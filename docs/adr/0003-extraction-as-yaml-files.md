@@ -39,6 +39,20 @@ specimen/
   `references/` at the same relative path. No `status` key.
 - **No database.** Every count, state and verdict a command shows is computed from these
   files each time.
+- **An extraction is wrong, or incomplete.** A *problem* is a file that does not fit its
+  schema or a name that points at nothing: the extraction cannot be trusted and
+  `specimen check` fails. A *gap* is what is still missing for the extraction to be whole
+  (a rule no scenario proves, a refusal no trigger translates): it is reported and fails
+  nothing — the list of gaps is the measure of completeness.
+
+Where the notation says something the spike's instances (`docs/brief/shapes.edn`) did not:
+
+| in the brief | here | why |
+|---|---|---|
+| `:condition []` for a fact about the caller alone | `condition: [{caller: signed-in}]` | an empty condition meant both "about the caller" and "not written yet"; empty now only means not written |
+| `:then {:field {["S" :f] [:minus 1]}}` | `then: {field: [{of: [S, f], change: [minus, 1]}]}` | a YAML key cannot be a list |
+| `:start {:compose … :alive …}`, `:seed`, `:credentials {actor headers}` in the target | `start`, `seed`, `reset`, `stop` as shell lines, `alive` as a raw request, `credentials` as the path of a file the seed writes | the lifecycle is decided in ADR-0004 |
+| `:status :planned/:played/:reference` | no key | the state is where the file is |
 
 ## Alternatives
 
