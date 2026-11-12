@@ -1,0 +1,130 @@
+schemas:
+  - schema: Article
+    shape:
+      slug: string
+      title: string
+      description: string
+      body: string
+      tagList: [string]
+      createdAt: string
+      updatedAt: string
+      favorited: boolean
+      favoritesCount: int
+      author:
+        username: string
+        bio: [maybe, string]
+        image: [maybe, string]
+        following: boolean
+
+interfaces:
+  - interface: get-article
+    method: get
+    pattern: /articles/{slug}
+    request:
+      path: { slug: string }
+      auth: optional
+    responses:
+      200: { body: { article: [schema, Article] } }
+
+  - interface: get-articles
+    method: get
+    pattern: /articles
+    request:
+      query:
+        tag: [optional, string]
+        author: [optional, string]
+        favorited: [optional, string]
+        limit: [optional, int]
+        offset: [optional, int]
+      auth: optional
+    responses:
+      200: { body: { articles: [[schema, Article]], articlesCount: int } }
+
+  - interface: get-articles-feed
+    method: get
+    pattern: /articles/feed
+    request:
+      query: { limit: int, offset: int }
+      auth: required
+    responses:
+      200: { body: { articles: [[schema, Article]], articlesCount: int } }
+
+  - interface: create-article-favorite
+    method: post
+    pattern: /articles/{slug}/favorite
+    request:
+      path: { slug: string }
+      auth: required
+    responses:
+      200: { body: { article: [schema, Article] } }
+
+  - interface: delete-article-favorite
+    method: delete
+    pattern: /articles/{slug}/favorite
+    request:
+      path: { slug: string }
+      auth: required
+    responses:
+      200: { body: { article: [schema, Article] } }
+      401: { body: null }
+
+  - interface: login
+    method: post
+    pattern: /users/login
+    request:
+      body: { user: { email: string, password: string } }
+      auth: none
+    responses:
+      200:
+        body:
+          user:
+            email: string
+            token: string
+            username: string
+            bio: [maybe, string]
+            image: [maybe, string]
+
+  - interface: create-user
+    method: post
+    pattern: /users
+    request:
+      body: { user: { email: string, username: string, password: string } }
+      auth: none
+    responses:
+      200:
+        body:
+          user:
+            email: string
+            token: string
+            username: string
+            bio: [maybe, string]
+            image: [maybe, string]
+
+  - interface: update-article
+    method: put
+    pattern: /articles/{slug}
+    request:
+      path: { slug: string }
+      body:
+        article:
+          title: [optional, string]
+          description: [optional, string]
+          body: [optional, string]
+      auth: required
+    responses:
+      200: { body: { article: [schema, Article] } }
+
+  - interface: get-profile-by-username
+    method: get
+    pattern: /profiles/{username}
+    request:
+      path: { username: string }
+      auth: optional
+    responses:
+      200:
+        body:
+          profile:
+            username: string
+            bio: [maybe, string]
+            image: [maybe, string]
+            following: boolean

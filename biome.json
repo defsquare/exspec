@@ -14,7 +14,7 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
-      "suspicious": { "noExplicitAny": "error" },
+      "suspicious": { "noExplicitAny": "error", "noThenProperty": "off" },
       "style": { "noNonNullAssertion": "error" }
     }
   },

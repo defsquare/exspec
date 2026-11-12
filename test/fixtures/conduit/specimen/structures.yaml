@@ -1,0 +1,28 @@
+- structure: Article
+  identity: slug
+  fields:
+    slug: { type: string }
+    title: { type: string }
+    description: { type: string }
+    body: { type: string }
+    author: { structure: User }
+    tagList: { structure: Tag, by: identity, many: true }
+    createdAt: { type: instant }
+    updatedAt: { type: instant }
+    favorited: { type: boolean }
+    favoritesCount: { type: int }
+
+- structure: User
+  identity: username
+  fields:
+    username: { type: string }
+    email: { type: string, format: email }
+    password: { type: string, min-length: 8, shown: false }
+    bio: { type: string }
+    image: { type: string }
+    following: { type: boolean }
+
+- structure: Tag
+  identity: name
+  fields:
+    name: { type: string }

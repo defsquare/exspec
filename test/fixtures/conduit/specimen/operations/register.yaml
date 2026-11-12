@@ -1,0 +1,22 @@
+operation: register
+takes:
+  email:
+    field: [User, email]
+    rules:
+      - { rule: email-given, violates: required, otherwise: incomplete }
+      - { rule: email-shaped, violates: format, otherwise: malformed-email }
+  username:
+    field: [User, username]
+    rules:
+      - { rule: username-given, violates: required, otherwise: incomplete }
+  password:
+    field: [User, password]
+    rules:
+      - { rule: password-given, violates: required, otherwise: incomplete }
+      - { rule: password-length, violates: min-length, otherwise: short-password }
+requires:
+  - { rule: email-free, fact: the email is not registered yet, otherwise: email-taken }
+answers: User
+effects:
+  - rule: creates-user
+    then: { says: A user is created and comes back with a token. }

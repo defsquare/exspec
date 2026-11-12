@@ -1,0 +1,5 @@
+scenario: unfavorite an unknown article
+says: A slug nobody has is not found.
+proves: [exists]
+act:
+  call: { operation: unfavorite-article, with: { slug: no-such-article }, caller: alice }

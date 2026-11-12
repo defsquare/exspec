@@ -1,0 +1,21 @@
+operation: update-article
+takes:
+  slug: { field: [Article, slug] }
+  title: { field: [Article, title], optional: true }
+  description: { field: [Article, description], optional: true }
+  body: { field: [Article, body], optional: true }
+requires:
+  - { rule: signed-in, fact: the caller is signed in, otherwise: unauthenticated }
+  - { rule: exists, fact: the article exists, otherwise: not-found }
+  - { rule: author, fact: the caller is the article's author, otherwise: forbidden }
+answers: Article
+effects:
+  - rule: title
+    when: [given, title]
+    then: { says: A given title replaces the article's; its slug stays. }
+  - rule: description
+    when: [given, description]
+    then: { says: A given description replaces the article's. }
+  - rule: body
+    when: [given, body]
+    then: { says: A given body replaces the article's. }

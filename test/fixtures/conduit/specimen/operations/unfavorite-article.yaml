@@ -1,0 +1,16 @@
+operation: unfavorite-article
+takes:
+  slug: { field: [Article, slug] }
+requires:
+  - { rule: signed-in, fact: the caller is signed in, otherwise: unauthenticated }
+  - { rule: exists, fact: the article exists, otherwise: not-found }
+answers: Article
+effects:
+  - rule: leaves-favorites
+    when: the caller has favorited the article
+    then:
+      fact: { the caller has favorited the article: false }
+      field: [{ of: [Article, favoritesCount], change: [minus, 1] }]
+  - rule: nothing-to-leave
+    when: [not, the caller has favorited the article]
+    then: nothing-changes

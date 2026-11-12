@@ -1,0 +1,58 @@
+projections:
+  - projection: article
+    interface: get-article
+    shows: [{ structure: Article, at: [article] }]
+  - projection: articles
+    interface: get-articles
+    shows: [{ structure: Article, at: [articles, each] }]
+  - projection: feed
+    interface: get-articles-feed
+    shows: [{ structure: Article, at: [articles, each] }]
+  - projection: profile
+    interface: get-profile-by-username
+    shows: [{ structure: User, at: [profile] }]
+
+triggers:
+  - trigger: delete-article-favorite
+    interface: delete-article-favorite
+    operation: unfavorite-article
+    sends: { slug: [path, slug] }
+    answers: { status: 200, shows: [{ structure: Article, at: [article] }] }
+    refuses: { unauthenticated: { status: 401 }, not-found: { status: 404 } }
+
+  - trigger: create-article-favorite
+    interface: create-article-favorite
+    operation: favorite-article
+    sends: { slug: [path, slug] }
+    answers: { status: 200, shows: [{ structure: Article, at: [article] }] }
+    refuses: { unauthenticated: { status: 401 }, not-found: { status: 404 } }
+
+  - trigger: create-user
+    interface: create-user
+    operation: register
+    sends:
+      email: [body, user, email]
+      username: [body, user, username]
+      password: [body, user, password]
+    answers: { status: 200, shows: [{ structure: User, at: [user] }] }
+    refuses:
+      short-password: { status: 400 }
+      malformed-email: { status: 400 }
+      incomplete: { status: 400 }
+      email-taken: { status: 400 }
+
+  - trigger: update-article
+    interface: update-article
+    operation: update-article
+    sends:
+      slug: [path, slug]
+      title: [body, article, title]
+      description: [body, article, description]
+      body: [body, article, body]
+    answers: { status: 200, shows: [{ structure: Article, at: [article] }] }
+
+  - trigger: get-articles
+    interface: get-articles
+    operation: list-articles
+    sends: { tag: [query, tag], limit: [query, limit], offset: [query, offset] }
+    answers: { status: 200, shows: [{ structure: Article, at: [articles, each] }] }

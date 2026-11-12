@@ -1,0 +1,20 @@
+- fact: the caller is signed in
+  condition: [{ caller: signed-in }]
+
+- fact: the article exists
+  condition:
+    - { structure: Article, where: { slug: [call, slug] }, must-be: [exists] }
+
+- fact: the caller has favorited the article
+  condition:
+    - structure: Article
+      where: { slug: [call, slug] }
+      seen-by: caller
+      field: [favorited]
+      must-be: [eq, true]
+
+- fact: the caller is the article's author
+  condition: []
+
+- fact: the email is not registered yet
+  condition: []

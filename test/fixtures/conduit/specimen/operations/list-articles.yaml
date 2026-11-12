@@ -1,0 +1,6 @@
+operation: list-articles
+takes:
+  tag: { type: string, optional: true }
+  limit: { type: int, min: 0, optional: true, default: 20 }
+  offset: { type: int, min: 0, optional: true, default: 0 }
+answers: Article

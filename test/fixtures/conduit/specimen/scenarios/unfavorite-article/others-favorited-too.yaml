@@ -1,0 +1,13 @@
+scenario: unfavorite an article that others favorited too
+says: "Only the caller's favorite goes: the others' stay in the count."
+proves: [leaves-favorites]
+arrange:
+  - call:
+      operation: favorite-article
+      with: { slug: how-to-train-your-dragon }
+      caller: alice
+act:
+  call:
+    operation: unfavorite-article
+    with: { slug: how-to-train-your-dragon }
+    caller: bob
