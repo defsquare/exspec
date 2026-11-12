@@ -49,7 +49,8 @@ After writing a scenario, play it. Compare the answer with what you meant:
   Correct the rule only if the code, read again, says you misread it.
 - A scenario that cannot be played (`unplayable`): the message says what is missing.
 
-Do not write a scenario's answer anywhere. Do not touch `specimen/references/`.
+Do not write a scenario's answer anywhere. Do not touch `specimen/references/`: playing
+keeps nothing, and the references are recorded by the tool once this phase is done.
 
 ## Done when
 

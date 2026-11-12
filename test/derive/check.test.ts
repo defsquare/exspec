@@ -738,3 +738,25 @@ triggers:
     { kind: "structure-not-shown", name: "U", message: "no projection shows it" },
   ]);
 });
+
+test("an input with a default may be left out of a call", () => {
+  expect(
+    problemsOf({
+      "operations/f.yaml": `
+operation: f
+takes:
+  a: {field: [S, a], rules: [{rule: q, violates: required, otherwise: x}]}
+  n: {type: int, default: 20}
+answers: S
+effects: [{rule: r, then: {says: s}}]
+`,
+      "scenarios/f/a.yaml": `
+scenario: a
+says: a
+proves: [r]
+act:
+  call: {operation: f, with: {a: s}}
+`,
+    }),
+  ).toEqual([]);
+});

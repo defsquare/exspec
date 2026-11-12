@@ -89,6 +89,7 @@ export function checkScenarios({
           .filter(
             ([name, input]) =>
               !input.optional &&
+              !("default" in input && input.default !== undefined) &&
               !Object.hasOwn(call.with, name) &&
               !leftOut.includes(name),
           )

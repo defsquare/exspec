@@ -25,7 +25,10 @@ export function mayWrite(dir: string, path: string): boolean {
   const within = relative(join(dir, "specimen"), resolve(dir, path));
   const parts = within.split("/");
   return (
-    within !== "" && !isAbsolute(within) && parts[0] !== ".." && parts[0] !== "references"
+    within !== "" &&
+    !isAbsolute(within) &&
+    parts[0] !== ".." &&
+    parts[0]?.toLowerCase() !== "references"
   );
 }
 

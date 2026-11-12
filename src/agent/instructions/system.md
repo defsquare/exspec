@@ -190,7 +190,8 @@ effects:
 
 - `takes`: each input by its business name. `{field: [Structure, field]}` — the input is
   that field and inherits its form; or `{type: int, min: 0, default: 20}` for an input
-  that is no field (a page size). `optional: true` when it may be left out. `rules`: what
+  that is no field (a page size). `optional: true` when it may be left out; an input with
+  a `default` may be left out too. `rules`: what
   happens when the form is violated — `violates` is `required` or a constraint the field
   carries (`format`, `min-length`, `max-length`, `min`, `max`).
 - `requires`: a fact that must hold, and the refusal otherwise. A refusal (`otherwise`) is
