@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Blocks an agent's commit whose message carries no `ADR-Reviewed:` trailer (see CLAUDE.md,
+# Mandatory ADR pass). Commits typed by a human and merge commits pass.
+set -u
+
+[ -n "${CLAUDECODE:-}${OMPCODE:-}${AGENT:-}" ] || exit 0
+[ -e "$(git rev-parse --git-dir)/MERGE_HEAD" ] && exit 0
+git interpret-trailers --parse "$1" | grep -q '^ADR-Reviewed:' && exit 0
+
+cat >&2 <<'EOF'
+commit-msg: mandatory ADR pass before commit.
+  1) Compare the staged diff (git diff --cached) with the ADRs in docs/adr/.
+  2) Create an ADR (Nygard format) for any new architecture decision in this diff;
+     mark any ADR it makes obsolete "Superseded by ADR-XXXX" (status + link);
+     mark "Deprecated" the ADR of a concept this diff removes.
+  3) Commit again with an "ADR-Reviewed: <what was checked / created / superseded>"
+     trailer — or "ADR-Reviewed: none — no architectural decision touched".
+EOF
+exit 1

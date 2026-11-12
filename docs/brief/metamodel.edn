@@ -1,0 +1,209 @@
+;; The metamodel of the recorded cases, as redrawn with the user on 2026-11-12 and decided
+;; for a rebuild: the spike's code does not have this shape. `shapes.draft.edn` holds one
+;; instance of every data shape; `<target>/shapes/fit.md` says what of Conduit and Petclinic
+;; fits it. `:at [column row]` places a concept on the page's grid (5 columns, 6 rows); `:t`
+;; moves a link's label along its arrow (0 origin, 1 head). A concept's `:group` puts it in
+;; a band of the page: the groups keep to separate rows.
+{:paths
+ [{:id "proof" :label "Group: the proof by simulation"
+   :says "One shape, the scenario, in three states: planned (written, with holes), played (a copy filled by one execution of the target, with the log of that execution), reference (the played copy that is kept, its noise marked). A played copy holds what was seen and no verdict."}
+  {:id "specified" :label "Group: the specification"
+   :says "Declared whole, with no hole, and stable: structures and their fields, facts, operations and their rules. It names no interface, no status, no place in an answer."}
+  {:id "binding" :label "Group: the bindings"
+   :says "The only shapes that know both sides: a projection says which structures an interface claims to show, a trigger which operation an interface triggers and how the target answers there, a detector which structure or fact a change at a place of an observable concerns. They are what is rewritten when the target changes."}
+  {:id "target" :label "Group: the target"
+   :says "Read off the target and never invented: what is started, the interfaces it exposes with their schemas, the observables where what it did is captured. Nothing here speaks of the specification."}
+  {:id "prove" :label "Proving a rule"
+   :says "A scenario names the rules of the operation it calls that it tries to prove, and the facts it looks at before and after the call. The verdict is derived from a played copy and the operation: a requirement is verified when its fact was false before, the call was refused and nothing changed; an effect when its condition held before and what it announces is seen after."}
+  {:id "derived" :label "Derived, never stored"
+   :says "The verdict of a rule (a played copy and the operation), of a binding (the answer and the trigger), of a replay (the reference and a new played copy, up to the noise); the provenance of a rule, of a field, of an interface's schema (every played copy). A rule no scenario points at is a missing scenario."}]
+
+ :groups
+ [{:id "proof" :label "The proof by simulation" :says "What an execution concretely showed, and what is kept of it."}
+  {:id "specification" :label "The specification" :says "The claims written about the target, each with its provenance."}
+  {:id "binding" :label "The bindings" :says "What ties an interface or an observable of the target to the specification."}
+  {:id "target" :label "The target" :says "What belongs to the target: it validates the extraction and is never extracted."}]
+
+ :concepts
+ [{:name "Scenario" :at [2 0] :group "proof"
+   :example "\"unfavorite an article that others favorited too\" — only the caller's favorite goes."
+   :instance {:from "shapes.draft.edn — Conduit's values; every nil is a hole an execution fills"
+              :edn "{:scenario \"unfavorite an article that others favorited too\"
+ :says     \"Only the caller's favorite goes: the others' stay in the count.\"
+ :status   :planned              ; :played adds :run and fills the holes; :reference marks the noise
+ :proves   [\"leaves-favorites\"]
+ :arrange  [{:call {:operation \"favorite-article\" :with {:slug \"how-to-train-your-dragon\"} :caller \"alice\"}
+             :response nil}]
+ :act      {:call {:operation \"unfavorite-article\" :with {:slug \"how-to-train-your-dragon\"} :caller \"bob\"}
+            :response nil :side-effects nil}
+ :assert   [{:fact \"the caller has favorited the article\" :before nil :after nil}
+            {:fact \"the caller has favorited the article\" :as \"alice\" :before nil :after nil}
+            {:shows {:structure \"Article\" :field [:favoritesCount]} :before nil :after nil}]}
+
+;; in a played copy
+ :run {:target \"conduit\" :version \"d8f34f0\" :at \"2026-11-10T14:02:11Z\" :clock nil}"}
+   :def "An example: a situation arranged by calls, one judged call, what is looked at before and after it, and the rules it tries to prove. One shape in three states: planned (written, with holes), played (filled by one execution, with its log), reference (the played copy kept, its noise marked)."
+   :attrs ["ident" "says (what this example shows)" "status (planned, played, reference)" "proves (names of rules of the judged call's operation)" "arrange (calls and their responses)" "act (the judged call, its response, its side effects)" "assert (a fact or a shown field, before and after; as another actor)" "run (the log of the execution: target, version, when, the clock it was started with)" "noise marks (reference only: equal marks, equal values)"]}
+  {:name "Call" :at [1 1] :group "proof"
+   :example "`unfavorite-article` with slug `how-to-train-your-dragon`, as bob."
+   :instance {:from "shapes.draft.edn"
+              :edn "{:operation \"unfavorite-article\"
+ :with      {:slug \"how-to-train-your-dragon\"}   ; the operation's inputs, by their business name
+ :caller    \"bob\"}                               ; a key of the target's :credentials"}
+   :def "A call to an operation, giving its inputs by their business name. Where each input travels in the request is the trigger's to say."
+   :attrs ["operation" "with (the inputs)" "caller"]}
+  {:name "SideEffect" :at [4 1] :group "proof"
+   :example "In `article_favorite`, the row `{article_id 5, user_id 2}` removed."
+   :instance {:from "shapes.draft.edn — Conduit's recorded value"
+              :edn "{:observable \"database\" :on \"article_favorite\"
+ :added [] :changed []
+ :removed [{\"article_id\" 5 \"user_id\" 2}]}"}
+   :def "A side effect the target carried out during the judged call, captured through an observable in the observable's own terms. A detector says which structure or fact it concerns. It is not compared: one at a place no detector names is a blind spot, one on a structure or fact the scenario does not look at is a missing assert."}
+
+  {:name "Operation" :at [1 2] :group "specification"
+   :example "`unfavorite-article`"
+   :instance {:from "shapes.draft.edn"
+              :edn "{:operation \"unfavorite-article\"
+ :takes     {:slug {:field [\"Article\" :slug]}}
+ :requires  [{:rule \"signed-in\" :fact \"the caller is signed in\" :otherwise :unauthenticated}
+             {:rule \"exists\"    :fact \"the article exists\"      :otherwise :not-found}]
+ :answers   \"Article\"
+ :effects   [{:rule \"leaves-favorites\"
+              :when \"the caller has favorited the article\"
+              :then {:fact  {\"the caller has favorited the article\" false}
+                     :field {[\"Article\" :favoritesCount] [:minus 1]}}}
+             {:rule \"nothing-to-leave\"
+              :when [:not \"the caller has favorited the article\"]
+              :then :nothing-changes}]}"}
+   :def "A business intent, declared whole: what it takes, what must hold, what its accepted answer shows, what it changes. No status and no path in an answer."
+   :attrs ["ident" "takes (its inputs: a field of a structure, or a schema of their own; optional or not)" "requires" "answers (the structure the accepted call shows, or none)" "effects"]}
+  {:name "Rule" :at [2 2] :group "specification"
+   :example "`password-length`: a password shorter than eight characters is refused as `:short-password`."
+   :instance {:from "shapes.draft.edn — the three places of a rule"
+              :edn ";; on an input: a constraint of the field violated
+{:rule \"password-length\" :violates :min-length :otherwise :short-password}
+
+;; a requirement: a fact that must hold, and the refusal otherwise
+{:rule \"exists\" :fact \"the article exists\" :otherwise :not-found}
+
+;; an effect: what changes when the call is accepted
+{:rule \"title\" :when [:given :title]
+ :then {:says \"A given title replaces the article's; its slug stays.\"}}"}
+   :def "A condition and its consequence, named so that a scenario can point at it. Three places in an operation: on an input (a constraint of its field violated, or the input missing: a refusal), a requirement (a fact that must hold: a refusal otherwise), an effect (what changes when the call is accepted; effects are independent of one another). A refusal is named in business terms. Which refusal wins when two conditions fail is observed."
+   :attrs ["ident" "violates · fact · when (its condition)" "otherwise · then (its consequence)"]}
+  {:name "Fact" :at [3 2] :group "specification"
+   :example "\"the caller has favorited the article\""
+   :instance {:from "shapes.draft.edn"
+              :edn "{:fact \"the caller has favorited the article\"
+ :condition [{:structure \"Article\"
+              :where     {:slug [:call :slug]}   ; which instance: bound to the call's input
+              :seen-by   :caller                 ; and seen by whom
+              :field     [:favorited]
+              :must-be   [:eq true]}]}"}
+   :def "A named statement about the situation, true or false, named once as the positive statement. It says nothing of what the system does with it. Its condition says which instance, bound to the call's inputs, and seen by whom. A condition on what the call sends is no fact: it is the form of a field."
+   :attrs ["name (the positive statement)" "condition (a structure's instance, a field, seen by whom, what it must be)"]}
+  {:name "Structure" :at [0 3] :group "specification"
+   :example "Article, identified by its `slug`."
+   :instance {:from "shapes.draft.edn"
+              :edn "{:structure \"User\"
+ :identity  \"username\"
+ :fields    {:username  {:type :string}
+             :email     {:type :string :format :email}
+             :password  {:type :string :min-length 8 :shown false}
+             :bio       {:type :string}
+             :following {:type :boolean}}}"}
+   :def "A business concept: an identity and fields. It does not say where it is read: a projection claims to show it."
+   :attrs ["name" "identity (the field that names one instance from outside)"]}
+  {:name "Field" :at [2 3] :group "specification"
+   :example "`password`, a string of at least eight characters, never shown."
+   :instance {:from "shapes.draft.edn"
+              :edn ":email     {:type :string :format :email}
+:password  {:type :string :min-length 8 :shown false}   ; written, never read
+:author    {:structure \"User\"}                          ; nested
+:tagList   {:structure \"Tag\" :by :identity :many true}  ; identities of another structure"}
+   :def "What a structure holds under one name, with its form: a type and its constraints (format, length, bounds), a nested structure, or another structure's identity. A constraint is checked twice: a value that violates it is refused as an input, and every value a projection shows respects it. A field may be never shown."
+   :attrs ["name" "type and constraints" "reference to a structure (nested, or by identity)" "shown (false: written and never read)"]}
+
+  {:name "Projection" :at [0 4] :group "binding"
+   :example "`get-article` shows an Article at `article`."
+   :instance {:from "shapes.draft.edn"
+              :edn "{:projection \"article\"  :interface \"get-article\"
+ :shows      [{:structure \"Article\" :at [:article]}]}
+{:projection \"articles\" :interface \"get-articles\"
+ :shows      [{:structure \"Article\" :at [:articles :each]}]}"}
+   :def "An interface in its role of reading, and the structures it claims to show, each at a place of its answer. A nested structure is not declared twice."}
+  {:name "Trigger" :at [1 4] :group "binding"
+   :example "`DELETE /articles/{slug}/favorite` triggers `unfavorite-article`."
+   :instance {:from "shapes.draft.edn"
+              :edn "{:trigger   \"delete-article-favorite\" :interface \"delete-article-favorite\"
+ :operation \"unfavorite-article\"
+ :sends     {:slug [:path \"slug\"]}
+ :answers   {:status 200 :shows [{:structure \"Article\" :at [:article]}]}
+ :refuses   {:unauthenticated {:status 401}
+             :not-found       {:status 404}}}"}
+   :def "An interface in its role of triggering an operation, and how the target speaks there: where each input travels, the status of the accepted call and where its answer shows the structure, how each refusal the operation names is translated."
+   :attrs ["sends" "answers" "refuses"]}
+  {:name "Detects" :at [3 4] :group "binding"
+   :example "A change in `article_favorite` concerns \"the caller has favorited the article\"."
+   :instance {:from "shapes.draft.edn — Conduit's tables; a provisional name"
+              :edn "{:detects {:observable \"database\" :on \"articles\"}         :structure \"Article\"}
+{:detects {:observable \"database\" :on \"article_favorite\"} :fact \"the caller has favorited the article\"}"}
+   :def "A place of an observable, and the structure or the fact a change there concerns. It explains a side effect; it triggers no reading."}
+
+  {:name "Interface" :at [1 5] :group "target" :variants ["HTTP" "Message"]
+   :example "`DELETE /articles/{slug}/favorite`"
+   :instance {:from "shapes.draft.edn — Conduit's routes; the schemas are rebuilt from recorded answers"
+              :edn "{:schema \"Article\"
+ :shape  {:slug :string :title :string :favorited :boolean :favoritesCount :int
+          :createdAt :string :author {:username :string :bio [:maybe :string]}}}
+
+{:interface \"delete-article-favorite\" :method :delete :pattern \"/articles/{slug}/favorite\"
+ :request   {:path {\"slug\" :string} :auth :required}
+ :responses {200 {:body {:article [:schema \"Article\"]}}
+             401 {:body nil}}}"}
+   :def "A template the target exposes, stated once, with its schema: what it accepts and what it answers, by status, in the shape the target writes. From the target's OpenAPI where it has one, from its code otherwise. It does not say what it is for: a binding gives it a role. Its schema is not a structure: it is the shape on the wire."
+   :attrs ["method, pattern (or topic, group)" "request" "responses by status" "named schemas"]}
+  {:name "Target" :at [2 5] :group "target"
+   :example "Conduit, a blog API (RealWorld, Spring), started from its compose file."
+   :instance {:from "shapes.draft.edn — Conduit's values, tokens left out"
+              :edn "{:target      \"conduit\"
+ :version     \"spring-boot-realworld-example-app d8f34f0\"
+ :start       {:compose \"conduit.compose.yml\" :alive [:get \"/tags\"]}
+ :seed        [\"./seed.sh\"]
+ :api         {:base-url \"http://localhost:8085/api\"}
+ :credentials {\"alice\" {\"Authorization\" \"Token …\"} \"bob\" {\"Authorization\" \"Token …\"}}}"}
+   :def "What is started. Its seed gives the state every scenario starts from; its credentials are the actors a call or an assert may name."
+   :attrs ["version" "start" "seed" "api" "credentials"]}
+  {:name "Observable" :at [4 5] :group "target" :variants ["Database" "Service" "Bus" "FileSystem" "Trace"]
+   :example "The database of Conduit. A trace: the branches of the code a call ran."
+   :instance {:from "shapes.draft.edn — the trace is proposed, not built"
+              :edn "{:observable \"database\" :kind :database
+ :connection {:jdbc-url \"jdbc:postgresql://localhost:5434/main\" :user \"main\"}
+ :ignores    [\"flyway_schema_history\"]}
+
+{:observable \"trace\" :kind :trace :tool :jacoco}"}
+   :def "A place of the target where what it did during a call is captured. It knows nothing of structures: it reports rows, messages, files, branches. A trace captures no change: it localizes the branch that carries a rule, and is never compared."}]
+
+ :links
+ [{:from "Scenario" :to "Call" :label "arranges · acts by" :cards ["1" "0..n arranged, 1 judged"] :paths ["proof"]}
+  {:from "Scenario" :to "Rule" :label "proves (declared)" :cards ["0..n" "1..n"] :paths ["proof" "prove"] :t 0.3}
+  {:from "Scenario" :to "Fact" :label "looks at, before and after" :cards ["0..n" "0..n"] :paths ["proof" "prove"] :t 0.4}
+  {:from "Scenario" :to "SideEffect" :label "holds, once played" :cards ["1" "0..n"] :paths ["proof"]}
+  {:from "Call" :to "Operation" :label "calls" :cards ["0..n" "1"] :paths ["proof" "prove"]}
+  {:from "SideEffect" :to "Observable" :label "captured through" :cards ["0..n" "1"] :paths ["proof"]}
+  {:from "Operation" :to "Rule" :label "decided by" :cards ["1" "0..n"] :paths ["specified" "prove"]}
+  {:from "Rule" :to "Fact" :label "requires · when" :cards ["0..n" "0..n"] :paths ["specified" "prove"]}
+  {:from "Rule" :to "Field" :label "a constraint violated · a change" :cards ["0..n" "0..n"] :paths ["specified"] :t 0.6}
+  {:from "Operation" :to "Field" :label "takes" :cards ["0..n" "0..n"] :paths ["specified"] :t 0.35}
+  {:from "Operation" :to "Structure" :label "its answer shows" :cards ["0..n" "0..1"] :paths ["specified"]}
+  {:from "Fact" :to "Field" :label "about" :cards ["0..n" "0..n"] :paths ["specified"]}
+  {:from "Structure" :to "Field" :label "holds" :cards ["1" "0..n"] :paths ["specified"]}
+  {:from "Projection" :to "Structure" :label "claims to show" :cards ["1..n" "1..n"] :paths ["binding"]}
+  {:from "Projection" :to "Interface" :label "role of" :cards ["0..1" "1"] :paths ["binding" "target"]}
+  {:from "Trigger" :to "Operation" :label "triggers · translates its answers" :cards ["1" "1"] :paths ["binding"] :t 0.3}
+  {:from "Trigger" :to "Interface" :label "role of" :cards ["0..1" "1"] :paths ["binding" "target"]}
+  {:from "Detects" :to "Fact" :label "a change there concerns" :cards ["0..n" "0..1"] :paths ["binding"] :t 0.3}
+  {:from "Detects" :to "Structure" :label "or concerns" :cards ["0..n" "0..1"] :paths ["binding"] :t 0.35}
+  {:from "Detects" :to "Observable" :label "a place of" :cards ["0..n" "1"] :paths ["binding" "target"]}
+  {:from "Target" :to "Interface" :label "exposes" :cards ["1" "1..n"] :paths ["target"]}
+  {:from "Target" :to "Observable" :label "observed through" :cards ["1" "0..n"] :paths ["target"]}]}

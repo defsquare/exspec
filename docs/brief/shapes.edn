@@ -1,0 +1,520 @@
+;; ============================================================================
+;; Version ajustée (Claude)
+;; ============================================================================
+
+;; ---------------------------------------------------------------- structure
+;; Une structure : un concept métier. De la SPEC : déclarée, aucun trou, et STABLE.
+;; Un champ porte sa forme (type, format, longueur, bornes) ; :shown false = jamais montré.
+;; Elle ne sait pas par où on la lit : c'est la projection qui dit ce qu'elle montre (plus bas).
+;;   :identity  le champ qui nomme une instance vue de l'extérieur
+;;   :fields    ce qu'une instance montre : un type, ou une autre structure (imbriquée, ou par son identité)
+;; Champs réels de Conduit (structures.edn).
+{:structure "Article"
+ :identity  "slug"
+ :fields    {:slug           {:type :string}
+             :title          {:type :string}
+             :description    {:type :string}
+             :body           {:type :string}
+             :author         {:structure "User"}                          ;; imbriquée
+             :tagList        {:structure "Tag" :by :identity :many true}  ;; une liste d'identités de Tag
+             :createdAt      {:type :instant}
+             :updatedAt      {:type :instant}
+             :favorited      {:type :boolean}
+             :favoritesCount {:type :int}}}
+
+{:structure "User"
+ :identity  "username"
+ :fields    {:username  {:type :string}
+             :email     {:type :string :format :email}
+             :password  {:type :string :min-length 8 :shown false}   ;; jamais montré par une projection
+             :bio       {:type :string}
+             :image     {:type :string}
+             :following {:type :boolean}}}
+
+;; Pas ici, car dérivé des runs comme la provenance d'une règle :
+;;   - la provenance d'un champ (déclaré seulement / vérifié / réfuté)
+;;   - ses exemples observés, ses nulls ("title" : 688 valeurs, 36 distinctes, 0 null dans le spike)
+;; Pas ici non plus : quelle table détecte un changement de la structure. Ce n'est pas de la spec :
+;; c'est un raccord (plus bas, "detects").
+
+;; ---------------------------------------------------------------- la cible : target, interface, observable
+;; Ce qui appartient à la cible. Rien ici ne parle de la spec : ni structure, ni opération, ni fait.
+;; Tout est relevé sur la cible (son compose, ses contrôleurs ou son OpenAPI, sa base), jamais inventé.
+;;
+;; Target : ce qu'on démarre. Valeurs réelles de Conduit (conduit.binding.edn), jetons omis.
+{:target      "conduit"
+ :version     "spring-boot-realworld-example-app d8f34f0"
+ :start       {:compose "conduit.compose.yml" :alive [:get "/tags"]}   ;; :alive = la cible répond
+ :seed        ["./seed.sh"]                                            ;; produit l'état de départ
+ :api         {:base-url "http://localhost:8085/api"}
+ :credentials {"alice" {"Authorization" "Token …"}                     ;; les acteurs : question ouverte
+               "bob"   {"Authorization" "Token …"}}}
+
+;; Interface : un gabarit que la cible expose, énoncé UNE fois, AVEC son schéma. Ici des routes HTTP ;
+;; ce pourrait être un topic (topic, groupe, schéma du message).
+;; Une interface ne dit pas à quoi elle sert : c'est un raccord qui lui donne un rôle.
+;;   :request    ce qu'elle accepte : paramètres de chemin, de requête, corps, authentification
+;;   :responses  ce qu'elle répond, par statut : la forme du corps TELLE QUE LA CIBLE L'ÉCRIT
+;; D'où vient le schéma : de l'OpenAPI s'il existe, sinon du code (contrôleurs, DTO). Conduit n'a pas
+;; d'OpenAPI ; les routes sont réelles (interfaces.edn), les schémas ci-dessous sont à relever du code.
+;; C'est une affirmation comme une autre : déclarée, puis confrontée à chaque réponse d'un run
+;; (vérifiée / réfutée, par statut).
+
+;; les formes nommées une fois, réutilisées (les components/schemas d'un OpenAPI)
+{:schema "Article"
+ :shape  {:slug :string :title :string :description :string :body :string
+          :tagList [:string] :createdAt :string :updatedAt :string       ;; des dates écrites en texte
+          :favorited :boolean :favoritesCount :int
+          :author {:username :string :bio [:maybe :string] :image [:maybe :string] :following :boolean}}}
+
+{:interface "get-article" :method :get :pattern "/articles/{slug}"
+ :request   {:path {"slug" :string} :auth :optional}
+ :responses {200 {:body {:article [:schema "Article"]}}}}
+
+{:interface "get-articles" :method :get :pattern "/articles"
+ :request   {:query {"tag" :string "author" :string "favorited" :string
+                     "limit" :int "offset" :int}                         ;; tous optionnels
+             :auth  :optional}
+ :responses {200 {:body {:articles [[:schema "Article"]] :articlesCount :int}}}}
+
+{:interface "get-articles-feed" :method :get :pattern "/articles/feed"
+ :request   {:query {"limit" :int "offset" :int} :auth :required}
+ :responses {200 {:body {:articles [[:schema "Article"]] :articlesCount :int}}}}
+
+{:interface "create-article-favorite" :method :post :pattern "/articles/{slug}/favorite"
+ :request   {:path {"slug" :string} :auth :required}
+ :responses {200 {:body {:article [:schema "Article"]}}}}
+
+{:interface "delete-article-favorite" :method :delete :pattern "/articles/{slug}/favorite"
+ :request   {:path {"slug" :string} :auth :required}
+ :responses {200 {:body {:article [:schema "Article"]}}
+             401 {:body nil}}}                                           ;; observé : anonyme, et slug inconnu
+
+{:interface "login" :method :post :pattern "/users/login"
+ :request   {:body {:user {:email :string :password :string}} :auth :none}
+ :responses {200 {:body {:user {:email :string :token :string :username :string
+                                :bio [:maybe :string] :image [:maybe :string]}}}}}
+
+;; Le schéma d'une interface N'EST PAS la structure :
+;;   - le schéma est la forme sur le fil, propre à cette cible (:createdAt est un texte, l'auteur est
+;;     recopié dans chaque article) ;
+;;   - la structure est le concept métier (:createdAt est un instant, :author est un User).
+;; Le raccord fait le pont : la projection dit qu'à [:article] de cette forme, on lit un Article.
+;; Une autre cible aura d'autres schémas, les mêmes structures.
+;;
+;; Ce que le schéma permet de dériver :
+;;   - un raccord qui pointe un chemin absent du schéma ([:article] sur une réponse sans :article) est faux
+;;     avant même de jouer un scénario ;
+;;   - un appel d'un scénario dont les paramètres ne respectent pas :request est mal écrit ;
+;;   - une interface qu'aucun raccord ne cite ne déclenche ni ne lit rien -> à signaler.
+
+;; Observable : un endroit de la cible où l'on capture ce qu'elle a fait pendant un appel.
+;;   :kind  database | service | bus | filesystem | trace
+;; Il ne sait rien des structures : il rapporte des lignes, des messages, des fichiers, des branches.
+{:observable "database"
+ :kind       :database
+ :connection {:jdbc-url "jdbc:postgresql://localhost:5434/main" :user "main"}
+ :ignores    ["flyway_schema_history"]}                     ;; le registre des migrations
+;; Ce qu'il rapporte pour un appel = un effet de bord, dans ses propres termes (une table, des lignes) :
+;;   {:observable "database" :on "article_favorite"
+;;    :added [] :changed [] :removed [{"article_id" 5 "user_id" 2}]}
+
+{:observable "trace"                                        ;; proposé, non construit dans le spike
+ :kind       :trace
+ :tool       :jacoco}
+;; Il ne capture pas un changement : il rapporte les branches du code qu'un appel a exécutées.
+;; Il sert à localiser la branche qui porte une règle (deux scénarios de part et d'autre d'une
+;; condition diffèrent d'une branche), pour la muter. Il valide l'extraction, n'est jamais comparé.
+
+;; ---------------------------------------------------------------- les raccords : projection, trigger, detects
+;; Ce qui relie une interface de la CIBLE à la SPEC. C'est ce qu'on réécrit quand la cible change
+;; (une route ajoutée, une réponse réorganisée, une réécriture avec une autre API) ; les structures
+;; et les opérations ne bougent pas.
+;;
+;; Projection : une interface en rôle de lecture, et les structures qu'elle PRÉTEND montrer.
+;;   :shows  quelle structure, et où dans la réponse (:each = chaque élément d'une liste)
+{:projection "article"  :interface "get-article"
+ :shows      [{:structure "Article" :at [:article]}]}
+{:projection "articles" :interface "get-articles"
+ :shows      [{:structure "Article" :at [:articles :each]}]}
+{:projection "feed"     :interface "get-articles-feed"
+ :shows      [{:structure "Article" :at [:articles :each]}]}
+{:projection "profile"  :interface "get-profile-by-username"
+ :shows      [{:structure "User" :at [:profile]}]}
+;; Une structure imbriquée ne se redéclare pas : "article" montre un Article à [:article], le champ
+;; :author d'Article est un User, donc le User est à [:article :author]. Déduit.
+;;
+;; Trigger : une interface en rôle de déclenchement d'une opération, et comment la cible y répond.
+;;   :answers  le statut de l'appel accepté, et où la réponse montre la structure que l'opération annonce
+;;   :sends    où voyage chaque entrant de l'opération : chemin, requête ou corps
+;;   :refuses  comment la cible traduit chaque refus que l'opération nomme
+{:trigger   "delete-article-favorite" :interface "delete-article-favorite"
+ :operation "unfavorite-article"
+ :sends     {:slug [:path "slug"]}
+ :answers   {:status 200 :shows [{:structure "Article" :at [:article]}]}
+ :refuses   {:unauthenticated {:status 401}
+             :not-found       {:status 404}}}               ;; déclaré depuis le contrat ; voir le run plus bas
+;;
+;; Vérification (dérivée) : une structure qu'aucune projection ne prétend montrer n'est pas observable.
+;;
+;; Detects (nom provisoire) : un endroit d'un observable, et la structure ou le fait qu'un changement
+;; à cet endroit concerne. Même sens que les deux autres raccords : c'est la cible qui pointe la spec.
+;; Tables réelles de Conduit (le :detected-by de structures.edn, sorti des structures).
+{:detects {:observable "database" :on "articles"}         :structure "Article"}
+{:detects {:observable "database" :on "article_tag"}      :structure "Article"}
+{:detects {:observable "database" :on "users"}            :structure "User"}
+{:detects {:observable "database" :on "tags"}             :structure "Tag"}
+{:detects {:observable "database" :on "comments"}         :structure "Comment"}
+{:detects {:observable "database" :on "article_favorite"} :fact "the caller has favorited the article"}
+{:detects {:observable "database" :on "follower_user"}    :fact "the caller follows the user"}
+;; À quoi il sert : EXPLIQUER un effet de bord, pas déclencher une lecture (c'est :assert qui dit
+;; ce qu'on regarde). Deux vérifications dérivées sur un run :
+;;   - un effet de bord à un endroit qu'aucun raccord ne cite        -> angle mort
+;;   - un effet de bord sur une structure ou un fait que :assert ne regarde pas -> un :assert qui manque
+;; Répond à la question ouverte 3 : le side-effect sur "article_favorite" touche bien un fait.
+
+;; ---------------------------------------------------------------- fact
+;; Un fait : un énoncé vrai/faux sur la situation. Il ne dit rien de ce que le système en fait.
+;; Sa condition dit QUELLE instance (liée aux entrants de l'appel, par leur nom métier) et VUE PAR QUI.
+;; C'est le fait qui porte le point de vue : ni la projection, ni l'appel.
+{:fact "the caller is signed in"
+ :condition []}                                             ;; porte sur l'appelant, aucune structure
+
+{:fact "the article exists"                                 ;; nom honnête de "the caller can read the article"
+ :condition [{:structure "Article" :where {:slug [:call :slug]}
+              :must-be   [:exists]}]}
+
+{:fact "the caller has favorited the article"
+ :condition [{:structure "Article" :where {:slug [:call :slug]}
+              :seen-by   :caller
+              :field     [:favorited]
+              :must-be   [:eq true]}]}                      ;; composable : [:and ...] [:or ...] [:not ...]
+
+;; ---------------------------------------------------------------- operation
+;; L'opération est de la SPEC : déclarée en entier, AUCUN trou. Elle dit ce qu'on affirme du système.
+;; Une règle = un fait -> une conséquence, nommée pour qu'un scénario puisse la pointer.
+;;   :takes     ce qu'elle prend, par nom métier (détaillé plus bas, "les entrants")
+;;   :requires  le fait exigé, et ce qui arrive sinon (le refus). La négation n'a plus de nom à elle.
+;;   :effects   ce qui change quand l'appel est accepté ; indépendants les uns des autres.
+;; C'est le scénario qui pointe la règle qu'il observe ou tente de prouver (:proves, plus bas).
+;; Une règle qu'aucun scénario ne pointe = un scénario qui manque (la mesure de complétude).
+{:operation "unfavorite-article"
+ :takes     {:slug {:field ["Article" :slug]}}
+ ;; :otherwise nomme le refus en termes métier ; sa traduction (un statut) est dans le trigger
+ :requires  [{:rule "signed-in" :fact "the caller is signed in" :otherwise :unauthenticated}
+             {:rule "exists"    :fact "the article exists"      :otherwise :not-found}]
+ ;; ce que l'appel accepté montre, en termes métier seulement ; le statut et le chemin sont dans le trigger
+ :answers   "Article"
+ :effects  [{:rule "leaves-favorites"
+              :when "the caller has favorited the article"
+              :then {:fact  {"the caller has favorited the article" false}
+                     :field {["Article" :favoritesCount] [:minus 1]}}}
+             {:rule "nothing-to-leave"
+              :when [:not "the caller has favorited the article"]
+              :then :nothing-changes}]}
+;; NB : dans Conduit, retirer un favori qu'on n'a pas mis est ACCEPTÉ et ne change rien.
+;; "has favorited" n'est donc pas une exigence mais une condition d'effet :
+;; une règle n'est pas toujours la négation d'un fait.
+
+;; ---------------------------------------------------------------- les entrants d'une opération
+;; Le test sur Conduit et Petclinic : 60 et 70 scénarios portent sur une règle dont la condition lit
+;; CE QUE L'APPEL ENVOIE ("mot de passe trop court", "titre fourni"), pas la situation.
+;; Ce n'est PAS un fait : un fait porte sur la situation et se lit par une projection. C'est du schéma.
+;;
+;;   la forme d'une valeur métier (format, longueur, bornes)      -> le CHAMP de la structure, dit une fois
+;;   ce que l'opération prend, ce qui est obligatoire             -> :takes de l'opération
+;;   le schéma d'une entrée qui n'est pas un champ (une page)     -> :takes de l'opération
+;;   ce qui arrive quand une contrainte est violée (le refus)     -> :takes, à côté de l'entrée
+;;   où l'entrée voyage dans la requête                           -> :sends du trigger
+;;   la valeur d'un exemple                                       -> le scénario
+
+;; -------- la structure : ses champs portent leurs contraintes
+;; Contraintes réelles de Conduit (les règles de register), ramenées sur le champ : voir "User" en tête
+;; du fichier (:email a un :format, :password un :min-length et :shown false).
+;; :shown false = un champ qu'on écrit sans jamais le lire. Il a sa place ici parce qu'il a une forme ;
+;; aucune projection ne le montrera, donc rien ne peut le confronter à une valeur observée.
+;;
+;; Une contrainte sur un champ MONTRÉ se vérifie deux fois :
+;;   - à l'entrée : une valeur qui la viole est refusée (les règles de :takes, plus bas) ;
+;;   - à la sortie : toute valeur que les projections montrent la respecte (dérivé de toutes les copies
+;;     remplies, comme la provenance d'un champ). C'est l'invariant : dit une fois, appliqué à tout
+;;     ce qu'on observe.
+
+;; -------- l'opération : ce qu'elle prend
+;;   :field     l'entrée est ce champ de cette structure : elle en hérite la forme
+;;   :optional  absente = obligatoire
+;;   :rules     ce qui arrive quand une contrainte est violée. :violates nomme la contrainte du champ
+;;              (:format, :min-length…) ou :required. Même vocabulaire que :requires : :rule, :otherwise.
+{:operation "register"
+ :takes     {:email    {:field ["User" :email]
+                        :rules [{:rule "email-given"     :violates :required   :otherwise :incomplete}
+                                {:rule "email-shaped"    :violates :format     :otherwise :malformed-email}]}
+             :username {:field ["User" :username]
+                        :rules [{:rule "username-given"  :violates :required   :otherwise :incomplete}]}
+             :password {:field ["User" :password]
+                        :rules [{:rule "password-given"  :violates :required   :otherwise :incomplete}
+                                {:rule "password-length" :violates :min-length :otherwise :short-password}]}}
+ ;; :requires ne contient plus que des faits sur la situation
+ :requires  [{:rule "email-free" :fact "the email is not registered yet" :otherwise :email-taken}]
+ :answers   "User"
+ :effects   [{:rule "creates-user"                          ;; sans :when : vaut dès que l'appel est accepté
+              :then {:says "A user is created and comes back with a token."}}]}
+;; "the email is not registered yet" : le spike le lisait en base ([:rows "users" …]). Aucune projection
+;; ne montre un utilisateur par son email -> fait non observable par l'API, à signaler.
+
+{:operation "update-article"
+ :takes     {:slug        {:field ["Article" :slug]}        ;; désigne l'article ; obligatoire
+             :title       {:field ["Article" :title]       :optional true}
+             :description {:field ["Article" :description] :optional true}
+             :body        {:field ["Article" :body]        :optional true}}
+ :requires  [{:rule "signed-in" :fact "the caller is signed in"            :otherwise :unauthenticated}
+             {:rule "exists"    :fact "the article exists"                 :otherwise :not-found}
+             {:rule "author"    :fact "the caller is the article's author" :otherwise :forbidden}]
+ :answers   "Article"
+ ;; une condition d'effet sur une entrée optionnelle : [:given …], sans fait à nommer
+ :effects   [{:rule "title"       :when [:given :title]
+              :then {:says "A given title replaces the article's; its slug stays."}}
+             {:rule "description" :when [:given :description]
+              :then {:says "A given description replaces the article's."}}
+             {:rule "body"        :when [:given :body]
+              :then {:says "A given body replaces the article's."}}]}
+;; La règle "otherwise" du spike ("une mise à jour sans aucun de ces champs ne change rien")
+;; disparaît : c'est ce que disent trois effets dont aucune condition n'est vraie.
+
+;; Une entrée qui n'est pas un champ garde son schéma ici. Illustratif pour les bornes ; le défaut de
+;; 20 et 0 est celui de Conduit.
+{:operation "list-articles"
+ :takes     {:tag    {:type :string :optional true}
+             :limit  {:type :int :min 0 :optional true :default 20}
+             :offset {:type :int :min 0 :optional true :default 0}}
+ :answers   "Article"}
+
+;; -------- le trigger : où chaque entrée voyage
+{:trigger   "create-user" :interface "create-user"
+ :operation "register"
+ :sends     {:email    [:body :user :email]
+             :username [:body :user :username]
+             :password [:body :user :password]}
+ :answers   {:status 200 :shows [{:structure "User" :at [:user]}]}
+ :refuses   {:short-password  {:status 400}                 ;; observé
+             :malformed-email {:status 400}                 ;; observé
+             :incomplete      {:status 400}                 ;; supposé, non relu
+             :email-taken     {:status 400}}}               ;; supposé, non relu
+
+{:trigger   "update-article" :interface "update-article"
+ :operation "update-article"
+ :sends     {:slug [:path "slug"] :title [:body :article :title]
+             :description [:body :article :description] :body [:body :article :body]}
+ :answers   {:status 200 :shows [{:structure "Article" :at [:article]}]}}
+
+{:trigger   "get-articles" :interface "get-articles"
+ :operation "list-articles"
+ :sends     {:tag [:query "tag"] :limit [:query "limit"] :offset [:query "offset"]}   ;; en paramètres de requête
+ :answers   {:status 200 :shows [{:structure "Article" :at [:articles :each]}]}}
+
+;; -------- le scénario : l'appel donne les entrées par leur nom métier (:with)
+;; Scénarios réels de Conduit. La borne est déjà là : huit caractères accepté, sept refusé.
+{:scenario "register with a password of seven characters"
+ :says     "A password shorter than eight characters is refused."
+ :status   :planned
+ :proves   ["password-length"]
+ :arrange  []
+ :act      {:call         {:operation "register"
+                           :with      {:email "short@x.test" :username "short" :password "1234567"}}
+            :response     nil
+            :side-effects nil}
+ :assert   []}                                              ;; rien à regarder avant/après
+
+{:scenario "register with a password of eight characters"
+ :says     "A password of exactly eight characters is accepted."
+ :status   :planned
+ :proves   ["creates-user"]
+ :arrange  []
+ :act      {:call         {:operation "register"
+                           :with      {:email "eight@x.test" :username "eight" :password "12345678"}}  ;; valeurs illustratives
+            :response     nil
+            :side-effects nil}
+ :assert   []}
+
+;; Dérivé, AVANT toute exécution, puisque tout se lit dans l'appel et les schémas :
+;;   "…seven characters" : "1234567" viole :min-length 8 de ["User" :password] -> pointe bien "password-length"
+;;   "…eight characters" : aucune contrainte violée
+;;   une règle de :takes qu'aucun scénario ne viole = un scénario à écrire
+;; GÉNÉRATION : c'est ici, et ici seulement, qu'une bibliothèque s'applique. Depuis le schéma d'une entrée
+;;   on tire une valeur valide, et pour chaque contrainte les valeurs de part et d'autre de sa borne
+;;   (:min-length 8 -> 8 caractères, 7 caractères). Amener le système dans une situation où un FAIT est
+;;   vrai reste une affaire d'appels préparatoires.
+;; Dérivé après exécution : appel refusé + aucun effet de bord => "password-length" vérifiée ;
+;;   statut 400 contre le :refuses du trigger => raccord vérifié.
+;;
+;; Ce que cela NE règle PAS :
+;;   - quatre refus de register répondent 400 : la réponse seule ne dit pas lequel (le corps de l'erreur
+;;     le dit peut-être ; la forme ne décrit pas ce corps) ;
+;;   - l'ordre quand deux contraintes sont violées (email mal formé ET mot de passe court) ;
+;;   - une contrainte entre deux entrées ("la date de fin est après la date de début") : ni un champ,
+;;     ni un fait sur la situation ;
+;;   - les 18 refus de Petclinic sans fait : à revoir un par un.
+
+;; ---------------------------------------------------------------- scenario : UNE forme, trois états
+;;   :planned    écrit, avec ses trous
+;;   :played     rempli par une exécution (l'Observation)
+;;   :reference  la copie remplie qu'on a choisi de garder, avec son bruit marqué
+;; Une copie remplie ne contient que : le scénario, le journal de l'exécution (:run), et les valeurs
+;; qui ont comblé les trous. AUCUN verdict : ils se dérivent tous (bloc "dérivé" plus bas).
+;; Ni Report, ni Reference, ni Run, ni état de départ, ni acteur comme forme à part.
+
+;; -------- état :planned — ce qu'on écrit. Tout ce qui vaut nil est rempli par une exécution.
+{:scenario "unfavorite an article that others favorited too"
+ :says     "Only the caller's favorite goes: the others' stay in the count."
+ :status   :planned
+ ;; :proves = les règles que ce scénario tente de prouver : déclaré par le scénario, pas dérivé.
+ ;; Une liste : ce sont des règles de l'opération de :act, donc le nom de la règle suffit.
+ :proves   ["leaves-favorites"]
+ :arrange  [{:call     {:operation "favorite-article"
+                        :with      {:slug "how-to-train-your-dragon"} :caller "alice"}
+             :response nil}]
+ :act      {:call         {:operation "unfavorite-article"
+                           :with      {:slug "how-to-train-your-dragon"} :caller "bob"}
+            :response     nil
+            :side-effects nil}
+ ;; :assert = ce qu'on regarde avant et après :act. Trous aussi : rien n'est prédit.
+ :assert   [{:fact "the caller has favorited the article"             :before nil :after nil}
+            {:fact "the caller has favorited the article" :as "alice" :before nil :after nil}  ;; le point de vue d'un autre acteur
+            ;; une valeur qui n'est pas vrai/faux : un champ montré, pas un fait
+            {:shows {:structure "Article" :field [:favoritesCount]}   :before nil :after nil}]}
+
+;; -------- état :played — le même, rempli par une exécution
+;; Une copie par exécution : le scénario écrit ne change pas.
+;;
+;; :run n'est pas une forme à part : c'est le journal de l'exécution, porté par le scénario rempli.
+;;   :version  celle de la cible CE JOUR-LÀ (Target dit celle d'aujourd'hui) : dit sur quel système
+;;             l'observation a été prise, quand on comparera l'ancien au nouveau
+;;   :clock    l'horloge donnée à la cible au démarrage (nil = la sienne) ; à redonner pour rejouer
+;; La même carte se répète dans tous les scénarios d'une même exécution ; les regrouper se dérive.
+;; Pas de forme non plus pour l'état de départ : :seed (Target) dit comment on l'obtient, et les
+;; :before de :assert enregistrent ce que ce scénario y a trouvé.
+{:scenario "unfavorite an article that others favorited too"
+ :run      {:target "conduit" :version "d8f34f0" :at "2026-11-10T14:02:11Z" :clock nil}
+ :status   :played
+ :proves   ["leaves-favorites"]                             ;; inchangé : le verdict n'est pas stocké
+ :arrange  [{:call     {:operation "favorite-article"
+                        :with      {:slug "how-to-train-your-dragon"} :caller "alice"}
+             :response {:status 200 :body {:article {:favoritesCount 2 :favorited true
+                                                     :updatedAt "2026-11-10T14:02:13Z"}}}}]
+ :act      {:call         {:operation "unfavorite-article"
+                           :with      {:slug "how-to-train-your-dragon"} :caller "bob"}
+            :response     {:status 200 :body {:article {:favoritesCount 1 :favorited false
+                                                        :updatedAt "2026-11-10T14:02:13Z"}}}
+            :side-effects [{:observable "database" :on "article_favorite"
+                            :added [] :changed []
+                            :removed [{"article_id" 5 "user_id" 2}]}]}
+ :assert   [{:fact "the caller has favorited the article"             :before true :after false}
+            {:fact "the caller has favorited the article" :as "alice" :before true :after true}
+            {:shows {:structure "Article" :field [:favoritesCount]}   :before 2    :after 1}]}
+;; (les heures sont illustratives : le spike ne garde que la référence, bruit déjà marqué)
+
+;; -------- état :reference — la copie qu'on garde
+;; Le scénario est joué deux fois, sur deux exécutions. On garde une copie ; là où les deux diffèrent,
+;; la valeur est remplacée par une marque de bruit. Deux endroits qui portaient LA MÊME valeur bruitée
+;; reçoivent LA MÊME marque : au rejeu, peu importe la valeur, tant qu'ils restent égaux entre eux.
+;; Ce sont les deux seules informations qu'on ne retrouve pas sans rejouer deux fois : le choix de la
+;; copie, et le bruit.
+{:scenario "unfavorite an article that others favorited too"
+ :run      {:target "conduit" :version "d8f34f0" :at "2026-11-10T14:02:11Z" :clock nil}
+ :status   :reference
+ :proves   ["leaves-favorites"]
+ :arrange  [{:call     {:operation "favorite-article"
+                        :with      {:slug "how-to-train-your-dragon"} :caller "alice"}
+             :response {:status 200 :body {:article {:favoritesCount 2 :favorited true
+                                                     :updatedAt [:noise 1]}}}}]
+ :act      {:call         {:operation "unfavorite-article"
+                           :with      {:slug "how-to-train-your-dragon"} :caller "bob"}
+            :response     {:status 200 :body {:article {:favoritesCount 1 :favorited false
+                                                        :updatedAt [:noise 1]}}}   ;; même marque : même valeur
+            :side-effects [{:observable "database" :on "article_favorite"
+                            :added [] :changed []
+                            :removed [{"article_id" 5 "user_id" 2}]}]}
+ :assert   [{:fact "the caller has favorited the article"             :before true :after false}
+            {:fact "the caller has favorited the article" :as "alice" :before true :after true}
+            {:shows {:structure "Article" :field [:favoritesCount]}   :before 2    :after 1}]}
+;; Un rejeu = une nouvelle copie :played, comparée à la :reference au bruit près. Rien d'autre à stocker.
+
+;; ---------------------------------------------------------------- un scénario qui prouve PLUSIEURS règles
+;; Illustratif (forme seulement, valeurs non tirées de Conduit) : une mise à jour qui envoie deux champs
+;; exerce des règles d'effet indépendantes. Chacune aura son verdict, dérivé.
+{:scenario "update the title and the description of an article"
+ :run      {:target "conduit" :version "d8f34f0" :at "2026-11-10T…" :clock nil}
+ :status   :played
+ :proves   ["title" "description"]
+ :act      {:call {:operation "update-article"
+                   :with      {:slug "how-to-train-your-dragon" :title "…" :description "…"}
+                   :caller    "alice"}}}
+
+;; ---------------------------------------------------------------- un scénario dont le run contredit le raccord
+;; Valeurs réelles de Conduit : un slug inconnu répond 401, là où le trigger déclare 404.
+;; La copie ne dit rien de plus que ce qui a été observé.
+{:scenario "unfavorite an unknown article"
+ :says     "A slug nobody has is not found."
+ :run      {:target "conduit" :version "d8f34f0" :at "2026-11-10T…" :clock nil}
+ :status   :played
+ :proves   ["exists"]
+ :arrange  []
+ :act      {:call         {:operation "unfavorite-article"
+                           :with      {:slug "no-such-article"} :caller "alice"}
+            :response     {:status 401 :body nil}
+            :side-effects []}
+ :assert   [{:fact "the article exists" :before false :after false}]}
+
+;; ---------------------------------------------------------------- DÉRIVÉ : calculé, jamais stocké
+;; Écrit ici comme résultat d'un calcul, pour montrer ce qu'on obtient ; ce ne sont pas des données.
+;;
+;; 1. Le verdict d'une règle        <- une copie remplie + l'opération
+;;      "leaves-favorites"  :when vrai avant (favorited true), :then observé après (false, 2 -> 1)  => vérifiée
+;;      "exists"            fait faux avant, appel refusé, aucun effet de bord                      => vérifiée
+;;
+;; 2. Le verdict d'un raccord       <- la réponse + le trigger
+;;      refus attendu :not-found, traduction déclarée {:status 404}, observée {:status 401}         => réfuté
+;;    Deux sortes d'écart, donc : "le système ne fait pas ce que la règle dit" (1), ou "il le fait,
+;;    mais le dit autrement" (2). Les deux appellent une décision humaine : corriger l'affirmation,
+;;    ou nommer un bug de la cible.
+;;
+;; 3. Le verdict d'un rejeu         <- la :reference + une nouvelle copie :played, au bruit près
+;;      vert, ou rouge avec les endroits qui diffèrent
+;;
+;; 4. La provenance d'une règle     <- tous les verdicts (1)
+;;      déclarée seulement (aucun scénario ne la pointe : il en manque un) / vérifiée / réfutée
+;;
+;; 5. La provenance d'un champ, ses exemples, le schéma d'une interface confronté aux réponses
+;;                                  <- toutes les copies remplies
+;;
+;; Limite : Conduit répond 401 pour "anonyme" comme pour "inconnu". La réponse seule ne dit pas QUEL
+;; refus a eu lieu ; c'est le fait évalué avant l'appel qui le dit. Un scénario qui nierait les deux
+;; faits à la fois ne permettrait pas de savoir laquelle des deux exigences a répondu.
+
+;; ---------------------------------------------------------------- CE QUI RESTE : des ajustements, pas des concepts
+;; Le test sur Conduit et Petclinic (dev/spike/<cible>/shapes/fit.md) : les exigences tiennent toutes
+;; (30 sur 30 vérifiées sur chaque cible). Ce qui ne rentrait pas, et où cela se règle DANS ces formes :
+;;
+;;   réglé ci-dessus
+;;     - une condition sur l'entrée (60 et 70 scénarios)        -> forme du champ, :takes, :sends
+;;     - la requête de l'appel (24 et 20)                        -> une entrée que le trigger envoie en [:query …]
+;;     - la règle "otherwise"                                    -> des effets indépendants
+;;
+;;   à écrire, sans concept nouveau
+;;     - :assert ne sait pas dire une liste (appartenance, nombre, ordre), ni qu'une instance apparaît ou
+;;       disparaît, ni un champ d'un élément de liste : des termes de plus pour {:shows …} et pour :must-be
+;;     - :then n'est déclaré pour aucun effet : le spike n'a que la phrase. À écrire règle par règle ;
+;;       ce qu'on ne sait pas écrire reste "déclaré seulement"
+;;     - une réponse acceptée sans corps (204) : :answers nil dans l'opération et le trigger
+;;     - un acteur créé par un appel préparatoire, une valeur reprise d'une réponse précédente, un jeton
+;;       brut : des termes de l'appel ([:from <appel> …], :caller par jeton)
+;;     - un fait qui compte, un fait sur l'identité de l'appelant : des termes de :must-be
+;;     - un bruit sans égalité (un jeton différent à chaque fois) : une marque [:noise] sans numéro
+;;     - le schéma d'une interface : une clé absente de certaines réponses (optionnelle)
+;;
+;;   questions qui restent
+;;     - {:fact … :as "alice"} : le fait dit "the caller" et on l'évalue pour un autre acteur
+;;     - qui choisit ce que :assert regarde : le scénario, ou les faits que l'opération cite
+;;     - :status : seule :reference est un choix ; :planned et :played se déduisent de :run
+;;     - un fait que l'API ne montre pas ("the email is not registered yet")
+;;     - des refus distincts qui répondent le même statut : la norme sur les deux cibles (401, 404)
