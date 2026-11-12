@@ -16,6 +16,35 @@ export function describeEvent(event: Event): string {
       return Object.entries(event.counts)
         .map(([name, count]) => `${count} ${name}`)
         .join(", ");
+    case "target-step":
+      return `target   ${event.step} ${event.state}`;
+    case "scenario-played":
+      return `played   ${event.path}  ${event.played.act.response.status}`;
+    case "scenario-unplayable":
+      return `unplayable ${event.path}: ${event.message}`;
+    case "reference-written":
+      return `written  ${event.path}  ${event.noise} noisy`;
+    case "reference-kept":
+      return `kept     ${event.path}  a reference exists, --force to replace it`;
+    case "scenario-unstable":
+      return [
+        `unstable ${event.path}`,
+        ...event.differences.map(
+          ({ at, first, second }) =>
+            `  ${at.join(".")}: ${JSON.stringify(first)}, then ${JSON.stringify(second)}`,
+        ),
+      ].join("\n");
+    case "scenario-replayed":
+      return event.differences.length === 0
+        ? `replayed ${event.path}  green`
+        : `replayed ${event.path}  red  ${event.differences
+            .map(
+              ({ at, expected, actual }) =>
+                `${at.join(".")}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+            )
+            .join("\n  ")}`;
+    case "command-failed":
+      return `failed   ${event.message}`;
     case "command-finished":
       return `${event.command} ${event.ok ? "ok" : "failed"}`;
     default: {

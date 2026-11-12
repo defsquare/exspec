@@ -1,6 +1,8 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { SourceFile } from "../shapes/extraction.ts";
+import type { Reference } from "../shapes/scenario.ts";
+import { type Credentials, credentialsSchema, type Target } from "../shapes/target.ts";
 
 export async function readExtractionFiles(dir: string): Promise<readonly SourceFile[]> {
   const root = join(dir, "specimen");
@@ -20,4 +22,30 @@ export async function directoryExists(path: string): Promise<boolean> {
       throw error;
     },
   );
+}
+
+export async function readCredentials(dir: string, target: Target): Promise<Credentials> {
+  if (target.credentials === undefined) return {};
+  return credentialsSchema.parse(await Bun.file(join(dir, target.credentials)).json());
+}
+
+// path: "<operation>/<slug>"
+export async function writeReference(
+  dir: string,
+  path: string,
+  reference: Reference,
+): Promise<void> {
+  await Bun.write(
+    join(dir, "specimen", "references", `${path}.yaml`),
+    Bun.YAML.stringify(reference, null, 2),
+  );
+}
+
+// "abc1234", or "unversioned" when dir is not a git checkout
+export async function checkoutVersion(dir: string): Promise<string> {
+  const { exitCode, stdout } = await Bun.$`git rev-parse --short HEAD`
+    .cwd(dir)
+    .quiet()
+    .nothrow();
+  return exitCode === 0 ? stdout.toString().trim() : "unversioned";
 }
