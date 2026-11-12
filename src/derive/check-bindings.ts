@@ -70,6 +70,17 @@ export function checkBindings({
     interfaceNamed.has(name) ? [] : [problem(at, `unknown interface "${name}"`)];
 
   return [
+    ...[...new Set(triggers.map(({ operation }) => operation))].flatMap((name) => {
+      const bound = triggers.flatMap((t, i) => (t.operation === name ? [i] : []));
+      return bound.length > 1
+        ? [
+            problem(
+              `triggers.${bound[0]}.operation`,
+              `${bound.length} triggers call "${name}"`,
+            ),
+          ]
+        : [];
+    }),
     ...projections.flatMap((projection, i) => [
       ...checkInterface(`projections.${i}.interface`, projection.interface),
       ...checkShows(
@@ -107,6 +118,16 @@ export function checkBindings({
               ]
             : []),
         ]),
+        ...(operation
+          ? Object.keys(operation.takes)
+              .filter((input) => !Object.hasOwn(trigger.sends, input))
+              .map((input) =>
+                problem(
+                  `${at}.sends`,
+                  `"${input}" is taken by ${operation.operation} and sent nowhere`,
+                ),
+              )
+          : []),
         ...(operation
           ? Object.keys(trigger.refuses)
               .filter((refusal) => !refusals.includes(refusal))

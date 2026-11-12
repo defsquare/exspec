@@ -1,6 +1,6 @@
 import type { NamedShape, Shape } from "../shapes/target.ts";
 
-function isTuple(shape: Shape): shape is Extract<Shape, readonly unknown[]> {
+export function isTuple(shape: Shape): shape is Extract<Shape, readonly unknown[]> {
   return Array.isArray(shape);
 }
 

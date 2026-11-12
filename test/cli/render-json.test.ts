@@ -5,7 +5,7 @@ import type { Event } from "../../src/shapes/event.ts";
 const events: readonly Event[] = [
   { type: "command-started", command: "check", dir: "/abs/dir" },
   { type: "problem", file: "f.yaml", at: "a.0", message: "m" },
-  { type: "gap", kind: "fact-not-observable", name: "p", message: "m" },
+  { type: "gap", kind: "fact-without-condition", name: "p", message: "m" },
   { type: "command-finished", command: "check", ok: false },
 ];
 
@@ -21,7 +21,7 @@ test("one JSON object per line, and the last event returned", async () => {
     lines: [
       '{"type":"command-started","command":"check","dir":"/abs/dir"}',
       '{"type":"problem","file":"f.yaml","at":"a.0","message":"m"}',
-      '{"type":"gap","kind":"fact-not-observable","name":"p","message":"m"}',
+      '{"type":"gap","kind":"fact-without-condition","name":"p","message":"m"}',
       '{"type":"command-finished","command":"check","ok":false}',
     ],
     last: { type: "command-finished", command: "check", ok: false },

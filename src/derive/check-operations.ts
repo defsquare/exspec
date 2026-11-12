@@ -17,6 +17,20 @@ export function checkOperations({
   operations,
 }: Extraction): readonly Problem[] {
   const factNames = new Set(facts.map(({ fact }) => fact));
+  // [call, a] in a fact's condition -> a
+  const calledBy = (name: string): readonly string[] => [
+    ...new Set(
+      facts
+        .filter(({ fact }) => fact === name)
+        .flatMap(({ condition }) =>
+          condition.flatMap((term) =>
+            "structure" in term
+              ? Object.values(term.where).map(([, input]) => input)
+              : [],
+          ),
+        ),
+    ),
+  ];
   return operations.flatMap(({ path, operation }) => {
     const file = `operations/${path}.yaml`;
     const problem = (at: string, message: string): Problem => ({ file, at, message });
@@ -25,6 +39,15 @@ export function checkOperations({
     const unknownFact = (at: string, fact: string) =>
       factNames.has(fact) ? [] : [problem(at, `unknown fact "${fact}"`)];
     const rules = declaredRules(operation);
+    const unreadInput = (at: string, fact: string) =>
+      calledBy(fact)
+        .filter((input) => !Object.hasOwn(operation.takes, input))
+        .map((input) =>
+          problem(
+            at,
+            `the fact "${fact}" reads the input "${input}", which ${operation.operation} does not take`,
+          ),
+        );
     return [
       ...(path === operation.operation
         ? []
@@ -53,25 +76,33 @@ export function checkOperations({
               ],
         );
       }),
-      ...operation.requires.flatMap(({ fact }, i) =>
-        unknownFact(`requires.${i}.fact`, fact),
-      ),
+      ...operation.requires.flatMap(({ fact }, i) => [
+        ...unknownFact(`requires.${i}.fact`, fact),
+        ...unreadInput(`requires.${i}.fact`, fact),
+      ]),
       ...operation.effects.flatMap(({ when, then }, i) => [
         ...(when === undefined
           ? []
           : typeof when === "string"
-            ? unknownFact(`effects.${i}.when`, when)
+            ? [
+                ...unknownFact(`effects.${i}.when`, when),
+                ...unreadInput(`effects.${i}.when`, when),
+              ]
             : when[0] === "not"
-              ? unknownFact(`effects.${i}.when`, when[1])
+              ? [
+                  ...unknownFact(`effects.${i}.when`, when[1]),
+                  ...unreadInput(`effects.${i}.when`, when[1]),
+                ]
               : Object.hasOwn(operation.takes, when[1])
                 ? []
                 : [problem(`effects.${i}.when`, `"${when[1]}" is not an input`)]),
         ...(typeof then === "string" || "says" in then
           ? []
           : [
-              ...Object.keys(then.fact ?? {}).flatMap((fact) =>
-                unknownFact(`effects.${i}.then.fact.${fact}`, fact),
-              ),
+              ...Object.keys(then.fact ?? {}).flatMap((fact) => [
+                ...unknownFact(`effects.${i}.then.fact.${fact}`, fact),
+                ...unreadInput(`effects.${i}.then.fact.${fact}`, fact),
+              ]),
               ...(then.field ?? []).flatMap(({ of }, j) =>
                 unknownField(`effects.${i}.then.field.${j}.of`, of),
               ),

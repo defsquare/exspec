@@ -1,30 +1,82 @@
 import type { Extraction, Problem } from "../shapes/extraction.ts";
 import type { Call } from "../shapes/scenario.ts";
+import type { Operation } from "../shapes/specification.ts";
+import { fieldOf } from "./check-operations.ts";
 import { rulesOf } from "./operation.ts";
+
+const wanted = {
+  string: "string",
+  instant: "string",
+  int: "number",
+  number: "number",
+  boolean: "boolean",
+} as const;
+
+// 12 -> "number";  null, a list, a map -> undefined: no judgement
+function kindOf(value: unknown): "string" | "number" | "boolean" | undefined {
+  switch (typeof value) {
+    case "string":
+      return "string";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    default:
+      return undefined;
+  }
+}
 
 export function checkScenarios({
   operations,
   triggers,
   scenarios,
+  structures,
 }: Extraction): readonly Problem[] {
   const operationNamed = new Map(operations.map(({ operation: o }) => [o.operation, o]));
   return scenarios.flatMap(({ path, scenario }) => {
     const file = `scenarios/${path}.yaml`;
     const problem = (at: string, message: string): Problem => ({ file, at, message });
 
-    // the inputs left out on purpose: a proved rule violates: required on them
-    const checkCall = (at: string, call: Call, leftOut: readonly string[]) => {
+    const typeOf = (input: Operation["takes"][string]) => {
+      if (!("field" in input)) return input.type;
+      const field = fieldOf(structures, input.field);
+      return field && "type" in field ? field.type : undefined;
+    };
+
+    // leftOut: a proved rule violates: required on them
+    // wrongOn: a proved rule violates something on them, a wrong value may be the point
+    const checkCall = (
+      at: string,
+      call: Call,
+      leftOut: readonly string[],
+      wrongOn: readonly string[],
+    ) => {
       const operation = operationNamed.get(call.operation);
       if (operation === undefined) {
         return [problem(`${at}.operation`, `unknown operation "${call.operation}"`)];
       }
-      const bound = triggers.filter((t) => t.operation === call.operation).length;
+      const bound = triggers.some((t) => t.operation === call.operation);
       return [
-        ...(bound === 0
-          ? [problem(`${at}.operation`, `no trigger calls "${call.operation}"`)]
-          : bound > 1
-            ? [problem(`${at}.operation`, `${bound} triggers call "${call.operation}"`)]
-            : []),
+        ...(bound
+          ? []
+          : [problem(`${at}.operation`, `no trigger calls "${call.operation}"`)]),
+        ...Object.entries(call.with).flatMap(([name, value]) => {
+          const input = Object.hasOwn(operation.takes, name)
+            ? operation.takes[name]
+            : undefined;
+          const type = input && typeOf(input);
+          const given = kindOf(value);
+          if (type === undefined || given === undefined || wrongOn.includes(name))
+            return [];
+          return wanted[type] === given
+            ? []
+            : [
+                problem(
+                  `${at}.with.${name}`,
+                  `"${name}" is ${type === "int" || type === "instant" ? "an" : "a"} ${type} for ${call.operation}, the scenario gives the ${given} ${JSON.stringify(value)}`,
+                ),
+              ];
+        }),
         ...Object.keys(call.with)
           .filter((input) => !Object.hasOwn(operation.takes, input))
           .map((input) =>
@@ -49,17 +101,20 @@ export function checkScenarios({
     const { act, arrange, proves } = scenario;
     const [directory] = path.split("/");
     const operation = operationNamed.get(act.call.operation);
-    const leftOut = operation
-      ? Object.entries(operation.takes)
-          .filter(
-            ([, input]) =>
-              "rules" in input &&
-              (input.rules ?? []).some(
-                ({ rule, violates }) => violates === "required" && proves.includes(rule),
-              ),
-          )
-          .map(([name]) => name)
-      : [];
+    const provenOn = (only?: "required") =>
+      operation
+        ? Object.entries(operation.takes)
+            .filter(
+              ([, input]) =>
+                "rules" in input &&
+                (input.rules ?? []).some(
+                  ({ rule, violates }) =>
+                    (only === undefined || violates === only) && proves.includes(rule),
+                ),
+            )
+            .map(([name]) => name)
+        : [];
+    const leftOut = provenOn("required");
     const rules = operation ? rulesOf(operation) : [];
     return [
       ...(directory === act.call.operation
@@ -70,8 +125,8 @@ export function checkScenarios({
               `the scenario is under "${directory}", its act calls "${act.call.operation}"`,
             ),
           ]),
-      ...arrange.flatMap(({ call }, i) => checkCall(`arrange.${i}.call`, call, [])),
-      ...checkCall("act.call", act.call, leftOut),
+      ...arrange.flatMap(({ call }, i) => checkCall(`arrange.${i}.call`, call, [], [])),
+      ...checkCall("act.call", act.call, leftOut, provenOn()),
       ...(operation
         ? proves.flatMap((rule, i) =>
             rules.includes(rule)

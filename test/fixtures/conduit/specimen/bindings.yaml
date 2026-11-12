@@ -50,6 +50,10 @@ triggers:
       description: [body, article, description]
       body: [body, article, body]
     answers: { status: 200, shows: [{ structure: Article, at: [article] }] }
+    refuses:
+      unauthenticated: { status: 401 }
+      not-found: { status: 404 }
+      forbidden: { status: 403 }
 
   - trigger: get-articles
     interface: get-articles

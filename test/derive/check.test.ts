@@ -55,7 +55,7 @@ triggers:
   - trigger: t
     interface: i
     operation: f
-    sends: {a: [path, a]}
+    sends: {a: [path, a], n: [query, q]}
     answers: {status: 200, shows: [{structure: S, at: [s]}]}
     refuses: {x: {status: 400}}
 `,
@@ -85,14 +85,14 @@ test("the fixture has no problem, and these gaps", async () => {
     problems: [],
     gaps: [
       {
-        kind: "fact-not-observable",
+        kind: "fact-without-condition",
         name: "the caller is the article's author",
-        message: "its condition is empty",
+        message: "its condition is not written",
       },
       {
-        kind: "fact-not-observable",
+        kind: "fact-without-condition",
         name: "the email is not registered yet",
-        message: "its condition is empty",
+        message: "its condition is not written",
       },
       {
         kind: "interface-not-bound",
@@ -212,7 +212,7 @@ test("a shown path the response does not have", () => {
 projections:
   - {projection: v, interface: i, shows: [{structure: S, at: [l, each, a]}, {structure: S, at: [s, each]}]}
 triggers:
-  - {trigger: t, interface: i, operation: f, answers: {status: 201, shows: [{structure: S, at: [s]}]}}
+  - {trigger: t, interface: i, operation: f, sends: {a: [path, a], n: [query, q]}, answers: {status: 201, shows: [{structure: S, at: [s]}]}}
 `,
     }),
   ).toEqual([
@@ -246,6 +246,7 @@ effects:
   - {rule: e3, when: [given, z], then: {says: s}}
 `,
       "operations/h.yaml": "operation: k\ntakes: {}\nanswers: U\n",
+      "bindings.yaml": "triggers: []\n",
     }),
   ).toEqual([
     {
@@ -335,7 +336,7 @@ act:
       "scenarios/g/c.yaml": `
 scenario: c
 says: c
-proves: []
+proves: [r]
 act:
   call: {operation: f, with: {a: s}}
 `,
@@ -365,19 +366,14 @@ act:
   ]);
 });
 
-test("a scenario calling an operation with no trigger, or with several", () => {
+test("a scenario calling an operation with no trigger", () => {
   expect(
     problemsOf({
       "operations/k.yaml": "operation: k\ntakes: {}\nanswers: null\n",
-      "bindings.yaml": `
-triggers:
-  - {trigger: t, interface: i, operation: f, answers: {status: 200}}
-  - {trigger: u, interface: i, operation: f, answers: {status: 200}}
-`,
       "scenarios/f/a.yaml": `
 scenario: a
 says: a
-proves: []
+proves: [r]
 arrange:
   - call: {operation: k}
 act:
@@ -387,13 +383,292 @@ act:
   ).toEqual([
     {
       file: "scenarios/f/a.yaml",
-      at: "act.call.operation",
-      message: '2 triggers call "f"',
+      at: "arrange.0.call.operation",
+      message: 'no trigger calls "k"',
+    },
+  ]);
+});
+
+test("an operation with several triggers is one problem", () => {
+  const sends = "sends: {a: [path, a], n: [query, q]}, answers: {status: 200}";
+  expect(
+    problemsOf({
+      "bindings.yaml": `
+triggers:
+  - {trigger: t, interface: i, operation: f, ${sends}}
+  - {trigger: u, interface: i, operation: f, ${sends}}
+  - {trigger: v, interface: i, operation: f, ${sends}}
+`,
+    }),
+  ).toEqual([
+    {
+      file: "bindings.yaml",
+      at: "triggers.0.operation",
+      message: '3 triggers call "f"',
+    },
+  ]);
+});
+
+test("a [schema, N] naming no schema, wherever it is", () => {
+  expect(
+    problemsOf({
+      "interfaces.yaml": `
+schemas:
+  - schema: S
+    shape: {a: [[schema, X]], b: [maybe, [schema, Y]], c: [schema, S]}
+interfaces:
+  - interface: i
+    method: post
+    pattern: /s/{a}
+    request:
+      path: {a: [schema, S]}
+      query: {q: [optional, [schema, Z]]}
+      body: {s: [optional, [schema, W]]}
+    responses:
+      200: {body: {article: [schema, V]}}
+`,
+      "bindings.yaml": "triggers: []\n",
+    }),
+  ).toEqual([
+    {
+      file: "interfaces.yaml",
+      at: "interfaces.i.request.body.s",
+      message: 'unknown schema "W"',
+    },
+    {
+      file: "interfaces.yaml",
+      at: "interfaces.i.request.query.q",
+      message: 'unknown schema "Z"',
+    },
+    {
+      file: "interfaces.yaml",
+      at: "interfaces.i.responses.200.body.article",
+      message: 'unknown schema "V"',
+    },
+    { file: "interfaces.yaml", at: "schemas.S.shape.a.0", message: 'unknown schema "X"' },
+    { file: "interfaces.yaml", at: "schemas.S.shape.b", message: 'unknown schema "Y"' },
+  ]);
+});
+
+test("two things of one kind with one name", () => {
+  expect(
+    problemsOf({
+      "interfaces.yaml": `
+schemas:
+  - {schema: S, shape: {a: string}}
+  - {schema: S, shape: {a: string}}
+interfaces:
+  - {interface: i, method: get, pattern: /a, request: {path: {a: string}, query: {q: int}}, responses: {200: {body: null}}}
+  - {interface: i, method: get, pattern: /b, request: {path: {a: string}, query: {q: int}}, responses: {200: {body: null}}}
+`,
+      "structures.yaml": `
+- {structure: S, identity: a, fields: {a: {type: string, min-length: 1}}}
+- {structure: S, identity: a, fields: {a: {type: string, min-length: 1}}}
+`,
+      "facts.yaml": `
+- {fact: p, condition: []}
+- {fact: p, condition: []}
+`,
+      "bindings.yaml": `
+projections:
+  - {projection: v, interface: i, shows: []}
+  - {projection: v, interface: i, shows: []}
+triggers:
+  - {trigger: t, interface: i, operation: f, sends: {a: [path, a], n: [query, q]}, answers: {status: 200}}
+  - {trigger: t, interface: i, operation: g, answers: {status: 200}}
+`,
+    }),
+  ).toEqual([
+    {
+      file: "bindings.yaml",
+      at: "projections.1.projection",
+      message: 'projection "v" is declared twice',
+    },
+    {
+      file: "bindings.yaml",
+      at: "triggers.1.operation",
+      message: 'unknown operation "g"',
+    },
+    {
+      file: "bindings.yaml",
+      at: "triggers.1.trigger",
+      message: 'trigger "t" is declared twice',
+    },
+    { file: "facts.yaml", at: "1.fact", message: 'fact "p" is declared twice' },
+    {
+      file: "interfaces.yaml",
+      at: "interfaces.1.interface",
+      message: 'interface "i" is declared twice',
+    },
+    {
+      file: "interfaces.yaml",
+      at: "schemas.1.schema",
+      message: 'schema "S" is declared twice',
+    },
+    {
+      file: "structures.yaml",
+      at: "1.structure",
+      message: 'structure "S" is declared twice',
+    },
+  ]);
+});
+
+test("a structure whose identity is not one of its fields", () => {
+  expect(
+    problemsOf({
+      "structures.yaml": `
+- {structure: S, identity: z, fields: {a: {type: string, min-length: 1}}}
+`,
+    }),
+  ).toEqual([
+    { file: "structures.yaml", at: "0.identity", message: '"z" is not a field of S' },
+  ]);
+});
+
+test("an input the operation takes that its trigger does not send", () => {
+  expect(
+    problemsOf({
+      "bindings.yaml": `
+triggers:
+  - {trigger: t, interface: i, operation: f, sends: {a: [path, a]}, answers: {status: 200}}
+`,
+    }),
+  ).toEqual([
+    {
+      file: "bindings.yaml",
+      at: "triggers.0.sends",
+      message: '"n" is taken by f and sent nowhere',
+    },
+  ]);
+});
+
+test("a fact reading an input its operation does not take", () => {
+  expect(
+    problemsOf({
+      "facts.yaml": `
+- fact: p
+  condition: [{structure: S, where: {a: [call, a]}, must-be: [exists]}]
+- fact: o
+  condition: [{structure: S, where: {a: [call, z]}, must-be: [exists]}]
+`,
+      "operations/f.yaml": `
+operation: f
+takes:
+  a: {field: [S, a]}
+  n: {type: int, optional: true}
+requires: [{rule: q, fact: o, otherwise: y}]
+answers: S
+effects:
+  - {rule: e1, when: o, then: nothing-changes}
+  - {rule: e2, when: [not, o], then: {fact: {o: true}}}
+  - {rule: e3, when: p, then: nothing-changes}
+`,
+      "bindings.yaml": "triggers: []\n",
+    }),
+  ).toEqual([
+    {
+      file: "operations/f.yaml",
+      at: "effects.0.when",
+      message: 'the fact "o" reads the input "z", which f does not take',
+    },
+    {
+      file: "operations/f.yaml",
+      at: "effects.1.then.fact.o",
+      message: 'the fact "o" reads the input "z", which f does not take',
+    },
+    {
+      file: "operations/f.yaml",
+      at: "effects.1.when",
+      message: 'the fact "o" reads the input "z", which f does not take',
+    },
+    {
+      file: "operations/f.yaml",
+      at: "requires.0.fact",
+      message: 'the fact "o" reads the input "z", which f does not take',
+    },
+  ]);
+});
+
+test("a given value whose kind is not its input's", () => {
+  expect(
+    problemsOf({
+      "operations/f.yaml": `
+operation: f
+takes:
+  a:
+    field: [S, a]
+    rules: [{rule: r, violates: min-length, otherwise: x}]
+  n: {type: int, optional: true}
+  b: {type: boolean, optional: true}
+  d: {type: instant, optional: true}
+  m: {type: number, optional: true}
+answers: S
+`,
+      "bindings.yaml": `
+triggers:
+  - trigger: t
+    interface: i
+    operation: f
+    sends: {a: [path, a], n: [query, q], b: [query, q], d: [query, q], m: [query, q]}
+    answers: {status: 200}
+    refuses: {x: {status: 400}}
+`,
+      "scenarios/f/a.yaml": `
+scenario: a
+says: a
+proves: [other]
+act:
+  call: {operation: f, with: {a: 12345678, n: "1", b: yes-please, d: 5, m: null}}
+`,
+      "scenarios/f/b.yaml": `
+scenario: b
+says: b
+proves: [r]
+act:
+  call: {operation: f, with: {a: 12345678, n: [1]}}
+`,
+    }),
+  ).toEqual([
+    {
+      file: "scenarios/f/a.yaml",
+      at: "act.call.with.a",
+      message: '"a" is a string for f, the scenario gives the number 12345678',
     },
     {
       file: "scenarios/f/a.yaml",
-      at: "arrange.0.call.operation",
-      message: 'no trigger calls "k"',
+      at: "act.call.with.b",
+      message: '"b" is a boolean for f, the scenario gives the string "yes-please"',
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "act.call.with.d",
+      message: '"d" is an instant for f, the scenario gives the number 5',
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "act.call.with.n",
+      message: '"n" is an int for f, the scenario gives the string "1"',
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "proves.0",
+      message: '"other" is not a rule of "f"',
+    },
+  ]);
+});
+
+test("a scenario proving no rule is refused", () => {
+  const { problems } = parseExtraction([
+    {
+      path: "scenarios/f/a.yaml",
+      text: "scenario: a\nsays: a\nproves: []\nact: {call: {operation: f}}\n",
+    },
+  ]);
+  expect(problems).toEqual([
+    {
+      file: "scenarios/f/a.yaml",
+      at: "proves",
+      message: "Too small: expected array to have >=1 items",
     },
   ]);
 });
@@ -432,8 +707,22 @@ triggers:
       }),
     ).gaps,
   ).toEqual([
-    { kind: "fact-not-observable", name: "o", message: "its condition is empty" },
+    {
+      kind: "fact-without-condition",
+      name: "o",
+      message: "its condition is not written",
+    },
     { kind: "operation-without-trigger", name: "k", message: "no trigger calls it" },
+    {
+      kind: "refusal-not-translated",
+      name: "f/x",
+      message: "its trigger does not translate it",
+    },
+    {
+      kind: "refusal-not-translated",
+      name: "f/y",
+      message: "its trigger does not translate it",
+    },
     { kind: "rule-without-scenario", name: "f/given", message: "no scenario proves it" },
     { kind: "rule-without-scenario", name: "f/q", message: "no scenario proves it" },
     { kind: "rule-without-scenario", name: "f/r", message: "no scenario proves it" },

@@ -54,7 +54,7 @@ test("a scenario that carries an answer is refused", () => {
         text: [
           "scenario: a",
           "says: a",
-          "proves: []",
+          "proves: [r]",
           "act:",
           "  call: {operation: f}",
           "  response: {status: 200}",

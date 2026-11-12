@@ -16,7 +16,7 @@ export const scenarioSchema = z
   .strictObject({
     scenario: z.string(),
     says: z.string(),
-    proves: z.array(z.string()).readonly(),
+    proves: z.array(z.string()).min(1).readonly(),
     arrange: z
       .array(z.strictObject({ call: callSchema }).readonly())
       .readonly()

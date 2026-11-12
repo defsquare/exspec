@@ -17,9 +17,9 @@ test("check of an extraction with gaps only", async () => {
     { type: "command-started", command: "check", dir: "/abs/dir" },
     {
       type: "gap",
-      kind: "fact-not-observable",
+      kind: "fact-without-condition",
       name: "p",
-      message: "its condition is empty",
+      message: "its condition is not written",
     },
     { type: "command-finished", command: "check", ok: true },
   ]);

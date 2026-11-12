@@ -1,6 +1,6 @@
 import type { Extraction, Gap } from "../shapes/extraction.ts";
 import type { Structure } from "../shapes/specification.ts";
-import { rulesOf } from "./operation.ts";
+import { refusalsOf, rulesOf } from "./operation.ts";
 
 // [A] -> [A, B] when A has a field {structure: B}; a field {structure: C, by: identity}
 // shows C's identity only, not C
@@ -35,7 +35,24 @@ export function findGaps({
   );
   const cited = new Set([...projections, ...triggers].map((b) => b.interface));
   const triggered = new Set(triggers.map(({ operation }) => operation));
+  const translated = new Set(
+    triggers.flatMap(({ operation, refuses }) =>
+      Object.keys(refuses).map((refusal) => `${operation}/${refusal}`),
+    ),
+  );
   return [
+    ...operations
+      .filter(({ operation }) => triggered.has(operation.operation))
+      .flatMap(({ operation }) =>
+        refusalsOf(operation)
+          .map((refusal) => `${operation.operation}/${refusal}`)
+          .filter((name) => !translated.has(name))
+          .map((name) => ({
+            kind: "refusal-not-translated" as const,
+            name,
+            message: "its trigger does not translate it",
+          })),
+      ),
     ...operations.flatMap(({ operation }) =>
       rulesOf(operation)
         .map((rule) => `${operation.operation}/${rule}`)
@@ -70,9 +87,9 @@ export function findGaps({
     ...facts
       .filter(({ condition }) => condition.length === 0)
       .map(({ fact }) => ({
-        kind: "fact-not-observable" as const,
+        kind: "fact-without-condition" as const,
         name: fact,
-        message: "its condition is empty",
+        message: "its condition is not written",
       })),
   ];
 }
