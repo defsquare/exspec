@@ -1,0 +1,22 @@
+{
+  "files": {
+    "includes": [
+      "**",
+      "!**/*.md",
+      "!docs",
+      "!dist",
+      "!node_modules",
+      "!.idea",
+      "!.claude"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "suspicious": { "noExplicitAny": "error" },
+      "style": { "noNonNullAssertion": "error" }
+    }
+  },
+  "formatter": { "enabled": true, "indentStyle": "space", "lineWidth": 90 }
+}

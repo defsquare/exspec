@@ -12,6 +12,14 @@ branch, `specimen status <dir>`, only says that `<dir>` holds no extraction yet.
 
 ## Journal
 
+- The skeleton — `specimen status <dir>`, the event stream, both renderers, the architecture
+  test, the pre-commit hook. Reviewer: conformant, approved. Fixed after review: a stream
+  that throws now ends the Ink renderer and reaches `main`; `directoryExists` rethrows
+  anything but ENOENT; Biome no longer formats markdown. Minor, left for the pre-merge
+  review: the exit code is kept in a module-level `let` fed by a wrapping generator;
+  `status` joins its path by hand; the architecture test's import pattern also matches
+  comments and strings.
+
 ## Backlog
 
 ### The skeleton: a command, the event stream, the checks

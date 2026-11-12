@@ -41,3 +41,12 @@ A rewrite of the system keeps the specification and the scenarios, and rewrites 
 
 `CLAUDE.md` holds the project's conventions; `docs/adr/` the decisions. Enable the hooks
 once per clone: `git config core.hooksPath .githooks`.
+
+## Build and run
+
+```
+bun install
+bun test
+bun run check
+bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
+```

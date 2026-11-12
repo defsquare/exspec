@@ -22,6 +22,8 @@ of a terminal.
   parsed into a shape at the boundary.
 - **fast-check** for generated values, always with a seed.
 - The agent driven through the **Claude Agent SDK**, its stream turned into events.
+- **Biome** for the linter and the formatter, with the TypeScript compiler's type-check:
+  the two halves of `bun run check`, run by the pre-commit hook. Markdown is left alone.
 - A database driver per kind of target, added when a target needs it (PostgreSQL first).
 - **CLI first**: every capability is a command; everything that runs emits events as data,
   read alike by the terminal renderer, by `--format json` and by a viewer.
