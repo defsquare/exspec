@@ -3,22 +3,27 @@ import { renderJson } from "../../src/cli/render-json.ts";
 import type { Event } from "../../src/shapes/event.ts";
 
 const events: readonly Event[] = [
-  { type: "command-started", command: "status", dir: "/abs/dir" },
-  { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/specimen" },
-  { type: "command-finished", command: "status", ok: false },
+  { type: "command-started", command: "check", dir: "/abs/dir" },
+  { type: "problem", file: "f.yaml", at: "a.0", message: "m" },
+  { type: "gap", kind: "fact-not-observable", name: "p", message: "m" },
+  { type: "command-finished", command: "check", ok: false },
 ];
 
-test("one JSON object per line", async () => {
+test("one JSON object per line, and the last event returned", async () => {
   const lines: string[] = [];
-  await renderJson(
+  const last = await renderJson(
     (async function* () {
       yield* events;
     })(),
     (line) => lines.push(line),
   );
-  expect(lines).toEqual([
-    '{"type":"command-started","command":"status","dir":"/abs/dir"}',
-    '{"type":"extraction-not-found","dir":"/abs/dir","expected":"/abs/dir/specimen"}',
-    '{"type":"command-finished","command":"status","ok":false}',
-  ]);
+  expect({ lines, last }).toEqual({
+    lines: [
+      '{"type":"command-started","command":"check","dir":"/abs/dir"}',
+      '{"type":"problem","file":"f.yaml","at":"a.0","message":"m"}',
+      '{"type":"gap","kind":"fact-not-observable","name":"p","message":"m"}',
+      '{"type":"command-finished","command":"check","ok":false}',
+    ],
+    last: { type: "command-finished", command: "check", ok: false },
+  });
 });
