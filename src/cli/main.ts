@@ -11,6 +11,8 @@ import {
 import { send } from "../io/http.ts";
 import { runLines } from "../io/shell.ts";
 import type { Io } from "../run/io.ts";
+import { record } from "../run/record.ts";
+import { replay } from "../run/replay.ts";
 import { down, play, up } from "../run/target-commands.ts";
 import type { Event } from "../shapes/event.ts";
 import { againstTarget } from "./against-target.ts";
@@ -21,11 +23,12 @@ import { status } from "./status.ts";
 
 const usage = `usage: specimen <status|check> <dir> [--format json]
        specimen <up|down> <dir>
-       specimen play <dir> [<operation>/<slug>…]`;
+       specimen <play|replay> <dir> [<operation>/<slug>…]
+       specimen record <dir> [<operation>/<slug>…] [--force]`;
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
-  options: { format: { type: "string" } },
+  options: { format: { type: "string" }, force: { type: "boolean", default: false } },
 });
 const [command, dir, ...paths] = positionals;
 
@@ -61,11 +64,18 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
       return check(examination);
     case "up":
     case "down":
-    case "play": {
-      const run = { up, down, play }[command];
+    case "play":
+    case "replay": {
+      const run = { up, down, play, replay }[command];
       const io = await ioOf();
       return againstTarget(command, examination, (extraction) =>
         run({ ...asked, extraction }, io),
+      );
+    }
+    case "record": {
+      const io = await ioOf();
+      return againstTarget(command, examination, (extraction) =>
+        record({ ...asked, extraction, force: values.force }, io),
       );
     }
     default:
