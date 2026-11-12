@@ -5,16 +5,6 @@ The only backlog. An item is written to be picked up cold: *Seen* (the evidence)
 deleted, never ticked: its commit says which item it closes. Order is the order to take
 them in; each of the first five is a branch of its own.
 
-## 1 — The skeleton: a command, the event stream, the checks
-
-- **Seen.** Nothing is built. ADR-0002 is `Proposed`.
-- **Settled.** CLI first; everything that runs emits events as data, read by a terminal
-  renderer and by `--format json` (CLAUDE.md › The stack). The layers of CLAUDE.md.
-- **Next.** One command that does nothing but emit three events and render them both ways;
-  `bun test`, `bun run check`, the pre-commit hook, the architecture test on imports.
-  Accept or amend ADR-0002 with what was actually installed.
-- **Source.** `docs/adr/0002-typescript-on-bun.md`.
-
 ## 2 — The shapes as schemas, loaded from files
 
 - **Seen.** Ten shapes drawn by instance, one operation of Conduit carried through all of
