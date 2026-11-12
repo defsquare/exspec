@@ -5,19 +5,6 @@ The only backlog. An item is written to be picked up cold: *Seen* (the evidence)
 deleted, never ticked: its commit says which item it closes. Order is the order to take
 them in; each of the first five is a branch of its own.
 
-## 2 — The shapes as schemas, loaded from files
-
-- **Seen.** Ten shapes drawn by instance, one operation of Conduit carried through all of
-  them (`docs/brief/shapes.edn`).
-- **Settled.** The specification declared whole; a scenario in three states; the bindings
-  apart; the form of a value on the field of its structure; no verdict stored.
-- **Next.** Decide the notation of the files (an ADR). Write the schemas, load Conduit's
-  `unfavorite-article` and `register` whole, and the checks that need no execution: a
-  binding pointing at a path its interface's schema does not have, a call whose inputs do
-  not fit the operation's `:takes`, a rule no scenario points at, a structure no projection
-  shows.
-- **Source.** `docs/brief/shapes.edn`, `docs/brief/metamodel.md`.
-
 ## 3 — Playing a scenario against a target
 
 - **Seen.** The spike recorded 167 scenarios of Conduit in 36 s and replayed them in 18 s,
