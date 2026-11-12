@@ -13,6 +13,19 @@ and any observable; the verdicts; the agent.
 
 ## Journal
 
+- Playing, the reference, the replay — `up`, `down`, `play`, `record`, `replay`; a call
+  turned into a request by its trigger; noise in classes; Conduit's fixture playable.
+  Live on Conduit (`bun run live`): record on two fresh stacks 21 s, replay 9.5 s; four
+  references, noisy places 1 (a token), 0, 4 in two classes (createdAt, updatedAt), 0.
+  Seen on the target: an unknown article answers 401, with a valid token too; a refused
+  registration answers 400 with `{errors, message, status}`. Reviewer: conformant,
+  approved; fixed — a replay with no reference to compare with passed green, it now fails
+  before anything starts. Minor, left for the pre-merge review: a scenario with no
+  reference is skipped by `replay` without a word; `requestOf` takes the first trigger of
+  an operation (the check refuses several); `Disagreement` and `Difference` are two close
+  shapes in `derive/json.ts`; a local mutable array in `playScenario`; an explanatory
+  comment in `test/run/fake.ts`.
+
 ## Backlog
 
 ### Playing a scenario against a target
