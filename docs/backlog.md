@@ -60,6 +60,8 @@ them in; each of the first five is a branch of its own.
   red one business day later; 15 rules cannot be written without a term for today.
 - **Settled.** The clock the target is started with is part of what an execution records;
   a scenario may move it as an arranged step.
+- **Also.** A value fixed by the day (a date with no time) is stable on two stacks started
+  the same day and red the next: two recordings do not show it (ADR-0005).
 - **Next.** Not before a target with a clock is taken. Then: holding the clock of a target
   that offers nothing for it, a date type, calendar arithmetic in a rule.
 - **Source.** `docs/brief/clock.md`.
@@ -73,6 +75,41 @@ them in; each of the first five is a branch of its own.
   tools and belong to the target.
 - **Next.** After item 7. One rule of Conduit, end to end, with JaCoCo and PIT.
 - **Source.** `docs/brief/framing.md` › "Settled with the user".
+
+## The reset is checked, through the interfaces
+
+- **Seen.** A reset that restores too little is invisible to the two recordings: both
+  stacks accumulate the same changes in the same order, and the result is stable and wrong.
+- **Settled.** specimen holds no driver (ADR-0004); the check uses the interfaces alone.
+- **Next.** Once a projection can be read: read every projection that takes no input, play
+  a scenario that writes, reset, read again, compare. Make it the last step of `up`.
+- **Source.** ADR-0004 › Consequences; `docs/branches/feat-play.md` at `f8bd037`.
+
+## What a reference leaves free is measured
+
+- **Seen.** Where two executions do not have the same form at a place (two lists of
+  different lengths, a body that is not JSON once), the whole value there is one noisy
+  place: `reference-written` counts 1, and a whole body or list is free. Lists are walked
+  by index: two elements swapped become two crossed classes, and a replay that duplicates
+  one element can pass.
+- **Settled.** Noise is derived from two executions, in classes (ADR-0005); a reference
+  where most of the answer is noisy compares little, and that is to show.
+- **Next.** Count the leaves a noisy place frees, show it in `reference-written` and in
+  `status`. Then pair the elements of a list by the identity of the structure a projection
+  says it shows, instead of by index — it needs the projection, so after the readings.
+- **Source.** ADR-0005 › Consequences; `docs/brief/spike-journal.md` › Journal 6;
+  `docs/branches/feat-play.md` at `f8bd037`.
+
+## A forced recording that changes the class of a status says so
+
+- **Seen.** `record --force` rewrites a reference whose judged call answered 200 with one
+  that answers 401, without a word. In the spike nothing stopped a recording from changing
+  its class of status either.
+- **Settled.** A reference is kept unless forced, and replaced when its scenario was
+  rewritten.
+- **Next.** When a reference is replaced and the status of its judged call changes, emit
+  it as an event of its own; decide whether `--force` alone may do it.
+- **Source.** `docs/brief/spike-journal.md` › Journal 5; `src/run/record.ts`.
 
 ## Open questions, no item yet
 
