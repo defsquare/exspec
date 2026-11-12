@@ -16,6 +16,10 @@ export function describeEvent(event: Event): string {
       return Object.entries(event.counts)
         .map(([name, count]) => `${count} ${name}`)
         .join(", ");
+    case "extraction-phases":
+      return `phases   ${Object.entries(event.phases)
+        .map(([phase, progress]) => `${phase} ${progress}`)
+        .join(", ")}`;
     case "target-step":
       return `target   ${event.step} ${event.state}`;
     case "scenario-played":

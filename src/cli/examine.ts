@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { checkExtraction } from "../derive/check.ts";
 import { countExtraction } from "../derive/count.ts";
+import { phasesOf } from "../derive/phases.ts";
 import type { Event } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 
@@ -10,7 +11,7 @@ export type Examination = {
   readonly readFiles: (dir: string) => Promise<readonly SourceFile[]>;
 };
 
-// what check and status share; status counts as well
+// what check and status share; status counts and shows the phases as well
 export async function* examine(
   command: "status" | "check",
   { dir, exists, readFiles }: Examination,
@@ -27,6 +28,10 @@ export async function* examine(
   const problems = [...parsed.problems, ...checked.problems];
   if (command === "status") {
     yield { type: "extraction-counted", counts: countExtraction(parsed.extraction) };
+    yield {
+      type: "extraction-phases",
+      phases: phasesOf({ extraction: parsed.extraction, problems, gaps: checked.gaps }),
+    };
   }
   for (const problem of problems) yield { type: "problem", ...problem };
   for (const gap of checked.gaps) yield { type: "gap", ...gap };

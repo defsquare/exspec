@@ -16,6 +16,30 @@ const commandSchema = z.enum([
   "replay",
 ]);
 
+export const phaseSchema = z.enum([
+  "target",
+  "interfaces",
+  "specification",
+  "scenarios",
+  "record",
+]);
+
+export type Phase = z.infer<typeof phaseSchema>;
+
+const progressSchema = z.enum(["done", "to-do"]);
+
+export const phasesSchema = z
+  .object({
+    target: progressSchema,
+    interfaces: progressSchema,
+    specification: progressSchema,
+    scenarios: progressSchema,
+    record: progressSchema,
+  })
+  .readonly();
+
+export type Phases = z.infer<typeof phasesSchema>;
+
 export const countsSchema = z
   .object({
     interfaces: z.int(),
@@ -49,6 +73,7 @@ export const eventSchema = z.discriminatedUnion("type", [
     type: z.literal("extraction-counted"),
     counts: countsSchema,
   }),
+  z.object({ type: z.literal("extraction-phases"), phases: phasesSchema }),
   z.object({
     type: z.literal("target-step"),
     step: z.enum(["start", "alive", "seed", "stop", "reset"]),

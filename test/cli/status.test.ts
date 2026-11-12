@@ -45,6 +45,16 @@ test("status of a directory with an extraction", async () => {
       },
     },
     {
+      type: "extraction-phases",
+      phases: {
+        target: "to-do",
+        interfaces: "to-do",
+        specification: "to-do",
+        scenarios: "to-do",
+        record: "to-do",
+      },
+    },
+    {
       type: "problem",
       file: "notes.yaml",
       at: "",
