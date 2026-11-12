@@ -55,5 +55,6 @@ bun src/cli/main.ts play <dir> [<operation>/<slug>…]     # on a target up: res
 bun src/cli/main.ts down <dir>
 bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
 bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
+bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>]   # an agent writes the extraction, phase by phase
 bun run live                                # record and replay Conduit's fixture (Docker)
 ```

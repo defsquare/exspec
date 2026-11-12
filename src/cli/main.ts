@@ -14,9 +14,10 @@ import type { Io } from "../run/io.ts";
 import { record } from "../run/record.ts";
 import { replay } from "../run/replay.ts";
 import { down, play, up } from "../run/target-commands.ts";
-import type { Event } from "../shapes/event.ts";
+import { type Event, phaseSchema } from "../shapes/event.ts";
 import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
+import { extractCommand } from "./extract.ts";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
 import { status } from "./status.ts";
@@ -24,11 +25,17 @@ import { status } from "./status.ts";
 const usage = `usage: specimen <status|check> <dir> [--format json]
        specimen <up|down> <dir>
        specimen <play|replay> <dir> [<operation>/<slug>…]
-       specimen record <dir> [<operation>/<slug>…] [--force]`;
+       specimen record <dir> [<operation>/<slug>…] [--force]
+       specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]`;
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
-  options: { format: { type: "string" }, force: { type: "boolean", default: false } },
+  options: {
+    format: { type: "string" },
+    force: { type: "boolean", default: false },
+    phase: { type: "string" },
+    model: { type: "string", default: "sonnet" },
+  },
 });
 const [command, dir, ...paths] = positionals;
 
@@ -77,6 +84,17 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
       return againstTarget(command, examination, (extraction) =>
         record({ ...asked, extraction, force: values.force }, io),
       );
+    }
+    case "extract": {
+      const only = phaseSchema.optional().safeParse(values.phase);
+      if (!only.success) return undefined;
+      const { dir } = examination;
+      return extractCommand({
+        dir,
+        only: only.data,
+        model: values.model,
+        io: await ioOf(),
+      });
     }
     default:
       return undefined;

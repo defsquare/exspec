@@ -14,6 +14,7 @@ const commandSchema = z.enum([
   "play",
   "record",
   "replay",
+  "extract",
 ]);
 
 export const phaseSchema = z.enum([
@@ -128,9 +129,20 @@ export const eventSchema = z.discriminatedUnion("type", [
     path: z.string(),
     differences: z.array(differenceSchema).readonly(),
   }),
+  z.object({ type: z.literal("phase-started"), phase: phaseSchema }),
+  // the files say it is done already
+  z.object({ type: z.literal("phase-skipped"), phase: phaseSchema }),
   agentSaid.extend({ phase: phaseSchema }),
   agentUsed.extend({ phase: phaseSchema }),
   agentEnded.extend({ phase: phaseSchema }),
+  // findings: [] when the gate passes; else what is sent back to the agent
+  z.object({
+    type: z.literal("gate-checked"),
+    phase: phaseSchema,
+    ok: z.boolean(),
+    findings: z.array(z.string()).readonly(),
+  }),
+  z.object({ type: z.literal("phase-finished"), phase: phaseSchema, ok: z.boolean() }),
   // what ended a command before its end: the target failed to start, a command failed
   z.object({ type: z.literal("command-failed"), message: z.string() }),
   z.object({

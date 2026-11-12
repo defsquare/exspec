@@ -2,49 +2,8 @@ import { expect, test } from "bun:test";
 import { checkExtraction } from "../../src/derive/check.ts";
 import { phasesOf, staticFindings } from "../../src/derive/phases.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
+import { bindings, facts, interfaces, operation, reference, target } from "../files.ts";
 import { scenarioFile } from "../run/fake.ts";
-
-const target = `
-target: t
-start: [start]
-alive: {method: get, path: /alive, status: 200}
-seed: [seed]
-reset: [reset]
-stop: [stop]
-api: {base-url: "http://h"}
-`;
-
-const interfaces = `
-interfaces:
-  - {interface: i, method: get, pattern: "/f/{a}", request: {path: {a: string}}, responses: {200: {body: any}, 404: {body: null}}}
-`;
-
-const operation = `
-operation: f
-takes: {a: {type: string}}
-requires: [{rule: q, fact: p, otherwise: missing}]
-answers: null
-effects: [{rule: r, then: nothing-changes}]
-`;
-
-const facts = "- {fact: p, condition: []}";
-
-const bindings = `
-triggers:
-  - {trigger: t, interface: i, operation: f, sends: {a: [path, a]}, answers: {status: 200}, refuses: {missing: {status: 404}}}
-`;
-
-const reference = `
-scenario: s
-says: s
-proves: [r]
-run: {target: t, version: v, at: "2026-11-13T10:00:00.000Z", clock: null}
-arrange: []
-act:
-  call: {operation: f, with: {a: x}, caller: u}
-  response: {status: 200, body: null}
-noise: []
-`;
 
 function examine(files: Readonly<Record<string, string>>) {
   const parsed = parseExtraction(

@@ -47,6 +47,17 @@ export function describeEvent(event: Event): string {
                 `${at.join(".")}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
             )
             .join("\n  ")}`;
+    case "phase-started":
+      return `phase    ${event.phase}`;
+    case "phase-skipped":
+      return `phase    ${event.phase} done already`;
+    case "gate-checked":
+      return [
+        `gate     ${event.phase} ${event.ok ? "passed" : "failed"}`,
+        ...event.findings.map((finding) => `  ${finding}`),
+      ].join("\n");
+    case "phase-finished":
+      return `phase    ${event.phase} ${event.ok ? "done" : "failed"}`;
     case "agent-said":
       return `agent    ${event.text.replace(/\n[\s\S]*/, "").slice(0, 160)}`;
     case "agent-used":
