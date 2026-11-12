@@ -89,3 +89,10 @@ export const interfacesFileSchema = z
     interfaces: z.array(interfaceSchema).readonly(),
   })
   .readonly();
+
+// written by the seed: { alice: { Authorization: "Token …" } }
+export const credentialsSchema = z
+  .record(z.string(), z.record(z.string(), z.string()).readonly())
+  .readonly();
+
+export type Credentials = z.infer<typeof credentialsSchema>;

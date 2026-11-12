@@ -71,6 +71,7 @@ test("a scenario that carries an answer is refused", () => {
       projections: [],
       triggers: [],
       scenarios: [],
+      references: [],
     },
     problems: [
       { file: "scenarios/f/a.yaml", at: "act", message: 'Unrecognized key: "response"' },
@@ -84,13 +85,89 @@ test("a file that is not YAML is a problem", () => {
   ]);
 });
 
-test("an unknown file is a problem, references and runs are skipped", () => {
+test("an unknown file is a problem, the target's own files are skipped", () => {
   expect(
     parseExtraction([
       { path: "a.yaml", text: "a: 1" },
-      { path: "references/f/a.yaml", text: "a: 1" },
       { path: "target/compose.yaml", text: "a: 1" },
       { path: "runs/r/f/a.yaml", text: "a: 1" },
     ]).problems,
-  ).toEqual([{ file: "a.yaml", at: "", message: "not a file of an extraction" }]);
+  ).toEqual([
+    { file: "a.yaml", at: "", message: "not a file of an extraction" },
+    { file: "runs/r/f/a.yaml", at: "", message: "not a file of an extraction" },
+  ]);
+});
+
+test("a reference is read with its answers and its noise", () => {
+  expect(
+    parseExtraction([
+      {
+        path: "references/f/a.yaml",
+        text: [
+          "scenario: a",
+          "says: a",
+          "proves: [r]",
+          'run: {target: t, version: v, at: "2026-11-13T10:00:00.000Z", clock: null}',
+          "arrange:",
+          "  - call: {operation: g, caller: u}",
+          "    response: {status: 204, body: null}",
+          "act:",
+          "  call: {operation: f, with: {a: 1}}",
+          "  response: {status: 200, body: {a: t1, b: [1]}}",
+          "noise:",
+          "  - {at: [act, response, body, a], class: 1}",
+        ].join("\n"),
+      },
+    ]).extraction.references,
+  ).toEqual([
+    {
+      path: "f/a",
+      reference: {
+        scenario: "a",
+        says: "a",
+        proves: ["r"],
+        run: { target: "t", version: "v", at: "2026-11-13T10:00:00.000Z", clock: null },
+        arrange: [
+          {
+            call: { operation: "g", with: {}, caller: "u" },
+            response: { status: 204, body: null },
+          },
+        ],
+        act: {
+          call: { operation: "f", with: { a: 1 } },
+          response: { status: 200, body: { a: "t1", b: [1] } },
+        },
+        noise: [{ at: ["act", "response", "body", "a"], class: 1 }],
+      },
+    },
+  ]);
+});
+
+test("a reference without its answers is refused", () => {
+  expect(
+    parseExtraction([
+      {
+        path: "references/f/a.yaml",
+        text: [
+          "scenario: a",
+          "says: a",
+          "proves: [r]",
+          "run: {target: t, version: v, at: x, clock: null}",
+          "act: {call: {operation: f}}",
+          "noise: []",
+        ].join("\n"),
+      },
+    ]).problems,
+  ).toEqual([
+    {
+      file: "references/f/a.yaml",
+      at: "arrange",
+      message: "Invalid input: expected array, received undefined",
+    },
+    {
+      file: "references/f/a.yaml",
+      at: "act.response",
+      message: "Invalid input: expected object, received undefined",
+    },
+  ]);
 });

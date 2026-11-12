@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { bindingsFileSchema, projectionSchema, triggerSchema } from "./bindings.ts";
-import { scenarioSchema } from "./scenario.ts";
+import { referenceSchema, scenarioSchema } from "./scenario.ts";
 import { factSchema, operationSchema, structureSchema } from "./specification.ts";
 import {
   interfaceSchema,
@@ -33,6 +33,9 @@ export const gapSchema = z
       "operation-without-trigger",
       "fact-without-condition",
       "refusal-not-translated",
+      "reference-stale",
+      "reference-without-scenario",
+      "scenario-without-reference",
     ]),
     name: z.string(),
     message: z.string(),
@@ -41,7 +44,7 @@ export const gapSchema = z
 
 export type Gap = z.infer<typeof gapSchema>;
 
-// path: "<operation>" for an operation, "<operation>/<slug>" for a scenario
+// path: "<operation>" for an operation, "<operation>/<slug>" for a scenario or a reference
 export const extractionSchema = z
   .object({
     target: targetSchema.optional(),
@@ -56,6 +59,9 @@ export const extractionSchema = z
     triggers: z.array(triggerSchema).readonly(),
     scenarios: z
       .array(z.object({ path: z.string(), scenario: scenarioSchema }).readonly())
+      .readonly(),
+    references: z
+      .array(z.object({ path: z.string(), reference: referenceSchema }).readonly())
       .readonly(),
   })
   .readonly();
@@ -103,8 +109,7 @@ function parseYaml(
 function readSourceFile(file: SourceFile): Outcome {
   const { path } = file;
   // target/ is the target's own: a compose file, a seed, what the lifecycle commands run
-  if (["references/", "runs/", "target/"].some((own) => path.startsWith(own)))
-    return nothing;
+  if (path.startsWith("target/")) return nothing;
   switch (path) {
     case "target.yaml":
       return parseFile(file, targetSchema, (target) => ({ target }));
@@ -129,6 +134,12 @@ function readSourceFile(file: SourceFile): Outcome {
       scenarios: [{ path: scenario, scenario: parsed }],
     }));
   }
+  const reference = /^references\/([^/]+\/[^/]+)\.yaml$/.exec(path)?.[1];
+  if (reference !== undefined) {
+    return parseFile(file, referenceSchema, (parsed) => ({
+      references: [{ path: reference, reference: parsed }],
+    }));
+  }
   if (!path.endsWith(".yaml")) return nothing;
   return {
     part: {},
@@ -145,6 +156,7 @@ const emptyExtraction: Extraction = {
   projections: [],
   triggers: [],
   scenarios: [],
+  references: [],
 };
 
 function merge(extraction: Extraction, part: Part): Extraction {
@@ -160,6 +172,7 @@ function merge(extraction: Extraction, part: Part): Extraction {
     projections: [...extraction.projections, ...(part.projections ?? [])],
     triggers: [...extraction.triggers, ...(part.triggers ?? [])],
     scenarios: [...extraction.scenarios, ...(part.scenarios ?? [])],
+    references: [...extraction.references, ...(part.references ?? [])],
   };
 }
 

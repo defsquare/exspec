@@ -28,8 +28,9 @@ specimen/
   bindings.yaml                         projections, triggers
   scenarios/<operation>/<slug>.yaml     a scenario as written, with its holes
   references/<operation>/<slug>.yaml    the played copy that is kept
-  runs/<run>/<operation>/<slug>.yaml    the played copies of one execution
 ```
+
+The played copies of an execution are not written: they travel on the event stream.
 
 - **YAML**, read and written with Bun's own parser (no dependency), every file parsed by a
   zod schema at the boundary. A key the schema does not know is an error, not ignored.
@@ -68,7 +69,7 @@ Where the notation says something the spike's instances (`docs/brief/shapes.edn`
 
 ## Consequences
 
-- The extraction is versioned with the target; `runs/` is not (ignored by git).
+- The extraction is versioned with the target.
 - Renaming a scenario's file orphans its reference: a check names a reference with no
   scenario, and a reference whose written part no longer matches its scenario.
 - Reading everything on every command is the cost of storing nothing derived; a target of a
