@@ -17,5 +17,6 @@ test("the fixture's counts", async () => {
     projections: 4,
     triggers: 5,
     scenarios: 4,
+    references: 0,
   });
 });

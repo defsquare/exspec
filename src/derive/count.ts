@@ -10,6 +10,7 @@ export function countExtraction({
   projections,
   triggers,
   scenarios,
+  references,
 }: Extraction): Counts {
   return {
     interfaces: interfaces.length,
@@ -20,5 +21,6 @@ export function countExtraction({
     projections: projections.length,
     triggers: triggers.length,
     scenarios: scenarios.length,
+    references: references.length,
   };
 }

@@ -13,6 +13,7 @@ export const countsSchema = z
     projections: z.int(),
     triggers: z.int(),
     scenarios: z.int(),
+    references: z.int(),
   })
   .readonly();
 

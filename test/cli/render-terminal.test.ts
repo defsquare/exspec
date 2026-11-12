@@ -17,6 +17,7 @@ test("describeEvent words each event", () => {
         projections: 4,
         triggers: 5,
         scenarios: 4,
+        references: 0,
       },
     },
     { type: "problem", file: "f.yaml", at: "a.0", message: "m" },
@@ -27,7 +28,7 @@ test("describeEvent words each event", () => {
   expect(events.map(describeEvent)).toEqual([
     "status /abs/dir",
     "no extraction in /abs/dir: /abs/dir/specimen is missing",
-    "9 interfaces, 3 structures, 5 facts, 5 operations, 20 rules, 4 projections, 5 triggers, 4 scenarios",
+    "9 interfaces, 3 structures, 5 facts, 5 operations, 20 rules, 4 projections, 5 triggers, 4 scenarios, 0 references",
     "problem  f.yaml a.0: m",
     "problem  f.yaml: m",
     "gap      rule-without-scenario f/r",

@@ -81,6 +81,11 @@ test("the fixture has no problem, and these gaps", async () => {
     name,
     message: "no scenario proves it",
   });
+  const unrecorded = (name: string): Gap => ({
+    kind: "scenario-without-reference",
+    name,
+    message: "it has not been recorded",
+  });
   expect(checkExtraction(extraction)).toEqual({
     problems: [],
     gaps: [
@@ -115,6 +120,10 @@ test("the fixture has no problem, and these gaps", async () => {
       rule("update-article/exists"),
       rule("update-article/signed-in"),
       rule("update-article/title"),
+      unrecorded("register/password-of-eight-characters"),
+      unrecorded("register/password-of-seven-characters"),
+      unrecorded("unfavorite-article/others-favorited-too"),
+      unrecorded("unfavorite-article/unknown-article"),
       { kind: "structure-not-shown", name: "Tag", message: "no projection shows it" },
     ],
   });

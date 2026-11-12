@@ -41,6 +41,7 @@ test("status of a directory with an extraction", async () => {
         projections: 0,
         triggers: 0,
         scenarios: 0,
+        references: 0,
       },
     },
     {

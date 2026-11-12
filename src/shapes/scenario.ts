@@ -44,7 +44,7 @@ export const httpRequestSchema = z
     method: z.enum(["get", "post", "put", "patch", "delete"]),
     url: z.string(),
     headers: z.record(z.string(), z.string()).readonly(),
-    body: z.json().optional(),
+    body: z.unknown().optional(),
   })
   .readonly();
 

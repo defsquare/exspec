@@ -1,5 +1,7 @@
 import type { Extraction, Gap } from "../shapes/extraction.ts";
+import type { Scenario } from "../shapes/scenario.ts";
 import type { Structure } from "../shapes/specification.ts";
+import { deepEqual } from "./json.ts";
 import { refusalsOf, rulesOf } from "./operation.ts";
 
 // [A] -> [A, B] when A has a field {structure: B}; a field {structure: C, by: identity}
@@ -15,6 +17,23 @@ function withNested(structures: readonly Structure[], roots: readonly string[]) 
   return new Set(roots.reduce(visit, []));
 }
 
+// what a scenario wrote, its answers left out
+function writtenPart({
+  scenario,
+  says,
+  proves,
+  arrange,
+  act,
+}: Pick<Scenario, "scenario" | "says" | "proves" | "arrange" | "act">) {
+  return {
+    scenario,
+    says,
+    proves,
+    arrange: arrange.map(({ call }) => call),
+    act: act.call,
+  };
+}
+
 export function findGaps({
   interfaces,
   structures,
@@ -23,7 +42,10 @@ export function findGaps({
   projections,
   triggers,
   scenarios,
+  references,
 }: Extraction): readonly Gap[] {
+  const scenarioAt = new Map(scenarios.map(({ path, scenario }) => [path, scenario]));
+  const referenced = new Set(references.map(({ path }) => path));
   const proved = new Set(
     scenarios.flatMap(({ scenario: { act, proves } }) =>
       proves.map((rule) => `${act.call.operation}/${rule}`),
@@ -90,6 +112,34 @@ export function findGaps({
         kind: "fact-without-condition" as const,
         name: fact,
         message: "its condition is not written",
+      })),
+    ...references.flatMap(({ path, reference }): readonly Gap[] => {
+      const scenario = scenarioAt.get(path);
+      if (scenario === undefined) {
+        return [
+          {
+            kind: "reference-without-scenario",
+            name: path,
+            message: "no scenario is written at its path",
+          },
+        ];
+      }
+      return deepEqual(writtenPart(scenario), writtenPart(reference))
+        ? []
+        : [
+            {
+              kind: "reference-stale",
+              name: path,
+              message: "its scenario is no longer written as it was played",
+            },
+          ];
+    }),
+    ...scenarios
+      .filter(({ path }) => !referenced.has(path))
+      .map(({ path }) => ({
+        kind: "scenario-without-reference" as const,
+        name: path,
+        message: "it has not been recorded",
       })),
   ];
 }
