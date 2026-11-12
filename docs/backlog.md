@@ -5,30 +5,6 @@ The only backlog. An item is written to be picked up cold: *Seen* (the evidence)
 deleted, never ticked: its commit says which item it closes. Order is the order to take
 them in; each of the first five is a branch of its own.
 
-## 3 — Playing a scenario against a target
-
-- **Seen.** The spike recorded 167 scenarios of Conduit in 36 s and replayed them in 18 s,
-  restoring the database between two scenarios; a pool of ids held in the target's memory
-  survived the restore on Fineract.
-- **Settled.** An execution fills a copy of the scenario and adds `:run` (target, version,
-  when, the clock it was started with). Only what the interfaces expose is compared.
-- **Next.** Start Conduit from its compose file, play the two scenarios of item 2, write
-  their played copies. Decide what the starting state holds besides the database, and how
-  a scenario starts from it (an ADR).
-- **Source.** `docs/brief/spike-journal.md` › Journal 1, 6, 20; `docs/brief/framing.md` ›
-  "To settle before the first line" (the world's boundary).
-
-## 4 — The reference, the noise, the replay
-
-- **Seen.** Noise as a wildcard per leaf let 3 mutants of 8 survive; as classes of equal
-  values it did not. A value that differs every time with no equal elsewhere (a token)
-  needs a mark with no equality.
-- **Settled.** Two executions; one copy kept; equal noisy values, equal marks. A replay is
-  one more played copy compared with the reference.
-- **Next.** Record the two scenarios twice, mark the noise, replay green; turn one red by
-  hand and show where it differs.
-- **Source.** `docs/brief/spike-journal.md` › Journal 6; `docs/brief/fit-conduit.md`.
-
 ## 5 — The verdicts, derived
 
 - **Seen.** On the spike's data every requirement verified (30 of 30 on each of two
