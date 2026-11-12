@@ -70,7 +70,8 @@ export const interfaceSchema = z
         body: shapeSchema.optional(),
         auth: z.enum(["required", "optional", "none"]).optional(),
       })
-      .readonly(),
+      .readonly()
+      .default({}),
     responses: z
       .record(
         z.string().regex(/^\d{3}$/),

@@ -34,6 +34,10 @@ export function checkOperations({
               `the file is named "${path}", the operation "${operation.operation}"`,
             ),
           ]),
+      ...(operation.answers === null ||
+      structures.some((s) => s.structure === operation.answers)
+        ? []
+        : [problem("answers", `unknown structure "${operation.answers}"`)]),
       ...Object.entries(operation.takes).flatMap(([name, input]) => {
         if (!("field" in input)) return [];
         const field = fieldOf(structures, input.field);

@@ -245,7 +245,7 @@ effects:
   - {rule: e2, when: [not, u], then: nothing-changes}
   - {rule: e3, when: [given, z], then: {says: s}}
 `,
-      "operations/h.yaml": "operation: k\ntakes: {}\nanswers: null\n",
+      "operations/h.yaml": "operation: k\ntakes: {}\nanswers: U\n",
     }),
   ).toEqual([
     {
@@ -278,6 +278,7 @@ effects:
       at: "takes.c.rules.0.violates",
       message: "S.t carries no max",
     },
+    { file: "operations/h.yaml", at: "answers", message: 'unknown structure "U"' },
     {
       file: "operations/h.yaml",
       at: "operation",

@@ -19,6 +19,17 @@ writes a reference): shapes, then playing and the reference in one branch, then 
 
 ## Journal
 
+- The shapes, the checks, `check` and `status` — schemas of the four groups, an extraction
+  parsed from its YAML files, problems and gaps, Conduit's fixture (9 interfaces, 5
+  operations, 20 rules, 4 scenarios; no problem, 20 gaps). Reviewer: one gap in
+  conformance, fixed — an operation's `answers` naming an unknown structure was not
+  checked. Also after review: `request` defaults to empty; the target's own files go under
+  `specimen/target/`. Minor, left for the pre-merge review: a `[schema, N]` naming no
+  schema reads as "no such path"; duplicate names (interfaces, structures, facts,
+  operations) and a structure's `identity` not being one of its fields are not checked;
+  "operation with no trigger" is repeated per call; the wire `Shape` type is written by
+  hand beside its schema (zod infers no recursive union).
+
 ## Backlog
 
 ### The shapes as schemas, loaded from files
