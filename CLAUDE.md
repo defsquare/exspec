@@ -223,11 +223,28 @@ Not for bug fixes, renames, or a change an accepted ADR already decides.
 
 ## Mandatory ADR pass before every commit
 
+**What gets an ADR, and what does not.** An ADR records a decision that matters on one of
+three subjects:
+
+- the **architecture** — the layers and what may import what, the stack, a dependency that
+  shapes the code, how the tool talks to a target or to the agent;
+- the **overall design** — one of the three rules the design rests on, the notation of the
+  files, the event stream, how a scenario is played, recorded and compared;
+- the **metamodel** — a concept added, removed or renamed, a link between two concepts, a
+  key added to a data shape.
+
+Everything else is told in the **body of the commit message**: the choice made, the reason,
+what was set aside — a local implementation choice, the layout of a module, a term added
+inside an existing shape, a library's option, a fix. When in doubt: would someone rewriting
+this module in a year have to know the decision to avoid undoing it by accident? If not,
+the commit carries it.
+
 Before **every** `git commit`, do a pass over the ADRs:
 
 1. Compare the staged diff (`git diff --cached`) against the ADRs in `docs/adr/`.
 2. **Create** a new ADR (Nygard format: Context / Decision / Alternatives / Consequences)
-   for any new architecture decision introduced by the diff.
+   for any decision of the diff on one of the three subjects above; write any other
+   decision in the commit body.
 3. **Supersede** — status `Superseded by ADR-XXXX` + link — any ADR made obsolete;
    **deprecate** — status `Deprecated`, one line on what replaced it — the ADR of a concept
    the diff removes.
