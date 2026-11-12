@@ -101,7 +101,9 @@ function parseYaml(
 
 function readSourceFile(file: SourceFile): Outcome {
   const { path } = file;
-  if (path.startsWith("references/") || path.startsWith("runs/")) return nothing;
+  // target/ is the target's own: a compose file, a seed, what the lifecycle commands run
+  if (["references/", "runs/", "target/"].some((own) => path.startsWith(own)))
+    return nothing;
   switch (path) {
     case "target.yaml":
       return parseFile(file, targetSchema, (target) => ({ target }));

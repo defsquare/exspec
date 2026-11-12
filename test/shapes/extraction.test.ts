@@ -89,6 +89,7 @@ test("an unknown file is a problem, references and runs are skipped", () => {
     parseExtraction([
       { path: "a.yaml", text: "a: 1" },
       { path: "references/f/a.yaml", text: "a: 1" },
+      { path: "target/compose.yaml", text: "a: 1" },
       { path: "runs/r/f/a.yaml", text: "a: 1" },
     ]).problems,
   ).toEqual([{ file: "a.yaml", at: "", message: "not a file of an extraction" }]);

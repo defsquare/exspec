@@ -19,6 +19,8 @@ An **extraction** is the directory `<dir>/specimen/` of the target's checkout:
 ```
 specimen/
   target.yaml                           what is started, and how
+  target/                               the target's own files the lifecycle runs: a compose
+                                        file, a seed, a reset — never parsed
   interfaces.yaml                       the interfaces and the named wire schemas
   structures.yaml
   facts.yaml

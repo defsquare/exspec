@@ -3,6 +3,7 @@
     "includes": [
       "**",
       "!**/*.md",
+      "!**/*.yaml",
       "!docs",
       "!dist",
       "!node_modules",
