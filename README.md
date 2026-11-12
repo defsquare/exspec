@@ -49,4 +49,11 @@ bun install
 bun test
 bun run check
 bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
+bun src/cli/main.ts check <dir>
+bun src/cli/main.ts up <dir>                # start the target, wait until alive, seed
+bun src/cli/main.ts play <dir> [<operation>/<slug>…]     # on a target up: reset, play once
+bun src/cli/main.ts down <dir>
+bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
+bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
+bun run live                                # record and replay Conduit's fixture (Docker)
 ```

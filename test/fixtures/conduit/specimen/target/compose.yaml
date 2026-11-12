@@ -1,0 +1,35 @@
+# Conduit (spring-boot-realworld-example-app) on Postgres. The app image is built from the
+# app's checkout at d8f34f0. No volume: every up after a down starts from Flyway's schema,
+# empty. API on 8085, Postgres on 5434. The JWT session is an int of milliseconds in the
+# app, 24 days at most: 23 days here.
+name: specimen-conduit
+
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: main
+      POSTGRES_PASSWORD: main
+      POSTGRES_DB: main
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-h", "127.0.0.1", "-U", "main"]
+      interval: 2s
+      retries: 30
+
+  app:
+    image: realworld-app:d8f34f0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: main
+      DB_USERNAME: main
+      DB_PASSWORD: main
+      JWT_SECRET_KEY: MDIyZGQwMDdjNDA3ZDQwYTc4MGYyNjdkZjFkZTJkMzRhMDhmMTNkN2QyMWY5ZjMxMTYwZjM5ZDI1YjE5ZjhiYQ==
+      JWT_SESSIONTIME: 2000000
+    ports:
+      - "8085:8080"

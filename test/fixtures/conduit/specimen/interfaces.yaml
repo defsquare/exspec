@@ -99,6 +99,7 @@ interfaces:
             username: string
             bio: [maybe, string]
             image: [maybe, string]
+      400: { body: { errors: [string], message: string, status: string } }
 
   - interface: update-article
     method: put

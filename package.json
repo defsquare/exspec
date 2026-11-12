@@ -7,6 +7,7 @@
   },
   "scripts": {
     "test": "bun test",
+    "live": "bun test ./live/conduit.live.ts",
     "check": "tsc --noEmit && biome check .",
     "build": "bun build --compile src/cli/main.ts --outfile dist/specimen"
   },

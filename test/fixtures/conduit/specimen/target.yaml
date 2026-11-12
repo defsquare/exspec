@@ -1,5 +1,5 @@
 target: conduit
-start: ["docker compose -f specimen/target/compose.yaml up -d --build"]
+start: ["docker compose -f specimen/target/compose.yaml up -d"]
 alive: { method: get, path: /tags, status: 200 }
 seed: ["./specimen/target/seed.sh"]
 reset: ["./specimen/target/reset.sh"]
