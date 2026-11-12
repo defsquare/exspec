@@ -18,7 +18,7 @@ triggers:
     operation: unfavorite-article
     sends: { slug: [path, slug] }
     answers: { status: 200, shows: [{ structure: Article, at: [article] }] }
-    refuses: { unauthenticated: { status: 401 }, not-found: { status: 401 } }
+    refuses: { unauthenticated: { status: 401 }, not-found: { status: 404 } }
 
   - trigger: create-article-favorite
     interface: create-article-favorite
