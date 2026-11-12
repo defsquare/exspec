@@ -56,6 +56,30 @@ export const countsSchema = z
 
 export type Counts = z.infer<typeof countsSchema>;
 
+const agentSaid = z.object({ type: z.literal("agent-said"), text: z.string() });
+// about: the file a tool works on, or the first line of a shell command
+const agentUsed = z.object({
+  type: z.literal("agent-used"),
+  tool: z.string(),
+  about: z.string(),
+});
+// cost: in USD, when known
+const agentEnded = z.object({
+  type: z.literal("agent-ended"),
+  turns: z.int(),
+  seconds: z.number(),
+  cost: z.number().optional(),
+});
+
+// what an agent's session says and does, before it is known which phase it serves
+export const agentEventSchema = z.discriminatedUnion("type", [
+  agentSaid,
+  agentUsed,
+  agentEnded,
+]);
+
+export type AgentEvent = z.infer<typeof agentEventSchema>;
+
 export const eventSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("command-started"),
@@ -104,6 +128,9 @@ export const eventSchema = z.discriminatedUnion("type", [
     path: z.string(),
     differences: z.array(differenceSchema).readonly(),
   }),
+  agentSaid.extend({ phase: phaseSchema }),
+  agentUsed.extend({ phase: phaseSchema }),
+  agentEnded.extend({ phase: phaseSchema }),
   // what ended a command before its end: the target failed to start, a command failed
   z.object({ type: z.literal("command-failed"), message: z.string() }),
   z.object({

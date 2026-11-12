@@ -47,6 +47,14 @@ export function describeEvent(event: Event): string {
                 `${at.join(".")}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
             )
             .join("\n  ")}`;
+    case "agent-said":
+      return `agent    ${event.text.replace(/\n[\s\S]*/, "").slice(0, 160)}`;
+    case "agent-used":
+      return `  ${event.tool}  ${event.about}`;
+    case "agent-ended":
+      return `agent    ended: ${event.turns} turns, ${event.seconds} s${
+        event.cost === undefined ? "" : `, $${event.cost.toFixed(2)}`
+      }`;
     case "command-failed":
       return `failed   ${event.message}`;
     case "command-finished":

@@ -66,6 +66,10 @@ test("describeEvent words each event", () => {
         { at: ["act", "response", "body", "y", 0], expected: "a", actual: null },
       ],
     },
+    { type: "agent-said", phase: "target", text: `${"a".repeat(170)}\nb` },
+    { type: "agent-used", phase: "target", tool: "Bash", about: "docker compose up" },
+    { type: "agent-ended", phase: "target", turns: 12, seconds: 61.5, cost: 0.4321 },
+    { type: "agent-ended", phase: "target", turns: 1, seconds: 2 },
     { type: "command-failed", message: "m" },
     { type: "command-finished", command: "check", ok: false },
   ];
@@ -85,6 +89,10 @@ test("describeEvent words each event", () => {
     "unstable f/a\n  act.response.status: 200, then 500",
     "replayed f/a  green",
     'replayed f/a  red  act.response.body.x: expected 1, got 2\n  act.response.body.y.0: expected "a", got null',
+    `agent    ${"a".repeat(160)}`,
+    "  Bash  docker compose up",
+    "agent    ended: 12 turns, 61.5 s, $0.43",
+    "agent    ended: 1 turns, 2 s",
     "failed   m",
     "check failed",
   ]);
