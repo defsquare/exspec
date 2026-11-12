@@ -88,3 +88,42 @@ test("with no reference to compare with, nothing is started and the replay fails
     lines: [],
   });
 });
+
+test("a reference of the scenario as it was, and a named scenario with none, are refused", async () => {
+  const { io } = fakeIo({
+    "http://h/f/x": [{ status: 200, body: { a: "t3", b: "t3", c: 1 } }],
+  });
+  const events = await Array.fromAsync(
+    replay(
+      {
+        dir: "/d",
+        extraction: {
+          ...extract({
+            "scenarios/f/a.yaml": scenarioFile("x"),
+            "scenarios/f/b.yaml": scenarioFile("y"),
+            "scenarios/f/c.yaml": scenarioFile("z"),
+          }),
+          references: [
+            { path: "f/a", reference: reference("x") },
+            { path: "f/b", reference: reference("w") },
+          ],
+        },
+        paths: ["f/a", "f/b", "f/c"],
+      },
+      io,
+    ),
+  );
+  expect(
+    events.filter(({ type }) => type !== "target-step" && type !== "scenario-played"),
+  ).toEqual([
+    { type: "command-started", command: "replay", dir: "/d" },
+    {
+      type: "scenario-unplayable",
+      path: "f/b",
+      message: "its reference is of the scenario as it was: record it again",
+    },
+    { type: "scenario-unplayable", path: "f/c", message: "it has no reference" },
+    { type: "scenario-replayed", path: "f/a", differences: [] },
+    { type: "command-finished", command: "replay", ok: false },
+  ]);
+});

@@ -32,7 +32,8 @@ noise:
 - **A status that differs is not noise.** The scenario is unstable and gets no reference.
 - A replay is one more played copy: outside the noisy places it must equal the reference;
   at a noisy place any value is accepted, but the places of one class must still be equal
-  among themselves.
+  among themselves, and two classes must still answer two values — a date answered where
+  another date was is a difference, though both are noise.
 - Only answers are walked: what the scenario wrote is compared as a whole elsewhere (a
   reference whose written part no longer matches its scenario is stale).
 
@@ -49,5 +50,8 @@ noise:
 
 - A value noisy with no equal elsewhere is a class of one; there is no second kind of mark.
 - A reference keeps one real value at each noisy place: readable, and usable as an example.
+- Two noisy values that may coincide by chance — two instants in one unit of a coarse
+  clock — turn a replay red when they do. None was met; the day one is, that pair of
+  classes is what a scenario would have to declare as free to coincide.
 - The noise of a scenario is a measure to show: a reference where most of the answer is
   noisy compares little.

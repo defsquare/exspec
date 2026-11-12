@@ -38,6 +38,23 @@ test("places of one class that differ from each other are one difference", () =>
   ).toEqual([{ at: ["act", "response", "body", "b"], expected: "t3", actual: "t4" }]);
 });
 
+test("two classes that answer one value are one difference", () => {
+  expect(
+    compareWithReference(
+      reference(noise),
+      played({ status: 200, body: { a: "t3", b: "t3", c: "t3", d: 1 } }, [
+        { status: 201, body: { e: 1 } },
+      ]),
+    ),
+  ).toEqual([
+    {
+      at: ["act", "response", "body", "c"],
+      expected: { "apart from": ["act", "response", "body", "a"] },
+      actual: "t3",
+    },
+  ]);
+});
+
 test("a status, a value and a form that differ outside the noise", () => {
   expect(
     compareWithReference(

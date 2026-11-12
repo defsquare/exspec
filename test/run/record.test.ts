@@ -160,3 +160,37 @@ test("a path that names no scenario refuses the command", async () => {
     lines: [],
   });
 });
+
+test("a reference of the scenario as it was is replaced", async () => {
+  const answer = { status: 200, body: null };
+  const { io, written } = fakeIo({ "http://h/f/x": [answer, answer] });
+  const events = await Array.fromAsync(
+    record(
+      {
+        dir: "/d",
+        extraction: {
+          ...extract({ "scenarios/f/a.yaml": scenarioFile("x") }),
+          references: [
+            { path: "f/a", reference: { ...playedWith("w", answer), noise: [] } },
+          ],
+        },
+        paths: [],
+        force: false,
+      },
+      io,
+    ),
+  );
+  expect({
+    events: events.filter(
+      ({ type }) => type !== "target-step" && type !== "scenario-played",
+    ),
+    written,
+  }).toEqual({
+    events: [
+      { type: "command-started", command: "record", dir: "/d" },
+      { type: "reference-written", path: "f/a", noise: 0 },
+      { type: "command-finished", command: "record", ok: true },
+    ],
+    written: [{ path: "f/a", reference: { ...playedWith("x", answer), noise: [] } }],
+  });
+});

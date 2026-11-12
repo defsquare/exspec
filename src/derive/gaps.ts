@@ -1,8 +1,7 @@
 import type { Extraction, Gap } from "../shapes/extraction.ts";
-import type { Scenario } from "../shapes/scenario.ts";
 import type { Structure } from "../shapes/specification.ts";
-import { deepEqual } from "./json.ts";
 import { refusalsOf, rulesOf } from "./operation.ts";
+import { writtenAlike } from "./written.ts";
 
 // [A] -> [A, B] when A has a field {structure: B}; a field {structure: C, by: identity}
 // shows C's identity only, not C
@@ -15,23 +14,6 @@ function withNested(structures: readonly Structure[], roots: readonly string[]) 
   const visit = (seen: readonly string[], name: string): readonly string[] =>
     seen.includes(name) ? seen : nested(name).reduce(visit, [...seen, name]);
   return new Set(roots.reduce(visit, []));
-}
-
-// what a scenario wrote, its answers left out
-function writtenPart({
-  scenario,
-  says,
-  proves,
-  arrange,
-  act,
-}: Pick<Scenario, "scenario" | "says" | "proves" | "arrange" | "act">) {
-  return {
-    scenario,
-    says,
-    proves,
-    arrange: arrange.map(({ call }) => call),
-    act: act.call,
-  };
 }
 
 export function findGaps({
@@ -124,7 +106,7 @@ export function findGaps({
           },
         ];
       }
-      return deepEqual(writtenPart(scenario), writtenPart(reference))
+      return writtenAlike(scenario, reference)
         ? []
         : [
             {

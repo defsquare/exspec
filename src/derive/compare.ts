@@ -3,8 +3,11 @@ import { deepEqual, differingPlaces, valueAt } from "./json.ts";
 import { answersOf } from "./noise.ts";
 
 // Outside the noise, a played copy answers what its reference answered. At a noisy place
-// any value goes, but the places of one class answer one value among themselves:
-//   noise a 1, b 1   played {a: "t3", b: "t3"} -> [];   {a: "t3", b: "t4"} -> [b: t3, t4]
+// any value goes, but the places of one class answer one value among themselves, and two
+// classes two values:
+//   noise a 1, b 1, c 2   played {a: "t3", b: "t3", c: "u3"} -> []
+//                                {a: "t3", b: "t4", c: "u3"} -> [b: expected t3, got t4]
+//                                {a: "t3", b: "t3", c: "t3"} -> [c: expected apart from a, got t3]
 export function compareWithReference(
   reference: Reference,
   played: PlayedScenario,
@@ -45,5 +48,15 @@ export function compareWithReference(
       ? []
       : [{ at, expected, actual }];
   });
-  return [...outside, ...withinClasses];
+  const firsts = [...firstOfClass.values()].toReversed();
+  const betweenClasses = firsts.flatMap((at, i) => {
+    const actual = valueAt(played, at);
+    const same = firsts
+      .slice(0, i)
+      .find(
+        (earlier) => actual !== undefined && deepEqual(valueAt(played, earlier), actual),
+      );
+    return same === undefined ? [] : [{ at, expected: { "apart from": same }, actual }];
+  });
+  return [...outside, ...withinClasses, ...betweenClasses];
 }
