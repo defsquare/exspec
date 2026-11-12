@@ -43,17 +43,6 @@ them in; each of the first five is a branch of its own.
   copies, play them, and count what thirty bound mutants do before and after.
 - **Source.** `docs/brief/framing.md` › "Experiments left"; ADR-0001.
 
-## 8 — The agent writes the scenarios and the specification
-
-- **Seen.** In the spike one agent session wrote Conduit's 167 scenarios in 14 minutes;
-  the rules, facts and structures were written by agents from the target's code.
-- **Settled.** The agent is driven by the CLI and reports through the event stream; its
-  instructions cite nothing of this project.
-- **Next.** Frame it once items 2 to 5 exist: what the agent is asked for (a specification
-  from the code, then scenarios for the rules no scenario points at), and how a refuted
-  claim comes back to it or to a human.
-- **Source.** `docs/brief/spike-journal.md` › Journal 2, 9, 14.
-
 ## 9 — The target's clock
 
 - **Seen.** On Fineract a reference holds only on the day it was taken: 20 scenarios of 49
