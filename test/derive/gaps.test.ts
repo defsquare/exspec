@@ -19,6 +19,7 @@ const scenario = {
   scenario: "s",
   says: "s",
   proves: ["r"],
+  assert: [],
   arrange: [{ call: { operation: "g", with: {} } }],
   act: { call: { operation: "f", with: {} } },
 };
@@ -58,6 +59,28 @@ test("a reference matches its scenario, is stale, or has none", () => {
       kind: "scenario-without-reference",
       name: "f/c",
       message: "it has not been recorded",
+    },
+  ]);
+});
+
+test("a reference of a scenario that now looks at more is stale", () => {
+  expect(
+    findGaps({
+      ...nothing,
+      scenarios: [
+        { path: "f/a", scenario: { ...scenario, assert: [{ fact: "p" }] } },
+        { path: "f/b", scenario: { ...scenario, assert: [{ fact: "p" }] } },
+      ],
+      references: [
+        { path: "f/a", reference },
+        { path: "f/b", reference: { ...reference, assert: [{ fact: "p" }] } },
+      ],
+    }),
+  ).toEqual([
+    {
+      kind: "reference-stale",
+      name: "f/a",
+      message: "its scenario is no longer written as it was played",
     },
   ]);
 });

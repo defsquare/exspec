@@ -1,6 +1,7 @@
 import type { Trigger } from "../shapes/bindings.ts";
 import type { Extraction, Problem } from "../shapes/extraction.ts";
 import type { Interface, NamedShape } from "../shapes/target.ts";
+import { fieldOf } from "./check-operations.ts";
 import { refusalsOf } from "./operation.ts";
 import { hasShapePath } from "./shape-path.ts";
 
@@ -11,7 +12,7 @@ function problem(at: string, message: string): Problem {
 }
 
 // [path, a] -> request.path has a;  [body, a, b] -> request.body has a.b
-function hasPlace(
+export function hasPlace(
   { request }: Interface,
   place: Trigger["sends"][string],
   schemas: readonly NamedShape[],
@@ -81,15 +82,40 @@ export function checkBindings({
           ]
         : [];
     }),
-    ...projections.flatMap((projection, i) => [
-      ...checkInterface(`projections.${i}.interface`, projection.interface),
-      ...checkShows(
-        `projections.${i}.shows`,
-        projection.shows,
-        interfaceNamed.get(projection.interface),
-        "200",
-      ),
-    ]),
+    ...projections.flatMap((projection, i) => {
+      const target = interfaceNamed.get(projection.interface);
+      const shown = projection.shows.map(({ structure }) => structure);
+      return [
+        ...checkInterface(`projections.${i}.interface`, projection.interface),
+        ...checkShows(`projections.${i}.shows`, projection.shows, target, "200"),
+        ...Object.entries(projection.locates ?? {}).flatMap(([field, place]) => [
+          ...(shown.some((structure) => fieldOf(structures, [structure, field]))
+            ? []
+            : [
+                problem(
+                  `projections.${i}.locates.${field}`,
+                  `"${field}" is not a field of ${shown.join(" or ")}`,
+                ),
+              ]),
+          ...(target && !hasPlace(target, place, schemas)
+            ? [
+                problem(
+                  `projections.${i}.locates.${field}`,
+                  `the request of "${target.interface}" has no ${place.join(".")}`,
+                ),
+              ]
+            : []),
+        ]),
+        ...(projection.absent !== undefined && projection.locates === undefined
+          ? [
+              problem(
+                `projections.${i}.absent`,
+                "absent says nothing of a projection that locates nothing",
+              ),
+            ]
+          : []),
+      ];
+    }),
     ...triggers.flatMap((trigger, i) => {
       const at = `triggers.${i}`;
       const target = interfaceNamed.get(trigger.interface);

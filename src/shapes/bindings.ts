@@ -5,11 +5,18 @@ const showSchema = z
   .strictObject({ structure: z.string(), at: z.array(z.string()).readonly() })
   .readonly();
 
+// locates: how one instance is found, {<field>: [path|query, <name>]};
+// absent: the status that means there is no such instance
 export const projectionSchema = z
   .strictObject({
     projection: z.string(),
     interface: z.string(),
     shows: z.array(showSchema).readonly(),
+    locates: z
+      .record(z.string(), z.tuple([z.enum(["path", "query"]), z.string()]).readonly())
+      .readonly()
+      .optional(),
+    absent: z.int().optional(),
   })
   .readonly();
 

@@ -760,3 +760,79 @@ act:
     }),
   ).toEqual([]);
 });
+
+test("a projection locating by what its structure or its request does not have", () => {
+  expect(
+    problemsOf({
+      "bindings.yaml": `
+projections:
+  - {projection: v, interface: i, shows: [{structure: S, at: [s]}], locates: {a: [path, a], z: [query, q], t: [query, z]}, absent: 404}
+  - {projection: w, interface: i, shows: [{structure: S, at: [s]}], absent: 404}
+triggers:
+  - {trigger: t, interface: i, operation: f, sends: {a: [path, a], n: [query, q]}, answers: {status: 200}, refuses: {x: {status: 400}}}
+`,
+    }),
+  ).toEqual([
+    {
+      file: "bindings.yaml",
+      at: "projections.0.locates.t",
+      message: 'the request of "i" has no query.z',
+    },
+    {
+      file: "bindings.yaml",
+      at: "projections.0.locates.z",
+      message: '"z" is not a field of S',
+    },
+    {
+      file: "bindings.yaml",
+      at: "projections.1.absent",
+      message: "absent says nothing of a projection that locates nothing",
+    },
+  ]);
+});
+
+test("a scenario asking to look at what does not exist", () => {
+  expect(
+    problemsOf({
+      "scenarios/f/a.yaml": `
+scenario: a
+says: a
+proves: [r]
+assert:
+  - {fact: p}
+  - {fact: o, as: u}
+  - {shows: {structure: U, where: {a: 1}, field: [a]}}
+  - {shows: {structure: S, where: {a: [call, z], k: 1}, field: [t, c]}, as: u}
+  - {shows: {structure: S, where: {a: [call, a]}, field: [t, b]}}
+act:
+  call: {operation: f, with: {a: "1"}}
+`,
+    }),
+  ).toEqual([
+    {
+      file: "scenarios/f/a.yaml",
+      at: "assert.1.fact",
+      message: 'unknown fact "o"',
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "assert.2.shows.structure",
+      message: 'unknown structure "U"',
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "assert.3.shows.field",
+      message: "S has no field t.c",
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "assert.3.shows.where.a",
+      message: '"z" is not an input of "f"',
+    },
+    {
+      file: "scenarios/f/a.yaml",
+      at: "assert.3.shows.where.k",
+      message: '"k" is not a field of S',
+    },
+  ]);
+});

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { scalarSchema } from "./specification.ts";
 
 const callSchema = z
   .strictObject({
@@ -9,6 +10,35 @@ const callSchema = z
   .readonly();
 
 export type Call = z.infer<typeof callSchema>;
+
+// where: a field -> an input of the judged call, [call, a], or a literal value
+const shownSchema = z
+  .strictObject({
+    structure: z.string(),
+    where: z
+      .record(
+        z.string(),
+        z.union([z.tuple([z.literal("call"), z.string()]).readonly(), scalarSchema]),
+      )
+      .readonly(),
+    field: z.array(z.string()).readonly(),
+  })
+  .readonly();
+
+// what is looked at around the judged call: a fact, or a field of one instance
+export const lookSchema = z.union([
+  z.strictObject({ fact: z.string() }).readonly(),
+  z.strictObject({ shows: shownSchema }).readonly(),
+]);
+
+export type Look = z.infer<typeof lookSchema>;
+
+// as: the actor it is looked at as; left out, the judged call's caller
+const actorSchema = z.string().nullable().optional();
+const assertSchema = z.union([
+  z.strictObject({ fact: z.string(), as: actorSchema }).readonly(),
+  z.strictObject({ shows: shownSchema, as: actorSchema }).readonly(),
+]);
 
 const writtenSchema = {
   scenario: z.string(),
@@ -21,6 +51,7 @@ const writtenSchema = {
 export const scenarioSchema = z
   .strictObject({
     ...writtenSchema,
+    assert: z.array(assertSchema).readonly().default([]),
     arrange: z
       .array(z.strictObject({ call: callSchema }).readonly())
       .readonly()
@@ -50,6 +81,27 @@ export const httpRequestSchema = z
 
 export type HttpRequest = z.infer<typeof httpRequestSchema>;
 
+// one per term that reads: what the projection's interface answered, or why nothing could
+// be asked
+const readingEntrySchema = z.union([
+  responseSchema,
+  z.strictObject({ unreadable: z.string() }).readonly(),
+]);
+
+export type ReadingEntry = z.infer<typeof readingEntrySchema>;
+
+// as: the actor's name, null for nobody
+export const readingSchema = z
+  .strictObject({
+    of: lookSchema,
+    as: z.string().nullable(),
+    before: z.array(readingEntrySchema).readonly(),
+    after: z.array(readingEntrySchema).readonly(),
+  })
+  .readonly();
+
+export type Reading = z.infer<typeof readingSchema>;
+
 const playedCallSchema = z
   .strictObject({ call: callSchema, response: responseSchema })
   .readonly();
@@ -68,9 +120,13 @@ export type Run = z.infer<typeof runSchema>;
 
 const playedSchema = {
   ...writtenSchema,
+  // left out: played before a scenario could ask for anything to be looked at
+  assert: z.array(assertSchema).readonly().optional(),
   run: runSchema,
   arrange: z.array(playedCallSchema).readonly(),
   act: playedCallSchema,
+  // left out: played before anything was read around the judged call
+  readings: z.array(readingSchema).readonly().optional(),
 };
 
 // The written scenario, filled by one execution.

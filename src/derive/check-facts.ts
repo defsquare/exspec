@@ -5,7 +5,7 @@ import { fieldOf } from "./check-operations.ts";
 const file = "facts.yaml";
 
 // S, [a, b] -> true when a is a field of S that is a structure T, and b a field of T
-function hasFieldPath(
+export function hasFieldPath(
   structures: readonly Structure[],
   structure: string,
   path: readonly string[],

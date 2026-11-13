@@ -1,6 +1,7 @@
 import type { Extraction, Problem } from "../shapes/extraction.ts";
-import type { Call } from "../shapes/scenario.ts";
-import type { Operation } from "../shapes/specification.ts";
+import type { Call, Scenario } from "../shapes/scenario.ts";
+import type { Operation, Structure } from "../shapes/specification.ts";
+import { hasFieldPath } from "./check-facts.ts";
 import { fieldOf } from "./check-operations.ts";
 import { rulesOf } from "./operation.ts";
 
@@ -26,12 +27,64 @@ function kindOf(value: unknown): "string" | "number" | "boolean" | undefined {
   }
 }
 
+// what a scenario asks to be looked at names a fact, a structure, its fields, the inputs
+function checkAssert(
+  { assert, act }: Scenario,
+  operation: Operation | undefined,
+  { facts, structures }: { facts: readonly string[]; structures: readonly Structure[] },
+): readonly { readonly at: string; readonly message: string }[] {
+  return assert.flatMap((item, i) => {
+    if ("fact" in item) {
+      return facts.includes(item.fact)
+        ? []
+        : [{ at: `assert.${i}.fact`, message: `unknown fact "${item.fact}"` }];
+    }
+    const { structure, where, field } = item.shows;
+    const at = `assert.${i}.shows`;
+    if (!structures.some((s) => s.structure === structure)) {
+      return [{ at: `${at}.structure`, message: `unknown structure "${structure}"` }];
+    }
+    return [
+      ...Object.entries(where).flatMap(([key, value]) => [
+        ...(hasFieldPath(structures, structure, [key])
+          ? []
+          : [
+              {
+                at: `${at}.where.${key}`,
+                message: `"${key}" is not a field of ${structure}`,
+              },
+            ]),
+        ...(Array.isArray(value) &&
+        operation !== undefined &&
+        !Object.hasOwn(operation.takes, value[1])
+          ? [
+              {
+                at: `${at}.where.${key}`,
+                message: `"${value[1]}" is not an input of "${act.call.operation}"`,
+              },
+            ]
+          : []),
+      ]),
+      ...(hasFieldPath(structures, structure, field)
+        ? []
+        : [
+            {
+              at: `${at}.field`,
+              message: `${structure} has no field ${field.join(".")}`,
+            },
+          ]),
+    ];
+  });
+}
+
 export function checkScenarios({
   operations,
   triggers,
   scenarios,
   structures,
+  facts,
 }: Extraction): readonly Problem[] {
+  const factNames = facts.map(({ fact }) => fact);
   const operationNamed = new Map(operations.map(({ operation: o }) => [o.operation, o]));
   return scenarios.flatMap(({ path, scenario }) => {
     const file = `scenarios/${path}.yaml`;
@@ -127,6 +180,9 @@ export function checkScenarios({
             ),
           ]),
       ...arrange.flatMap(({ call }, i) => checkCall(`arrange.${i}.call`, call, [], [])),
+      ...checkAssert(scenario, operation, { facts: factNames, structures }).map(
+        ({ at, message }) => problem(at, message),
+      ),
       ...checkCall("act.call", act.call, leftOut, provenOn()),
       ...(operation
         ? proves.flatMap((rule, i) =>

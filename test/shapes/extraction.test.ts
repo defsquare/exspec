@@ -171,3 +171,78 @@ test("a reference without its answers is refused", () => {
     },
   ]);
 });
+
+test("a reference is read with what was looked at, and its readings", () => {
+  expect(
+    parseExtraction([
+      {
+        path: "references/f/a.yaml",
+        text: [
+          "scenario: a",
+          "says: a",
+          "proves: [r]",
+          "assert: [{fact: p, as: u}]",
+          'run: {target: t, version: v, at: "2026-11-13T10:00:00.000Z", clock: null}',
+          "arrange: []",
+          "act:",
+          "  call: {operation: f, with: {a: 1}}",
+          "  response: {status: 200, body: null}",
+          "readings:",
+          "  - of: {fact: p}",
+          "    as: u",
+          "    before: [{status: 200, body: {s: {a: 1}}}]",
+          "    after: [{unreadable: no projection locates S by a}]",
+          "noise: []",
+        ].join("\n"),
+      },
+    ]).extraction.references,
+  ).toEqual([
+    {
+      path: "f/a",
+      reference: {
+        scenario: "a",
+        says: "a",
+        proves: ["r"],
+        assert: [{ fact: "p", as: "u" }],
+        run: { target: "t", version: "v", at: "2026-11-13T10:00:00.000Z", clock: null },
+        arrange: [],
+        act: {
+          call: { operation: "f", with: { a: 1 } },
+          response: { status: 200, body: null },
+        },
+        readings: [
+          {
+            of: { fact: "p" },
+            as: "u",
+            before: [{ status: 200, body: { s: { a: 1 } } }],
+            after: [{ unreadable: "no projection locates S by a" }],
+          },
+        ],
+        noise: [],
+      },
+    },
+  ]);
+});
+
+test("a scenario holding readings is refused", () => {
+  expect(
+    parseExtraction([
+      {
+        path: "scenarios/f/a.yaml",
+        text: [
+          "scenario: a",
+          "says: a",
+          "proves: [r]",
+          "act: {call: {operation: f}}",
+          "readings: []",
+        ].join("\n"),
+      },
+    ]).problems,
+  ).toEqual([
+    {
+      file: "scenarios/f/a.yaml",
+      at: "",
+      message: 'Unrecognized key: "readings"',
+    },
+  ]);
+});
