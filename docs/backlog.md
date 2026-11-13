@@ -142,13 +142,13 @@ them in; each of the first five is a branch of its own.
 
 - **Seen.** The gate of the target catches any error, a bug of specimen's included, and
   hands it to the agent as a finding. In the scenarios phase a `stop` that fails hides the
-  session's error. `bun run build` does not produce a working binary (an optional
-  dependency of Ink), so the compiled path of the command line given to the agent is
-  untested. The examples of the agent's instructions parse one by one and do not make one
-  consistent extraction: copied literally, the tool flags them.
+  session's error. `extract` has not run whole from the compiled binary: the agent calling
+  the binary's own path is untried, and nothing says which version of `claude` the binary
+  found on the PATH, older or newer than the one the SDK pins. The examples of the agent's instructions parse one by one and do not
+  make one consistent extraction: copied literally, the tool flags them.
 - **Settled.** The instructions' examples are parsed by a test.
 - **Next.** Each is small and independent: let through what is not a failure of the
-  target's own commands; keep the first error; make the build work or drop the script;
+  target's own commands; keep the first error; run `extract` from the binary and show the version found;
   make the examples one extraction the checks pass.
 - **Source.** `docs/branches/feat-extract.md` at `c1c9ef0`.
 

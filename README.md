@@ -57,6 +57,7 @@ once per clone: `git config core.hooksPath .githooks`.
 bun install
 bun test
 bun run check
+bun run build                               # dist/specimen, one executable; extract then needs `claude` on the PATH
 bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
 bun src/cli/main.ts check <dir>
 bun src/cli/main.ts verdicts <dir>          # every rule and trigger, judged by the references

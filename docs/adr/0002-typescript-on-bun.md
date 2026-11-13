@@ -1,7 +1,8 @@
 # ADR-0002 — TypeScript on Bun, CLI first, events as data
 
 Status: Accepted (2026-11-13) — reviewed by the user once the first code was written; what
-is not built yet is said as such below.
+is not built yet is said as such below. Amended the same day: the executable builds, and
+the consequence on it says how.
 
 ## Context
 
@@ -44,5 +45,8 @@ with a seed; a database driver per kind of target (PostgreSQL first).
 - A database with no good Node driver is a cost paid target by target.
 - Validation and generation are two libraries to keep in step: a constraint of a field is
   stated once and both are derived from it.
-- A single executable is the aim and does not build yet: the CLI runs from its sources.
+- `bun run build` makes one executable. It does not carry the agent's own executable,
+  which the SDK installs as a package beside itself and weighs five times the rest: a
+  compiled specimen starts the `claude` found on the PATH, so `extract` there runs the
+  version installed on the machine, not the one the SDK pins.
 - Nothing of the spike's code is reused.

@@ -14,6 +14,8 @@ export type Session = {
   readonly model: string;
   // the id of the session this prompt continues
   readonly resume?: string;
+  // the Claude Code executable to start; without it, the one the SDK installs beside itself
+  readonly executable?: string;
 };
 
 export type Ended = { readonly session: string; readonly ok: boolean };
@@ -60,6 +62,7 @@ export async function* driveAgent({
   cwd,
   model,
   resume,
+  executable,
 }: Session): AsyncGenerator<AgentEvent, Ended> {
   const canUseTool: CanUseTool = async (tool, input) => {
     const path = input.file_path;
@@ -89,6 +92,7 @@ export async function* driveAgent({
       // the SDK replaces the environment, it does not merge
       env: { ...process.env, [agentMark]: "1" },
       ...(resume === undefined ? {} : { resume }),
+      ...(executable === undefined ? {} : { pathToClaudeCodeExecutable: executable }),
     },
   });
   for await (const message of messages) {
