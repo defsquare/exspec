@@ -1,6 +1,6 @@
 # ADR-0004 — The target's lifecycle is commands of the target; specimen holds no driver
 
-Status: Proposed (2026-11-13) — written by the main thread working alone, challenged, to be
+Status: Accepted (2026-11-13) — written by the main thread working alone, challenged,
 reviewed by the user.
 
 ## Context
@@ -59,5 +59,11 @@ credentials: specimen/target/credentials.json   # written by the seed: {actor: {
   build with the readings.
 - State the scripts do not reach (a cache, a pool of ids in memory) survives a reset; the
   scripts may restart the target if that is what it takes.
+- What the seed draws reaches a scenario through the credentials only. A target that
+  draws the ids of what it creates (a third target does, at random, at each seed) leaves a
+  scenario no way to name a seeded instance: written as a literal, the id is unknown on
+  the next fresh stack and the accepted path is recorded as a refusal. Nothing here
+  solves it; the two alternatives above about arranged data and a richer description of
+  the target are the candidates.
 - The scripts are part of the extraction and are versioned with it; what they produce (the
   credentials, a dump) is not.
