@@ -1,7 +1,7 @@
 # ADR-0002 — TypeScript on Bun, CLI first, events as data
 
-Status: Proposed (2026-11-12) — the language is decided by the user; the libraries below
-are the main thread's proposal and are accepted or changed when the first code is written.
+Status: Accepted (2026-11-13) — reviewed by the user once the first code was written; what
+is not built yet is said as such below.
 
 ## Context
 
@@ -16,17 +16,19 @@ of a terminal.
 
 ## Decision
 
-- **TypeScript, strict**, run and compiled to a single executable with **Bun**.
+- **TypeScript, strict**, run with **Bun**.
 - **Ink** for the terminal.
 - **zod** for the data shapes: the schema is the source, the type is inferred, a file is
   parsed into a shape at the boundary.
-- **fast-check** for generated values, always with a seed.
 - The agent driven through the **Claude Agent SDK**, its stream turned into events.
 - **Biome** for the linter and the formatter, with the TypeScript compiler's type-check:
-  the two halves of `bun run check`, run by the pre-commit hook. Markdown is left alone.
-- A database driver per kind of target, added when a target needs it (PostgreSQL first).
+  the two halves of `bun run check`, run by the pre-commit hook. Markdown and YAML are
+  left alone.
 - **CLI first**: every capability is a command; everything that runs emits events as data,
   read alike by the terminal renderer, by `--format json` and by a viewer.
+
+Planned, and added only when an item needs it: **fast-check** for generated values, always
+with a seed; a database driver per kind of target (PostgreSQL first).
 
 ## Alternatives
 
@@ -37,9 +39,10 @@ of a terminal.
 
 ## Consequences
 
-- The shapes of `docs/brief/shapes.edn` are written in another notation here: which one
-  (TypeScript modules, YAML, JSON) is to decide with the first shape that is loaded.
+- The shapes of `docs/brief/shapes.edn` are written in another notation here: YAML files,
+  decided by ADR-0003.
 - A database with no good Node driver is a cost paid target by target.
 - Validation and generation are two libraries to keep in step: a constraint of a field is
   stated once and both are derived from it.
+- A single executable is the aim and does not build yet: the CLI runs from its sources.
 - Nothing of the spike's code is reused.
