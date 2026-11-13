@@ -1,4 +1,4 @@
-import type { BindingVerdict } from "../shapes/event.ts";
+import type { BindingVerdict, RuleVerdict } from "../shapes/event.ts";
 import { isMap } from "./json.ts";
 import type { Judging } from "./judging.ts";
 import { outcomeOf } from "./judging.ts";
@@ -12,9 +12,11 @@ function shown(value: unknown, [key, ...rest]: readonly string[]): boolean {
 }
 
 // An accepted answer shows what the trigger says where it says; a refusal has the status
-// the trigger gives the refusal of each rule the scenario proves.
+// the trigger gives the refusal of each rule the scenario proves and exercises: a rule
+// whose fact held, or whose input was not violated, did not refuse.
 export function bindingVerdict(
   judging: Pick<Judging, "played" | "operation" | "trigger">,
+  rules: readonly RuleVerdict[],
 ): BindingVerdict {
   const { played, operation, trigger } = judging;
   const { status, body } = played.act.response;
@@ -31,7 +33,9 @@ export function bindingVerdict(
         };
   }
   const refusals = [...operation.requires, ...inputRulesOf(operation)]
-    .filter(({ rule }) => played.proves.includes(rule))
+    .filter(({ rule }) =>
+      rules.some((r) => r.rule === rule && r.verdict !== "not-exercised"),
+    )
     .map(({ otherwise }) => otherwise);
   if (refusals.length === 0) return { verdict: "not-exercised" };
   const wrong = refusals.find((refusal) => trigger.refuses[refusal]?.status !== status);

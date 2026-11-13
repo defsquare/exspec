@@ -15,9 +15,12 @@ export function placeOf(
   return found && { at: [...found.at, ...field], absent: found.projection.absent };
 }
 
-const isSuccess = (status: number) => status >= 200 && status < 300;
+export const isSuccess = (status: number) => status >= 200 && status < 300;
 
-// a value read: on a success, the value at its place; else why there is none
+// A value read: on a success, the value at its place; on the projection's absent status,
+// no instance; else why there is none. A success whose body lacks the place (a mistyped
+// at or field) tells nothing:
+//   {s: {b: 1}}, [s, b] -> 1;   {s: {}}, [s, b] -> unknown;   {t: {}}, [s] -> unknown
 export function valueRead(
   projections: readonly Projection[],
   term: Located,
@@ -30,7 +33,12 @@ export function valueRead(
   if ("unreadable" in entry) return { unknown: entry.unreadable };
   const place = placeOf(projections, term);
   if (place === undefined) return { unknown: `no projection locates ${term.structure}` };
-  if (isSuccess(entry.status)) return { value: valueAt(entry.body, place.at) };
+  if (isSuccess(entry.status)) {
+    const value = valueAt(entry.body, place.at);
+    return value === undefined
+      ? { unknown: "the value is not in the answer" }
+      : { value };
+  }
   if (entry.status === place.absent) return { absent: true };
   return { unknown: `the reading answered ${entry.status}` };
 }

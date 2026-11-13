@@ -384,3 +384,112 @@ test("the binding: what an accepted call shows, the status of the refusal proved
     { verdict: "refuted", observed: 500 },
   ]);
 });
+
+const withH = extract({
+  "facts.yaml": `${files["facts.yaml"]}- {fact: k, condition: [{structure: S, where: {a: [call, a]}, field: [b], must-be: [exists]}]}\n`,
+  "operations/h.yaml": `
+operation: h
+takes: {a: {field: [S, a]}}
+requires:
+  - {rule: signed-in, fact: p, otherwise: x}
+  - {rule: r-held, fact: r, otherwise: y}
+  - {rule: k-held, fact: k, otherwise: y}
+answers: null
+effects: [{rule: n, then: nothing-changes}]
+`,
+  "bindings.yaml": `${files["bindings.yaml"]}  - {trigger: th, interface: i, operation: h, sends: {a: [path, a]}, answers: {status: 200}, refuses: {x: {status: 403}, y: {status: 401}}}\n`,
+});
+
+const onH = (proves: string, status: number, read: readonly Reading[]) =>
+  rulesOf(copy({ proves: [proves], status, operation: "h", read }), withH);
+
+test("nothing changes is not judged when nothing readable was read", () => {
+  const signedIn: Reading = { of: { fact: "p" }, as: "u", before: [], after: [] };
+  const forbidden: TargetResponse = { status: 401, body: null };
+  expect([
+    onH("n", 200, [signedIn]),
+    onH("n", 200, [
+      signedIn,
+      { of: { fact: "r" }, as: "u", before: [forbidden], after: [forbidden] },
+    ]),
+  ]).toEqual([
+    [{ rule: "n", verdict: "unjudged", reason: "nothing readable was read" }],
+    [{ rule: "n", verdict: "unjudged", reason: 'not readable: "r"' }],
+  ]);
+});
+
+test("a requirement whose value is not in a successful answer is not judged", () => {
+  const without: TargetResponse = { status: 200, body: { s: { a: "x" } } };
+  const read = (fact: string): readonly Reading[] => [
+    { of: { fact: "p" }, as: "u", before: [], after: [] },
+    { of: { fact }, as: "u", before: [without], after: [without] },
+  ];
+  expect([onH("r-held", 401, read("r")), onH("k-held", 401, read("k"))]).toEqual([
+    [{ rule: "r-held", verdict: "unjudged", reason: "the value is not in the answer" }],
+    [{ rule: "k-held", verdict: "unjudged", reason: "the value is not in the answer" }],
+  ]);
+});
+
+test("set on a value missing after is not judged", () => {
+  expect(
+    rulesOf(
+      copy({
+        proves: ["e4"],
+        status: 200,
+        given: { a: "x", z: "z" },
+        read: readings(instance(false, 2), {
+          status: 200,
+          body: { s: { a: "x", b: false } },
+        }),
+      }),
+    ),
+  ).toEqual([
+    { rule: "e4", verdict: "unjudged", reason: "the value is not in the answer" },
+  ]);
+});
+
+test("the binding of a refusal is judged on the proved rules that refused", () => {
+  expect(
+    judged(
+      copy({
+        proves: ["signed-in", "exists"],
+        status: 404,
+        read: readings(absent, absent),
+      }),
+      extract({ "bindings.yaml": bindings("{x: {status: 401}, y: {status: 404}}") }),
+    ),
+  ).toEqual({
+    rules: [
+      { rule: "signed-in", verdict: "not-exercised", reason: "the fact held before" },
+      { rule: "exists", verdict: "verified" },
+    ],
+    binding: { verdict: "verified" },
+  });
+});
+
+test("a noisy place above the value read: arithmetic is not judged, nothing-changes compares classes", () => {
+  const above = (after: number): readonly Noise[] =>
+    [1, 2, 3].flatMap((i) => [
+      { at: ["readings", i, "before", 0, "body", "s"], class: 1 },
+      { at: ["readings", i, "after", 0, "body", "s"], class: after },
+    ]);
+  const e1 = copy({
+    proves: ["e1"],
+    status: 200,
+    read: readings(instance(true, 2), instance(false, 1)),
+  });
+  const e2 = copy({
+    proves: ["e2"],
+    status: 200,
+    read: readings(instance(false, 2), instance(false, 3)),
+  });
+  expect([
+    judged(e1, extract(), above(1))?.rules,
+    judged(e2, extract(), above(1))?.rules,
+    judged(e2, extract(), above(2))?.rules,
+  ]).toEqual([
+    [{ rule: "e1", verdict: "unjudged", reason: "S.c is noise" }],
+    [{ rule: "e2", verdict: "verified" }],
+    [{ rule: "e2", verdict: "refuted", reason: "something read changed" }],
+  ]);
+});

@@ -3,8 +3,8 @@ import type { Noise, Place, ReadingEntry } from "../shapes/scenario.ts";
 import type { Operation } from "../shapes/specification.ts";
 import { deepEqual, differingPlaces } from "./json.ts";
 import { factAt, type Judging, outcomeOf, readingOf } from "./judging.ts";
-import { fieldLook } from "./reading.ts";
-import { placeOf, valueRead } from "./truth.ts";
+import { fieldLook, termsOf } from "./reading.ts";
+import { isSuccess, placeOf, valueRead } from "./truth.ts";
 
 type Effect = Operation["effects"][number];
 type Then = Effect["then"];
@@ -14,6 +14,10 @@ type Held =
 
 const classAt = (noise: readonly Noise[], at: Place) =>
   noise.find((n) => deepEqual(n.at, at))?.class;
+
+// a noisy place at this place or above it: [a] is above [a, b]
+const noisyAbove = (noise: readonly Noise[], at: Place) =>
+  noise.some((n) => deepEqual(at.slice(0, n.at.length), n.at));
 
 // One answer read before and after. Outside the noise, the same values; a noisy place
 // is the same value as the place facing it when both are of one class:
@@ -42,24 +46,44 @@ function sameAnswer(
   );
 }
 
-function nothingChanges({ played, noise }: Judging): Held {
+// Every answer read, the same before and after; only an answer that says something —
+// a success, or the projection's absent status — is compared.
+function nothingChanges({ played, noise, extraction }: Judging): Held {
   const { readings } = played;
   if (readings === undefined)
     return { unknown: "it was played before readings were taken" };
-  if (readings.length === 0) return { unknown: "nothing was read" };
-  const compared = readings.flatMap(({ before, after }, i) =>
-    before.map((entry, j) => {
-      const other = after[j];
-      if (other === undefined) return "unknown";
-      return sameAnswer(
-        noise,
-        [entry, ["readings", i, "before", j]],
-        [other, ["readings", i, "after", j]],
-      );
+  const { facts, projections } = extraction;
+  const unreadable: string[] = [];
+  const compared = readings.flatMap(({ of, before, after }, i) =>
+    termsOf(of, facts).flatMap((term, j) => {
+      const entries = [before[j], after[j]];
+      const readable = entries.every((entry) => {
+        if (entry === undefined || "unreadable" in entry) return false;
+        return (
+          isSuccess(entry.status) || entry.status === placeOf(projections, term)?.absent
+        );
+      });
+      const [first, second] = entries;
+      if (!readable || first === undefined || second === undefined) {
+        unreadable.push(
+          "fact" in of
+            ? `"${of.fact}"`
+            : `${of.shows.structure}.${of.shows.field.join(".")}`,
+        );
+        return [];
+      }
+      return [
+        sameAnswer(
+          noise,
+          [first, ["readings", i, "before", j]],
+          [second, ["readings", i, "after", j]],
+        ),
+      ];
     }),
   );
   if (compared.includes(false)) return { holds: false, why: "something read changed" };
-  if (compared.includes("unknown")) return { unknown: "a reading is unreadable" };
+  if (unreadable.length > 0) return { unknown: `not readable: ${unreadable.join(", ")}` };
+  if (compared.length === 0) return { unknown: "nothing readable was read" };
   return { holds: true };
 }
 
@@ -79,7 +103,7 @@ function fieldChanges(
   const at = placeOf(extraction.projections, term)?.at ?? [];
   const valueWhen = (when: "before" | "after") => ({
     read: valueRead(extraction.projections, term, reading[when][0]),
-    noisy: classAt(noise, ["readings", index, when, 0, "body", ...at]) !== undefined,
+    noisy: noisyAbove(noise, ["readings", index, when, 0, "body", ...at]),
   });
   const before = valueWhen("before");
   const after = valueWhen("after");

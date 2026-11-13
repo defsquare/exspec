@@ -19,6 +19,7 @@ const files: Readonly<Record<string, string>> = {
 - {fact: r, condition: [{structure: S, where: {a: [call, a]}, field: [b], must-be: [eq, true]}]}
 - {fact: w, condition: [{structure: S, where: {a: [call, z]}, must-be: [exists]}]}
 - {fact: pq, condition: [{caller: signed-in}, {structure: S, where: {a: [call, a]}, must-be: [exists]}]}
+- {fact: k, condition: [{structure: S, where: {a: [call, a]}, field: [b], must-be: [exists]}]}
 - {fact: o, condition: []}
 `,
   "operations/f.yaml": `
@@ -118,6 +119,10 @@ test("a fact is true, false or unknown from what its terms read", () => {
     truth("pq", [{ status: 401, body: null }], null),
     truth("pq", [{ status: 401, body: null }]),
     truth("o", []),
+    truth("q", [{ status: 200, body: { t: {} } }]),
+    truth("r", [{ status: 200, body: { s: { a: "x" } } }]),
+    truth("k", [{ status: 200, body: { s: { a: "x" } } }]),
+    truth("k", [{ status: 200, body: { s: { a: "x", b: null } } }]),
   ]).toEqual([
     true,
     false,
@@ -131,5 +136,9 @@ test("a fact is true, false or unknown from what its terms read", () => {
     false,
     "unknown",
     "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    true,
   ]);
 });

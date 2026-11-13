@@ -111,8 +111,6 @@ export function judgeScenario({
   const trigger = extraction.triggers.find((t) => t.operation === name);
   if (operation === undefined || trigger === undefined) return undefined;
   const judging = { played, noise, extraction, operation, trigger };
-  return {
-    rules: played.proves.map((rule) => ruleVerdict(judging, rule)),
-    binding: bindingVerdict(judging),
-  };
+  const rules = played.proves.map((rule) => ruleVerdict(judging, rule));
+  return { rules, binding: bindingVerdict(judging, rules) };
 }
