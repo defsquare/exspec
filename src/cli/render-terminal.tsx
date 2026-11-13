@@ -38,10 +38,15 @@ function bindingBy({ provenance, by }: BindingJudged): string {
     .join(", ");
 }
 
+// "up" -> "target up"; "check" -> "check"
+function typedAs(command: string): string {
+  return ["up", "down", "play"].includes(command) ? `target ${command}` : command;
+}
+
 export function describeEvent(event: Event): string {
   switch (event.type) {
     case "command-started":
-      return `${event.command} ${event.dir}`;
+      return `${typedAs(event.command)} ${event.dir}`;
     case "extraction-not-found":
       return `no extraction in ${event.dir}: ${event.expected} is missing`;
     case "problem":

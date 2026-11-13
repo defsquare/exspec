@@ -21,9 +21,21 @@ declaration the target contradicts is decided by a human.
   the scenarios, the target actually started, reset, played. A gate that fails sends its
   findings back to the same session, three times at most; a phase that fails stops the
   extraction.
-- **The agent's tools are the CLI's own commands** (`check`, `up`, `down`, `play`), run
-  through its shell. It is told that a file is right when the tool says so. The gate does
-  not take its word: it runs the same commands again.
+- **The agent's tools are the CLI's own commands**, run through its shell — the same a
+  human types. The commands are in three families, told apart in their names:
+
+  ```
+  read the extraction                   status, check, verdicts           the agent may
+  drive the target                      target up, target down, target play   the agent may
+  the references, and the agent itself  record, replay, extract           refused to the agent
+  ```
+
+  The first reads files; the second acts on the running target and writes nothing; the
+  third decides a reference (`record`), judges against the references on a stack it
+  tears down first (`replay`), or starts agents (`extract`). `extract` marks the agent's
+  environment and the third family refuses to run where the mark is. The agent is told
+  that a file is right when the tool says so; the gate does not take its word: it runs
+  the same checks again.
 - **The files are the state.** A phase whose gate's static part already passes is skipped;
   nothing records progress. What `status` shows of the phases is computed from the
   extraction.
@@ -54,8 +66,11 @@ declaration the target contradicts is decided by a human.
   on the first session, one of them with a scenario answered 400 by a missing identifier
   where it claims to prove "not found". That is what a rule's verdict says, once it
   exists; a gate is not made stricter with heuristics meanwhile.
-- The agent has a shell: the confinement of its file tools is a guard against a mistake,
-  not a sandbox. `extract` is run on a checkout one is willing to let it work in.
+- The confinement of the file tools does not reach a shell: without the mark, `record`
+  typed by the agent would write references. The mark closes that hole and is not
+  redundant with the confinement.
+- The agent has a shell: the confinement of its file tools and the mark are guards against
+  a mistake, not a sandbox. `extract` is run on a checkout one is willing to let it work in.
 - A phase's "already done" is weaker than its gate (the target is not restarted to find
   out): `--phase` runs one again.
 - The notation is described twice — the schemas, and the agent's instructions; the test

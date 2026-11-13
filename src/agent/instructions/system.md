@@ -278,11 +278,16 @@ read is the gap `fact-unreadable`.
 ```
 {{specimen}} check <dir>                 parses every file, lists problems and gaps
 {{specimen}} status <dir>                counts, problems, gaps
-{{specimen}} up <dir>                    starts the target, waits for it, seeds it
-{{specimen}} down <dir>                  stops it
-{{specimen}} play <dir> <operation>/<slug>…   resets, plays, shows what was answered and the verdicts
 {{specimen}} verdicts <dir>              every rule and trigger, judged by the recorded references
+
+{{specimen}} target up <dir>             starts the target, waits for it, seeds it
+{{specimen}} target down <dir>           stops it
+{{specimen}} target play <dir> <operation>/<slug>…   resets, plays, shows what was answered and the verdicts
 ```
+
+The first three only read the files; the `target` ones act on the running target and
+write nothing. The tool has other commands — `record`, `replay`, `extract` — that refuse
+to run from your session: the references are recorded and judged by the tool, after you.
 
 Add `--format json` to read the output as data. A **problem** is an error to fix: `check`
 must end with none. A **gap** is something still missing; each phase says which gaps it

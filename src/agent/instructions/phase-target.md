@@ -1,7 +1,7 @@
 # This phase: make the target startable, seedable and resettable
 
 Write `specimen/target.yaml` and, under `specimen/target/`, whatever it runs. When you are
-done, `{{specimen}} up .` must succeed, your reset must run, and `{{specimen}} down .` must
+done, `{{specimen}} target up .` must succeed, your reset must run, and `{{specimen}} target down .` must
 leave nothing running.
 
 ## What to find out, from the checkout
@@ -58,13 +58,13 @@ credentials, the snapshot).
 
 ## Check your work
 
-1. `{{specimen}} up .` — the first build may take minutes. Read the failure if it fails:
+1. `{{specimen}} target up .` — the first build may take minutes. Read the failure if it fails:
    the application's logs are in `docker compose -f specimen/target/compose.yaml logs`.
 2. Call the API by hand (`curl`) as one of your actors: the credentials work, the seeded
    world is there.
 3. Change something through the API, run your reset lines, look again: the change is gone,
    and creating the same thing again gives the same identifier as the first time.
-4. `{{specimen}} down .`
+4. `{{specimen}} target down .`
 
 End with a short message: how the target starts, what the starting state holds (the
 actors, the instances), and anything the reset does not restore.

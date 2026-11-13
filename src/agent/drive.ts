@@ -32,6 +32,10 @@ export function mayWrite(dir: string, path: string): boolean {
   );
 }
 
+// set in the agent's shell: the commands that record or judge a reference, and `extract`
+// itself, refuse to run where it is. The file tools' confinement does not cover a shell.
+export const agentMark = "SPECIMEN_AGENT";
+
 // no web, no sub-agent, no todo list, no notebook
 const tools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
 
@@ -81,6 +85,8 @@ export async function* driveAgent({
       skills: [],
       permissionMode: "default",
       canUseTool,
+      // the SDK replaces the environment, it does not merge
+      env: { ...process.env, [agentMark]: "1" },
       ...(resume === undefined ? {} : { resume }),
     },
   });

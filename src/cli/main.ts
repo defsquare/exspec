@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { agentMark } from "../agent/drive.ts";
 import {
   checkoutVersion,
   directoryExists,
@@ -17,6 +18,7 @@ import { down, play, up } from "../run/target-commands.ts";
 import { type Event, phaseSchema } from "../shapes/event.ts";
 import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
+import { askedOf } from "./command-line.ts";
 import { extractCommand } from "./extract.ts";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
@@ -24,8 +26,9 @@ import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
 
 const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
-       specimen <up|down> <dir>
-       specimen <play|replay> <dir> [<operation>/<slug>…]
+       specimen target <up|down> <dir>
+       specimen target play <dir> [<operation>/<slug>…]
+       specimen replay <dir> [<operation>/<slug>…]
        specimen record <dir> [<operation>/<slug>…] [--force]
        specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]`;
 
@@ -38,7 +41,15 @@ const { positionals, values } = parseArgs({
     model: { type: "string", default: "sonnet" },
   },
 });
-const [command, dir, ...paths] = positionals;
+const asked = askedOf(positionals, process.env[agentMark] !== undefined);
+if (asked.type === "refused-to-agent") {
+  console.error(
+    `specimen ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
+  );
+  process.exit(2);
+}
+const command = asked.type === "command" ? asked.command : undefined;
+const [dir, ...paths] = asked.type === "command" ? asked.rest : [];
 
 if (dir === undefined) {
   console.error(usage);

@@ -2,7 +2,7 @@
 
 Write the scenarios under `specimen/scenarios/<operation>/`, so that every rule of every
 operation has at least one scenario that proves it. The target is running and seeded:
-`{{specimen}} play . <operation>/<slug>` resets it, plays one scenario and shows what was
+`{{specimen}} target play . <operation>/<slug>` resets it, plays one scenario and shows what was
 answered.
 
 ## Which scenarios
@@ -61,7 +61,7 @@ After writing a scenario, play it. Compare the answer with what you meant:
 ## Read the verdicts
 
 After each scenario played, `play` shows the verdicts of that copy (`scenario-judged` in
-`{{specimen}} play . <operation>/<slug> --format json`): each rule the scenario proves,
+`{{specimen}} target play . <operation>/<slug> --format json`): each rule the scenario proves,
 and the trigger. Read them for the rules of the operation at hand:
 
 - A rule `ambiguous` or `not-exercised` in the scenario meant to prove it: the scenario
