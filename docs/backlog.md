@@ -219,6 +219,16 @@ them in; each of the first five is a branch of its own.
 - **Source.** The run on Kadai of 2026-11-13; `src/agent/extract.ts`,
   `src/cli/render-terminal.tsx`.
 
+## An extraction kept apart from the target's checkout
+
+- **Seen.** The user gathered the three extractions under `targets/` of this repository,
+  and copied Kadai's there flat, without the `specimen/` level: no command reads it.
+- **Settled.** An extraction is `<dir>/specimen/`, in the target's checkout (ADR-0003).
+- **Next.** If the need holds: an option naming where the extraction is read and written,
+  the code still read in `<dir>`; the agent's writes confined to that place. It amends
+  ADR-0003.
+- **Source.** `targets/kadai/`; ADR-0003 › Alternatives, "Outside the target's checkout".
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").

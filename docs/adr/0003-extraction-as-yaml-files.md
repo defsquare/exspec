@@ -1,6 +1,6 @@
 # ADR-0003 — The extraction is a directory of YAML files in the target's checkout
 
-Status: Proposed (2026-11-12) — written by the main thread working alone, challenged, to be
+Status: Accepted (2026-11-13) — written by the main thread working alone, challenged,
 reviewed by the user.
 
 ## Context
@@ -44,7 +44,8 @@ The played copies of an execution are not written: they travel on the event stre
   schema or a name that points at nothing: the extraction cannot be trusted and
   `specimen check` fails. A *gap* is what is still missing for the extraction to be whole
   (a rule no scenario proves, a refusal no trigger translates): it is reported and fails
-  nothing — the list of gaps is the measure of completeness.
+  nothing. The gaps measure what is missing, not what is wrong in what is there: a
+  scenario whose accepted path is recorded as a refusal is neither a problem nor a gap.
 
 Where the notation says something the spike's instances (`docs/brief/shapes.edn`) did not:
 
@@ -69,7 +70,9 @@ Where the notation says something the spike's instances (`docs/brief/shapes.edn`
 
 ## Consequences
 
-- The extraction is versioned with the target.
+- The extraction is versioned with the target. `<dir>/specimen/` is the only place a
+  command reads or writes: an extraction copied elsewhere is read only under a directory
+  named `specimen`.
 - Renaming a scenario's file orphans its reference: a check names a reference with no
   scenario, and a reference whose written part no longer matches its scenario.
 - Reading everything on every command is the cost of storing nothing derived; a target of a
