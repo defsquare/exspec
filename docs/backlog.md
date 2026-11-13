@@ -184,6 +184,41 @@ them in; each of the first five is a branch of its own.
   is stale; `{refusal, declared, observed}` as fields; then record Petclinic again.
 - **Source.** `docs/branches/feat-verdicts.md` at `591b23f`.
 
+## What the seed created has a name a scenario can use
+
+- **Seen.** On Kadai (third target, 93 interfaces, 18 operations, 99 rules, 94 scenarios)
+  the seed creates its tasks, workbaskets and classifications through the API and the
+  target draws their ids at random. 67 scenarios of 94 hold such an id as a literal, read
+  by the agent on the stack it had up: on the two fresh stacks of `record` the instance
+  is unknown, and 12 of the 16 accepted paths are recorded as a 404 or a 400. The
+  references are stable, so nothing is red; `status` shows them as
+  `not-exercised: refused`. Conduit and Petclinic have ids one can predict (a slug, a
+  serial number) and never met it.
+- **Settled.** A scenario is written with holes and an execution fills them; the seed is a
+  command of the target and writes the credentials file (ADR-0004).
+- **Next.** An ADR, through the challenger: a way for a scenario to name what the seed
+  created — the seed writing its ids beside the credentials, a scenario citing one by
+  name — against the alternative of arranging the instance in the scenario and using the
+  value an earlier call answered. Then the gate below, then extract Kadai again.
+- **Source.** `specimen/` of the Kadai extraction (copied flat under `targets/kadai/`);
+  `scenarios/claim-task/accepted.yaml` and its reference.
+
+## A scenario that proves an effect and is refused fails the gate
+
+- **Seen.** The gate of the `scenarios` phase asks that every scenario plays, not that it
+  is answered as its rule needs: on Kadai twelve scenarios said to prove an effect were
+  refused and the phase passed. A session of the agent that ends on an error of the API
+  (a 403 at the start of a phase) fails the phase at once, where a failed gate is given
+  three more rounds. The terminal renderer prints the whole history again at every event
+  once the output is taller than the window.
+- **Settled.** A gate is a check the tool runs and whose findings go back to the same
+  session (ADR-0006).
+- **Next.** In the gate, a scenario whose proved rule is an effect and whose judged call
+  is refused is a finding; useless before a scenario can name a seeded instance. Retry a
+  session that ended on an API error. Render past events once (Ink's `Static`).
+- **Source.** The run on Kadai of 2026-11-13; `src/agent/extract.ts`,
+  `src/cli/render-terminal.tsx`.
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").
