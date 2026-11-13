@@ -27,10 +27,15 @@ validation annotations, the queries, the security configuration, the database co
    code does not distinguish may share one refusal name.
 3. **Facts**, as the operations need them. One fact per statement, shared by every
    operation that requires it. Positive, in business terms, about the situation — never
-   about what the call sends (that is an input rule).
-4. **Bindings.** A projection for each interface that shows a structure. A trigger for
-   each operation: where each input travels, the status and the place of the answer of an
-   accepted call, the status of each refusal — as the contract or the code says.
+   about what the call sends (that is an input rule). Give a fact a condition whenever
+   the terms can say it: a fact without one is never read, and no rule that cites it can
+   be judged.
+4. **Bindings.** A projection for each interface that shows a structure. Every projection
+   that shows one instance gets `locates` — where each identifying field travels in its
+   request — and `absent`: the status the code answers when there is no such instance,
+   read in the code, not assumed. A trigger for each operation: where each input travels,
+   the status and the place of the answer of an accepted call, the status of each
+   refusal — as the contract or the code says.
 
 ## What is not allowed
 
@@ -43,8 +48,9 @@ validation annotations, the queries, the security configuration, the database co
 
 `{{specimen}} check .` reports no problem, and none of these gaps:
 `operation-without-trigger`, `refusal-not-translated`. The gaps `rule-without-scenario`
-are expected: the scenarios come next. Look at `interface-not-bound` and
-`structure-not-shown` one by one: bind it, or be able to say why it stays.
+are expected: the scenarios come next. Look at `interface-not-bound`,
+`structure-not-shown` and `fact-unreadable` one by one: bind it, or be able to say why it
+stays.
 
 End with a short message: the operations, the number of rules, and what you could not
 express with the terms you were given (each with the file where a `says` or an empty

@@ -153,15 +153,17 @@ table and not a response body.
     - {structure: Item, where: {id: [call, id]}, must-be: [exists]}
 - fact: the item is published
   condition:
-    - {structure: Item, where: {id: [call, id]}, seen-by: caller, field: [published], must-be: [eq, true]}
+    - {structure: Item, where: {id: [call, id]}, field: [published], must-be: [eq, true]}
 - fact: the caller owns the item
   condition: []
 ```
 
 A fact says nothing of what the system does with it. Its name is a plain sentence in
 business terms, stated positively. `where` says which instance, by a field, from an input
-of the call (`[call, <input>]`). `must-be` is `[exists]` or `[eq, <value>]`. Leave
-`condition: []` when these terms cannot say the fact.
+of the call (`[call, <input>]`). `field` (optional) is the path of the value looked at in
+the instance. `must-be` is `[exists]` or `[eq, <value>]`. A fact is true or false for one
+actor: "the caller" in its name is whoever it is read as. Leave `condition: []` when
+these terms cannot say the fact.
 
 ### `operations/<operation>.yaml`
 
@@ -210,6 +212,8 @@ projections:
   - projection: item
     interface: get-item
     shows: [{structure: Item, at: [item]}]
+    locates: {id: [path, id]}
+    absent: 404
   - projection: items
     interface: list-items
     shows: [{structure: Item, at: [items, each]}]
@@ -227,7 +231,10 @@ triggers:
       forbidden: {status: 403}
 ```
 
-`at` is the path in the response body (`each`: every element of a list). `sends` says
+`at` is the path in the response body (`each`: every element of a list). A projection
+that shows one instance says how it finds it: `locates` maps a field of the structure to
+where its value travels in the request (`[path, name]` or `[query, name]`), and `absent`
+is the status that means there is no such instance. `sends` says
 where each input of the operation travels: `[path, name]`, `[query, name]` or
 `[body, key, key…]`. Every input must be sent somewhere; every refusal translated. One
 trigger per operation.
@@ -242,12 +249,29 @@ arrange:
   - call: {operation: create-item, with: {name: "lamp"}, caller: ann}
 act:
   call: {operation: rename-item, with: {id: 4, name: "desk lamp"}, caller: bob}
+assert:
+  - {fact: the item is published, as: ann}
+  - {shows: {structure: Item, where: {id: [call, id]}, field: [name]}, as: ann}
 ```
 
 `act` is the one call that is judged; `arrange` calls only bring the system to the
 situation. `proves` names the rules of `act`'s operation this scenario is there to prove
 (at least one). `with` gives the inputs by their business names, as literal values.
 `caller` is an actor of the credentials file; leave it out for a call by nobody.
+`assert` (optional) asks for something more to be looked at before and after `act`: a
+fact as another actor (`as`), or a field of one instance (`shows`, its `where` from an
+input of the call or a literal value). It is for what the operation's rules do not cite —
+another actor's view, a field no effect names; leave `as` out to look as the caller.
+
+## What is read
+
+The tool reads by itself, before and after `act`, every fact the operation cites — the
+facts it requires, those of its effects' `when`, those an effect's `then` changes — and
+every field an effect's `then` changes, as `act`'s caller. It reads a fact's instance
+through a projection that `locates` the structure by the fields of its `where`. Nothing
+has to be asked for a rule to be judged, and a rule is judged on what was read: a fact is
+only as good as its condition and the projections that read it. A fact no projection can
+read is the gap `fact-unreadable`.
 
 ## The tool
 
@@ -256,7 +280,8 @@ situation. `proves` names the rules of `act`'s operation this scenario is there 
 {{specimen}} status <dir>                counts, problems, gaps
 {{specimen}} up <dir>                    starts the target, waits for it, seeds it
 {{specimen}} down <dir>                  stops it
-{{specimen}} play <dir> <operation>/<slug>…   resets, plays, shows what was answered
+{{specimen}} play <dir> <operation>/<slug>…   resets, plays, shows what was answered and the verdicts
+{{specimen}} verdicts <dir>              every rule and trigger, judged by the recorded references
 ```
 
 Add `--format json` to read the output as data. A **problem** is an error to fix: `check`

@@ -58,6 +58,23 @@ After writing a scenario, play it. Compare the answer with what you meant:
   Correct the rule only if the code, read again, says you misread it.
 - A scenario that cannot be played (`unplayable`): the message says what is missing.
 
+## Read the verdicts
+
+After each scenario played, `play` shows the verdicts of that copy (`scenario-judged` in
+`{{specimen}} play . <operation>/<slug> --format json`): each rule the scenario proves,
+and the trigger. Read them for the rules of the operation at hand:
+
+- A rule `ambiguous` or `not-exercised` in the scenario meant to prove it: the scenario
+  does not isolate it — the reason names what else could have refused, or why the
+  situation was not reached. Change only the scenario (`arrange`, `with`, `caller`).
+- A rule `refuted` or `unjudged`, a trigger `refuted`: a declaration (a projection's
+  `absent`, a fact's condition, a status) changes only with the line of code that
+  justifies it, quoted in your final message — never to the status observed for want of
+  better. A real contradiction is left as it is and reported.
+
+Once references are recorded, `{{specimen}} verdicts . --format json` gives the same
+for every rule and trigger, over all of them.
+
 Do not write a scenario's answer anywhere. Do not touch `specimen/references/`: playing
 keeps nothing, and the references are recorded by the tool once this phase is done.
 
