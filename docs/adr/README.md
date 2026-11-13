@@ -13,4 +13,4 @@ a concept removed from the code is marked `Deprecated`.
 | [0005](0005-noise-beside-the-copy.md) | A reference is a played copy, its noise kept beside it, in classes of equal values | Accepted |
 | [0006](0006-extract-in-phases.md) | `extract` is phases with gates the CLI runs; the agent's tools are the CLI's commands; it never writes a reference | Accepted |
 | [0007](0007-readings-around-the-judged-call.md) | What is read around the judged call: the facts its operation cites, through a projection that locates an instance | Accepted |
-| [0008](0008-verdicts-derived.md) | The verdicts are derived, and say when they cannot tell | Proposed |
+| [0008](0008-verdicts-derived.md) | The verdicts are derived, and say when they cannot tell | Accepted |

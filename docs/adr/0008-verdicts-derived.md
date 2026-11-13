@@ -1,7 +1,6 @@
 # ADR-0008 — The verdicts are derived, and say when they cannot tell
 
-Status: Proposed (2026-11-13) — written by the main thread working alone, challenged, to be
-reviewed by the user.
+Status: Accepted (2026-11-13)
 
 ## Context
 
