@@ -7,14 +7,26 @@ import type {
 } from "../shapes/scenario.ts";
 import { deepEqual, differingPlaces } from "./json.ts";
 
-// [arrange, 0, response] r0,  [arrange, 1, response] r1,  [act, response] r
+type Answer = { readonly at: Place; readonly response: TargetResponse };
+
+// [arrange, 0, response] r0,  [readings, 0, before, 0] b,  [act, response] r,
+// [readings, 0, after, 0] a;  an unreadable entry answered nothing
 export function answersOf({
   arrange,
   act,
-}: PlayedScenario): readonly { readonly at: Place; readonly response: TargetResponse }[] {
+  readings = [],
+}: PlayedScenario): readonly Answer[] {
+  const read = (when: "before" | "after") =>
+    readings.flatMap((reading, i) =>
+      reading[when].flatMap((entry, j): readonly Answer[] =>
+        "unreadable" in entry ? [] : [{ at: ["readings", i, when, j], response: entry }],
+      ),
+    );
   return [
     ...arrange.map(({ response }, i) => ({ at: ["arrange", i, "response"], response })),
+    ...read("before"),
     { at: ["act", "response"], response: act.response },
+    ...read("after"),
   ];
 }
 

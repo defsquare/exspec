@@ -75,3 +75,40 @@ test("a played copy with another number of calls", () => {
     compareWithReference(reference([]), played({ status: 200, body: null })),
   ).toEqual([{ at: ["arrange"], expected: 1, actual: 0 }]);
 });
+
+test("the readings are compared like the calls' answers, their noise included", () => {
+  const read = (t: string, n: number) => [
+    {
+      of: { fact: "p" },
+      as: null,
+      before: [{ status: 200, body: { t, n } }],
+      after: [{ status: 200, body: { t, n } }],
+    },
+  ];
+  const kept: Reference = {
+    ...played({ status: 200, body: null }),
+    readings: read("t1", 1),
+    noise: [
+      { at: ["readings", 0, "before", 0, "body", "t"], class: 1 },
+      { at: ["readings", 0, "after", 0, "body", "t"], class: 1 },
+    ],
+  };
+  expect([
+    compareWithReference(kept, {
+      ...played({ status: 200, body: null }),
+      readings: read("t2", 1),
+    }),
+    compareWithReference(kept, {
+      ...played({ status: 200, body: null }),
+      readings: read("t2", 2),
+    }),
+    compareWithReference(kept, { ...played({ status: 200, body: null }), readings: [] }),
+  ]).toEqual([
+    [],
+    [
+      { at: ["readings", 0, "before", 0, "body", "n"], expected: 1, actual: 2 },
+      { at: ["readings", 0, "after", 0, "body", "n"], expected: 1, actual: 2 },
+    ],
+    [{ at: ["readings"], expected: 1, actual: 0 }],
+  ]);
+});

@@ -83,3 +83,36 @@ test("two equal executions have no noise", () => {
     ),
   ).toEqual({ stable: true, noise: [] });
 });
+
+test("the readings are answers: before the act, after it, an unreadable one skipped", () => {
+  const withReadings = (b: string, a: number) => ({
+    ...played({ status: 200, body: { t: b } }),
+    readings: [
+      {
+        of: { fact: "p" },
+        as: null,
+        before: [{ unreadable: "u" }, { status: 200, body: { t: b, n: 1 } }],
+        after: [{ unreadable: "u" }, { status: a, body: { t: b, n: 1 } }],
+      },
+    ],
+  });
+  expect([
+    markNoise(withReadings("t1", 200), withReadings("t2", 200)),
+    markNoise(withReadings("t1", 200), withReadings("t1", 404)),
+  ]).toEqual([
+    {
+      stable: true,
+      noise: [
+        { at: ["readings", 0, "before", 1, "body", "t"], class: 1 },
+        { at: ["act", "response", "body", "t"], class: 1 },
+        { at: ["readings", 0, "after", 1, "body", "t"], class: 1 },
+      ],
+    },
+    {
+      stable: false,
+      differences: [
+        { at: ["readings", 0, "after", 1, "status"], first: 200, second: 404 },
+      ],
+    },
+  ]);
+});

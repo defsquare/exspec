@@ -21,6 +21,10 @@ export function compareWithReference(
       },
     ];
   }
+  const read = reference.readings?.length;
+  if (read !== undefined && read !== (played.readings?.length ?? 0)) {
+    return [{ at: ["readings"], expected: read, actual: played.readings?.length ?? 0 }];
+  }
   const noisy = new Set(reference.noise.map(({ at }) => JSON.stringify(at)));
   const isNoisy = (at: readonly unknown[]) => noisy.has(JSON.stringify(at));
   const answered = answersOf(played);
