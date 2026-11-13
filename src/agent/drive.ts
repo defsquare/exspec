@@ -33,7 +33,8 @@ export function mayWrite(dir: string, path: string): boolean {
 }
 
 // set in the agent's shell: the commands that record or judge a reference, and `extract`
-// itself, refuse to run where it is. The file tools' confinement does not cover a shell.
+// itself, refuse to run where it is present, whatever its value. The file tools'
+// confinement does not cover a shell.
 export const agentMark = "SPECIMEN_AGENT";
 
 // no web, no sub-agent, no todo list, no notebook

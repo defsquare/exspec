@@ -3,7 +3,7 @@
 //   drive the target       target up, target down, target play
 //   the references and the agent itself    record, replay, extract — refused to the agent
 const read = ["status", "check", "verdicts"];
-const onTarget = ["up", "down", "play"];
+export const onTarget = ["up", "down", "play"];
 const refusedToAgent = ["record", "replay", "extract"];
 
 export type Asked =

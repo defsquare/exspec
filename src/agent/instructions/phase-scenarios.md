@@ -60,7 +60,7 @@ After writing a scenario, play it. Compare the answer with what you meant:
 
 ## Read the verdicts
 
-After each scenario played, `play` shows the verdicts of that copy (`scenario-judged` in
+After each scenario played, `target play` shows the verdicts of that copy (`scenario-judged` in
 `{{specimen}} target play . <operation>/<slug> --format json`): each rule the scenario proves,
 and the trigger. Read them for the rules of the operation at hand:
 

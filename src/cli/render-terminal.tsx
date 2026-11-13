@@ -6,6 +6,7 @@ import type {
   Event,
   RuleJudged,
 } from "../shapes/event.ts";
+import { onTarget } from "./command-line.ts";
 
 // {verdict: refuted, expected: "y declared 404", observed: 401} -> "y declared 404, answered 401"
 function bindingLine({ verdict, expected, observed }: BindingVerdict): string {
@@ -40,7 +41,7 @@ function bindingBy({ provenance, by }: BindingJudged): string {
 
 // "up" -> "target up"; "check" -> "check"
 function typedAs(command: string): string {
-  return ["up", "down", "play"].includes(command) ? `target ${command}` : command;
+  return onTarget.includes(command) ? `target ${command}` : command;
 }
 
 export function describeEvent(event: Event): string {
