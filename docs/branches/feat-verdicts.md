@@ -18,6 +18,35 @@ actor the reading is taken as.
 
 ## Journal
 
+- The readings and the verdicts — `locates` and `absent` on a projection, `assert` on a
+  scenario, the readings taken before and after the judged call and kept whole, noise and
+  replay over them; a rule's verdict, a binding's, the provenance over the references;
+  `status` shows the counts and every claim not verified, `verdicts` all of them, `play`
+  judges each copy; the agent's instructions follow. Live on the fixture: as expected —
+  `leaves-favorites` verified (favorited true then false, the count 2 then 1),
+  `password-length` ambiguous (the email fact is unknown, both refusals answer 400),
+  `exists` unjudged (the reading of an unknown article answers 401), its binding refuted
+  (404 declared, 401 answered). Reviewer: two Important, fixed by the same implementer —
+  `nothing-changes` was verified with nothing readable read, and a value missing from a
+  2xx answer counted as false; a binding is no longer judged on a rule the scenario did
+  not exercise.
+- **Conduit, extracted again** with the new instructions (specification, scenarios,
+  `record --force`; $0.25): the agent added `locates` and `absent: 404` to the two
+  projections that show one instance, changed no scenario, read the verdicts and told
+  what they mean. Of 64 rules: 13 verified (twelve `signed-in`, one input rule), 0
+  refuted, 51 declared only — 20 effects written as a sentence, 12 rules ambiguous beside
+  a fact that is unknown, 9 unjudged because reading an unknown instance answers 401, 8
+  on a fact with no condition, 1 on a fact no projection can read (a comment by its id),
+  1 not exercised. Of 16 bindings: 7 verified, 9 refuted, all "404 or 403 declared, 401
+  answered". Petclinic, not extracted again (its references predate the readings): 79
+  rules verified, 86 declared only; all 24 bindings refuted, each by its wrong-role
+  scenario answering 500.
+- Left for the pre-merge review: `seen-by` stays in the schema and changes nothing; a
+  format other than email is not computed and does not count as another explanation of a
+  refusal; `nothing-changes` compares the readings a scenario's `assert` adds too, and a
+  change seen outweighs a reading that was unreadable; `play` judges without the noise;
+  `binding-judged` carries the refusal's name inside a text.
+
 ## Backlog
 
 ### The verdicts, derived
