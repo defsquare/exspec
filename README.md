@@ -11,20 +11,29 @@ rules, facts, structures — and says, for every claim of that specification, wh
 
 | claim | standing |
 |---|---|
-| A scenario recorded on a system is reproduced, or the difference is shown | held on three targets in the spike; on a target with a clock, only with the clock held |
-| A recording says what cannot be predicted (a hash, a slug, a page, a count) | held |
-| A rule is declared, and scenarios verify or refute it | the shape is drawn; nothing is built |
+| A scenario recorded on a system is reproduced, or the difference is shown | built: recorded on two fresh stacks and replayed, on two targets; on a target with a clock, only with the clock held — not built |
+| A recording says what cannot be predicted (a hash, a slug, a page, a count) | built: what two executions disagree on is kept beside the reference, in classes of equal values |
+| A rule is declared, and scenarios verify or refute it | built, and it says when it cannot tell: on the two targets most rules are still declared only, for want of terms to say their facts and effects |
 | The system does what it should | out of reach by construction: a bug is recorded as it is. A declared rule that a scenario refutes is where intent and behaviour part, and a human decides |
 
 ## Status
 
-**Nothing is built.** This repository starts from a spike made in another project; its
-record is in [`docs/brief/`](docs/brief/README.md). Read, in this order:
+`specimen extract <dir>` drives an agent through four phases — how the target starts, its
+interfaces, the specification and the bindings, the scenarios — each closed by a check the
+tool runs itself, then records every scenario on two fresh stacks. `specimen status <dir>`
+says where an extraction stands: its counts, its phases, how many rules and bindings are
+verified, refuted or only declared, each claim that is not verified with its reason, and
+the facts that block the most rules. The extraction is a directory of YAML files,
+`<dir>/specimen/`, and nothing else is stored.
 
-1. [`docs/brief/framing.md`](docs/brief/framing.md) — what is kept, dropped, settled, left open.
-2. [`docs/brief/shapes.edn`](docs/brief/shapes.edn) — every data shape as one instance.
-3. [`docs/brief/metamodel.md`](docs/brief/metamodel.md) — the concepts and what points at what.
-4. [`docs/backlog.md`](docs/backlog.md) — what to build first.
+It has run end to end on two targets, a Conduit and a Petclinic. What it does not do yet
+is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
+No side effect is observed: only what the target's interfaces answer.
+
+The project starts from a spike made in another project, whose record is in
+[`docs/brief/`](docs/brief/README.md): `framing.md` (what is kept, dropped, settled),
+`shapes.edn` (every data shape as one instance, in the spike's notation),
+`metamodel.md` (the concepts and what points at what).
 
 ## The idea in four groups
 
