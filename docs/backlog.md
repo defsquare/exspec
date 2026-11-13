@@ -152,6 +152,38 @@ them in; each of the first five is a branch of its own.
   make the examples one extraction the checks pass.
 - **Source.** `docs/branches/feat-extract.md` at `c1c9ef0`.
 
+## A form the tool can compute: a pattern, not a name
+
+- **Seen.** On Petclinic the agent wrote `format: person-name`, `digits-only`,
+  `not-in-the-future-and-at-most-50-years-ago`: names of its own, where the code holds a
+  regular expression or a date rule. Only `email` is computed; any other format is not,
+  and makes ambiguous the sibling rules that answer the same status — 22 rules there, and
+  13 more unjudged on their own format.
+- **Settled.** The form of a value is said once, on the field; a form that is not computed
+  is never taken as respected (ADR-0008).
+- **Next.** A `pattern` (the regular expression the code holds) beside `format`, computed;
+  say in the agent's instructions that a format is a pattern when the code has one. A date
+  rule relative to today waits for the clock.
+- **Source.** `specimen-targets/petclinic/specimen/structures.yaml`;
+  `docs/branches/feat-verdicts.md` at `591b23f`.
+
+## Loose ends of the verdicts
+
+- **Seen.** `play` judges a copy without knowing its noise: a date in a reading refutes
+  `nothing-changes` during the agent's scenarios phase, until a reference exists. A
+  reading keeps the answer and not the request made: a fact whose `where` is rewritten, or
+  whose terms are reordered, is judged on the answer of another instance with no sign —
+  ADR-0007 says to record again, nothing checks it. `binding-judged` carries the refusal's
+  name inside a text. `fact-blocks` gives the reason of the first reference only, and does
+  not name a fact unknown only in an effect's `then`. Petclinic's references predate the
+  readings: 17 of its rules wait for a new recording.
+- **Settled.** A reading is kept whole and the truth derived (ADR-0007); a claim that is
+  not verified is shown with its reason (ADR-0008).
+- **Next.** Each is small: `play` reuses the reference's noise when one exists; a reading
+  keeps what was asked, and a reference whose readings no longer match what would be asked
+  is stale; `{refusal, declared, observed}` as fields; then record Petclinic again.
+- **Source.** `docs/branches/feat-verdicts.md` at `591b23f`.
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").
