@@ -286,7 +286,7 @@ read is the gap `fact-unreadable`.
 ```
 
 The first three only read the files; the `target` ones act on the running target and
-write nothing. The tool has other commands — `record`, `replay`, `extract` — that refuse
+write nothing. The tool has other commands — `record`, `replay`, `extract`, `view` — that refuse
 to run from your session: the references are recorded and judged by the tool, after you.
 
 Add `--format json` to read the output as data. A **problem** is an error to fix: `check`

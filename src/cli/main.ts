@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { agentMark } from "../agent/drive.ts";
 import {
@@ -24,8 +24,10 @@ import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
 import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
+import { pageOf } from "./view.ts";
 
 const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
+       specimen view <dir> > page.html
        specimen target <up|down> <dir>
        specimen target play <dir> [<operation>/<slug>…]
        specimen replay <dir> [<operation>/<slug>…]
@@ -44,7 +46,9 @@ const { positionals, values } = parseArgs({
 const asked = askedOf(positionals, process.env[agentMark] !== undefined);
 if (asked.type === "refused-to-agent") {
   console.error(
-    `specimen ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
+    asked.command === "view"
+      ? "specimen view is not run from an agent's session: the page is for a person; status and verdicts say the same."
+      : `specimen ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
   );
   process.exit(2);
 }
@@ -61,6 +65,24 @@ const examination = {
   exists: directoryExists,
   readFiles: readExtractionFiles,
 };
+
+// the one command whose output is not the event stream: a page, for a browser
+if (command === "view") {
+  if (paths.length > 0 || values.format !== undefined) {
+    console.error(usage);
+    process.exit(2);
+  }
+  const page = await pageOf(examination);
+  if (page === undefined) {
+    console.error(
+      `no extraction: ${join(examination.dir, "specimen")} is not a directory`,
+    );
+    process.exit(1);
+  }
+  // Bun.write to a pipe stalls past 128 KB once Ink is loaded
+  process.stdout.write(page, () => process.exit(0));
+  await new Promise(() => {});
+}
 
 async function ioOf(): Promise<Io> {
   return {

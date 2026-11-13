@@ -29,8 +29,8 @@ test("a command is read by its family, and the target's commands by two words", 
 
 test("the agent is refused what decides or judges a reference, and itself", () => {
   expect(
-    ["status", "check", "verdicts", "record", "replay", "extract"].map((command) =>
-      askedOf([command, "d"], true),
+    ["status", "check", "verdicts", "record", "replay", "extract", "view"].map(
+      (command) => askedOf([command, "d"], true),
     ),
   ).toEqual([
     { type: "command", command: "status", rest: ["d"] },
@@ -39,6 +39,7 @@ test("the agent is refused what decides or judges a reference, and itself", () =
     { type: "refused-to-agent", command: "record" },
     { type: "refused-to-agent", command: "replay" },
     { type: "refused-to-agent", command: "extract" },
+    { type: "refused-to-agent", command: "view" },
   ]);
   expect(askedOf(["target", "play", "d"], true)).toEqual({
     type: "command",

@@ -61,6 +61,7 @@ bun run build                               # dist/specimen, one executable; ext
 bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
 bun src/cli/main.ts check <dir>
 bun src/cli/main.ts verdicts <dir>          # every rule and trigger, judged by the references
+bun src/cli/main.ts view <dir> > page.html  # the extraction as one page to browse, concept to concept
 bun src/cli/main.ts target up <dir>         # start the target, wait until alive, seed
 bun src/cli/main.ts target play <dir> [<operation>/<slug>…]   # on a target up: reset, play once, judge
 bun src/cli/main.ts target down <dir>

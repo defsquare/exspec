@@ -1,10 +1,11 @@
 // The three families of commands, as they are typed:
 //   read the extraction    status, check, verdicts
 //   drive the target       target up, target down, target play
-//   the references and the agent itself    record, replay, extract — refused to the agent
+//   the references and the agent itself    record, replay, extract, view — refused to the agent
 const read = ["status", "check", "verdicts"];
 export const onTarget = ["up", "down", "play"];
-const refusedToAgent = ["record", "replay", "extract"];
+// view: a page for a person, every recorded answer in it
+const refusedToAgent = ["record", "replay", "extract", "view"];
 
 export type Asked =
   | {

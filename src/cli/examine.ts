@@ -13,6 +13,13 @@ export type Examination = {
   readonly readFiles: (dir: string) => Promise<readonly SourceFile[]>;
 };
 
+// what every reader of an extraction starts from: the files parsed and checked
+export function checkedExtraction(files: readonly SourceFile[]) {
+  const { extraction, problems } = parseExtraction(files);
+  const checked = checkExtraction(extraction);
+  return { extraction, problems: [...problems, ...checked.problems], gaps: checked.gaps };
+}
+
 // What check, status and verdicts share. Status counts, shows the phases and every claim
 // not verified; verdicts shows every claim.
 export async function* examine(
@@ -26,20 +33,18 @@ export async function* examine(
     yield { type: "command-finished", command, ok: false };
     return;
   }
-  const parsed = parseExtraction(await readFiles(dir));
-  const checked = checkExtraction(parsed.extraction);
-  const problems = [...parsed.problems, ...checked.problems];
-  const judged = command === "check" ? undefined : judgeExtraction(parsed.extraction);
+  const { extraction, problems, gaps } = checkedExtraction(await readFiles(dir));
+  const judged = command === "check" ? undefined : judgeExtraction(extraction);
   if (command === "status" && judged !== undefined) {
-    yield { type: "extraction-counted", counts: countExtraction(parsed.extraction) };
+    yield { type: "extraction-counted", counts: countExtraction(extraction) };
     yield {
       type: "extraction-phases",
-      phases: phasesOf({ extraction: parsed.extraction, problems, gaps: checked.gaps }),
+      phases: phasesOf({ extraction, problems, gaps }),
     };
     yield { type: "extraction-judged", ...countJudged(judged) };
     yield* judged.rules.filter(({ provenance }) => provenance !== "verified");
     yield* judged.bindings.filter(({ provenance }) => provenance !== "verified");
-    yield* factBlocks(parsed.extraction);
+    yield* factBlocks(extraction);
     yield { type: "not-observed", what: "side-effects" };
   }
   for (const problem of problems) yield { type: "problem", ...problem };
@@ -47,7 +52,7 @@ export async function* examine(
     yield* judged.rules;
     yield* judged.bindings;
   } else {
-    for (const gap of checked.gaps) yield { type: "gap", ...gap };
+    for (const gap of gaps) yield { type: "gap", ...gap };
   }
   yield { type: "command-finished", command, ok: problems.length === 0 };
 }

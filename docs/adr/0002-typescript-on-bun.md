@@ -2,7 +2,8 @@
 
 Status: Accepted (2026-11-13) — reviewed by the user once the first code was written; what
 is not built yet is said as such below. Amended the same day: the executable builds, and
-the consequence on it says how.
+the consequence on it says how; the viewer it names became a page made from the files,
+not a reader of the event stream (ADR-0009).
 
 ## Context
 
