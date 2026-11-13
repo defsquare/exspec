@@ -1,12 +1,12 @@
 import { basename, join } from "node:path";
-import { linksOf } from "../derive/links.ts";
+import { placeOperations } from "../derive/placing.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
 import { checkedExtraction, type Examination } from "./examine.ts";
 // .txt: an .html import is a bundle to Bun and a document to lint for Biome
 import page from "./view.html.txt" with { type: "text" };
 
 // The extraction and everything derived from it, as one page: the files, the problems and
-// the gaps, every rule and trigger judged, and the links between the concepts. undefined:
+// the gaps, every rule and trigger judged, and each operation filed under a structure. undefined:
 // no specimen/ in dir. Nothing is written: the page is the command's output.
 export async function pageOf({
   dir,
@@ -24,7 +24,7 @@ export async function pageOf({
     gaps,
     ...judged,
     counts: countJudged(judged),
-    links: linksOf(extraction),
+    placed: placeOperations(extraction),
   };
   // "<" escaped: a body holding "</script>" does not end the page's data
   const json = JSON.stringify(data).replaceAll("<", "\\u003c");

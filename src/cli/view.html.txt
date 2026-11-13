@@ -8,11 +8,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Fira+Code:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap">
 <style>
 :root {
-  --ink: #172741; --primary: #1e416e; --primary-50: #f0f5fc; --primary-100: #d9e3f1;
-  --primary-700: #418ced; --accent: #f65e5e; --accent-300: #a62949; --mint: #3dbf9e;
-  --warning: #d97706; --navy: #1a2a36; --bg: #ffffff; --bg-muted: #f7f7f8;
-  --slate-100: #f1f5f9; --border: #e5e7eb; --border-soft: #f1f1f3; --fg: #070f19;
-  --fg-muted: #4b5563; --gray-300: #d1d5db; --code-bg: #0d1117; --code-fg: #e6edf3;
+  --ink: #172741; --primary: #1e416e; --primary-50: #f0f5fc;
+  --primary-700: #418ced; --accent: #f65e5e; --accent-300: #a62949;
+  --navy: #1a2a36; --bg: #ffffff; --bg-muted: #f7f7f8;
+  --border: #e5e7eb; --border-soft: #f1f1f3; --fg: #070f19; --fg-muted: #4b5563; --gray-300: #d1d5db;
+  --code-bg: #0d1117; --code-fg: #e6edf3;
   --heat: linear-gradient(122deg, #f65e5e 0%, #d04a72 70%, #a0427a 100%);
   --title: 'EB Garamond', Garamond, Cambria, Georgia, serif;
   --body: 'IBM Plex Sans Condensed', 'IBM Plex Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
@@ -21,303 +21,381 @@
 }
 * { box-sizing: border-box; }
 html { font-size: 17px; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
-a { color: var(--primary); text-decoration: none; transition: color 150ms ease-in-out; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); line-height: 1.5; display: flex; flex-direction: column; }
+a { color: var(--primary); text-decoration: none; cursor: pointer; transition: color 150ms ease-in-out; }
 a:hover { color: var(--accent-300); }
-a:focus-visible, input:focus-visible { outline: 2px solid var(--primary-700); outline-offset: 2px; }
-header { padding: 1.5rem 5% 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 2.5rem; }
-header .mark { font-family: var(--title); font-size: 2rem; color: var(--ink); letter-spacing: -0.005em; }
-header .mark b { font-weight: 400; background: var(--heat); -webkit-background-clip: text; background-clip: text; color: transparent; }
-nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; font-weight: 500; }
-nav a[aria-current] { color: var(--accent-300); }
-nav small { color: var(--fg-muted); font-weight: 400; }
-.page { flex: 1; display: grid; grid-template-columns: minmax(14rem, 19rem) minmax(0, 1fr); gap: 2.5rem; padding: 2rem 5% 4rem; align-items: start; }
-.page.wide { grid-template-columns: minmax(0, 1fr); }
-aside { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; border-right: 1px solid var(--border); padding-right: 1rem; }
-aside input { width: 100%; font: inherit; padding: 0.35rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.75rem; }
-aside ul { list-style: none; margin: 0; padding: 0; }
-aside li a { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.2rem 0.5rem; border-radius: var(--radius); overflow-wrap: anywhere; }
-aside li a[aria-current] { background: var(--primary-50); color: var(--ink); font-weight: 600; }
-aside h4 { margin: 1rem 0 0.25rem; }
-h1 { font-family: var(--title); font-weight: 400; font-size: 3rem; line-height: 1.1; letter-spacing: -0.005em; color: var(--ink); margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--primary-700); outline-offset: 2px; }
+header { background: var(--navy); color: var(--gray-300); padding: 0.5rem 1.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; align-items: baseline; font-size: 0.9rem; }
+header .mark { font-family: var(--title); font-size: 1.5rem; color: #fff; }
+header a { color: var(--gray-300); }
+header a:hover, header a[aria-current] { color: #fff; }
+header .warn { margin-left: auto; font-size: 0.8rem; }
+/* the columns: each one narrows as the next opens, so the sheet keeps its room */
+.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 13rem 19rem minmax(0, 1fr); }
+.cols.paneled { grid-template-columns: 9.5rem 14rem minmax(0, 1fr) minmax(0, 37rem); }
+.panel { border-left: 1px solid var(--border); padding: 1rem 1.5rem 4rem; box-shadow: -10px 0 15px -3px rgba(0, 0, 0, 0.08); background: var(--bg); }
+.panel h2 { margin-top: 0.25rem; overflow-wrap: anywhere; }
+.panel h3 { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); margin: 1.25rem 0 0.35rem; }
+.panel .close { float: right; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.05rem 0.6rem; font-size: 0.9rem; }
+.cols > * { overflow: auto; min-width: 0; }
+.col { padding: 0.75rem 0.5rem; border-right: 1px solid var(--border); }
+.col .row { display: flex; align-items: baseline; gap: 0.4rem; padding: 0.25rem 0.5rem; border-radius: var(--radius); color: var(--fg); font-size: 0.95rem; }
+.col .row .n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.col .row.on { background: var(--ink); color: #fff; }
+.col .row:not(.on):hover { background: var(--primary-50); color: var(--ink); }
+.col .row.on .word, .col .row.on .also { color: var(--gray-300); }
+.also { color: var(--fg-muted); font-size: 0.78rem; margin-left: 0.4rem; }
+.sheet { padding: 1.25rem 2rem 4rem; }
+h1 { font-family: var(--title); font-weight: 400; font-size: 2.6rem; line-height: 1.1; color: var(--ink); margin: 0 0 0.5rem; overflow-wrap: anywhere; }
 h1 b { font-weight: 400; background: var(--heat); -webkit-background-clip: text; background-clip: text; color: transparent; }
-h2 { font-family: var(--title); font-weight: 400; font-size: 1.9rem; color: var(--ink); margin: 2.5rem 0 0.75rem; }
-h3 { font-size: 1.15rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
-h4, .eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); }
-.eyebrow { margin: 0 0 0.25rem; }
-p { margin: 0 0 0.75rem; max-width: 65ch; }
+h2 { font-family: var(--title); font-weight: 400; font-size: 1.6rem; color: var(--ink); margin: 1.75rem 0 0.5rem; }
+.eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 0.25rem; padding: 0 0.5rem; }
+.sheet .eyebrow { padding: 0; }
+p { margin: 0 0 0.6rem; max-width: 72ch; }
 .muted { color: var(--fg-muted); }
-code, .mono { font-family: var(--mono); font-size: 0.86em; }
-code { background: var(--bg-muted); border: 1px solid var(--border-soft); border-radius: 0.25rem; padding: 0.05em 0.3em; }
-pre { font-family: var(--mono); font-size: 0.8rem; line-height: 1.55; background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); padding: 0.75rem 1rem; margin: 0.25rem 0 0.75rem; overflow: auto; max-height: 24rem; }
+code { font-family: var(--mono); font-size: 0.84em; background: var(--bg-muted); border: 1px solid var(--border-soft); border-radius: 0.25rem; padding: 0.05em 0.3em; }
+pre { font-family: var(--mono); font-size: 0.78rem; line-height: 1.55; background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); padding: 0.6rem 0.9rem; margin: 0.25rem 0 0.75rem; overflow: auto; max-height: 20rem; }
+.dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--gray-300); flex: none; margin-right: 0.35rem; }
+.word { font-size: 0.8rem; color: var(--fg-muted); white-space: nowrap; }
 table { border-collapse: collapse; width: 100%; margin: 0 0 1rem; }
-th { text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); padding: 0.4rem 0.75rem 0.4rem 0; border-bottom: 1px solid var(--border); }
-td { padding: 0.45rem 0.75rem 0.45rem 0; border-bottom: 1px solid var(--border-soft); vertical-align: top; overflow-wrap: anywhere; }
-.pill { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 500; white-space: nowrap; border: 1px solid var(--border); border-radius: 9999px; padding: 0.05rem 0.6rem; background: var(--bg); color: var(--fg); }
-.pill svg { width: 0.5rem; height: 0.5rem; fill: var(--gray-300); }
-.pill.verified svg { fill: var(--mint); }
-.pill.refuted svg { fill: var(--accent); }
-.pill.ambiguous svg, .pill.not-judged svg { fill: var(--warning); }
-.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-.stat { display: block; background: var(--bg-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
-.stat strong { display: block; font-family: var(--title); font-weight: 400; font-size: 2.4rem; line-height: 1; color: var(--ink); }
-.stat span { color: var(--fg-muted); }
-.bar { display: flex; height: 0.6rem; border-radius: 9999px; overflow: hidden; background: var(--border); max-width: 40rem; margin: 0.25rem 0 0.5rem; }
+th { text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); padding: 0.35rem 0.75rem 0.35rem 0; border-bottom: 1px solid var(--border); }
+td { padding: 0.4rem 0.75rem 0.4rem 0; border-bottom: 1px solid var(--border-soft); vertical-align: top; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.25rem 0 0.75rem; }
+.chip { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 9999px; padding: 0.1rem 0.7rem; font-size: 0.88rem; background: var(--bg); color: var(--fg); }
+.chip:hover { border-color: var(--primary); color: var(--primary); }
+.chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; border-top: 1px solid var(--border-soft); margin-top: 0.5rem; padding-top: 0.6rem; font-size: 0.8rem; color: var(--fg-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.legend i { display: inline-block; width: 1.1rem; height: 0.7rem; border: 2.5px solid; border-radius: 3px; }
+.legend i.path { height: 0; border: 0; border-top: 3px solid var(--accent); border-radius: 0; }
+.legend .otherwise { color: var(--accent-300); font-weight: 600; }
+.bar { display: flex; height: 0.6rem; border-radius: 9999px; overflow: hidden; background: var(--border); max-width: 36rem; margin: 0.25rem 0 0.5rem; }
 .bar i { display: block; }
-.bar .verified { background: var(--mint); } .bar .refuted { background: var(--accent); } .bar .declared-only { background: var(--gray-300); }
-.legend { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-.method { font-family: var(--mono); font-size: 0.8rem; font-weight: 500; text-transform: uppercase; color: var(--accent-300); margin-right: 0.5rem; }
-.call { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
-.call.act { border-left: 4px solid var(--accent); }
-.call > div { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: baseline; margin-bottom: 0.25rem; }
-footer { background: var(--navy); color: var(--gray-300); padding: 1.5rem 5%; font-size: 0.85rem; }
-@media (max-width: 800px) {
-  .page { grid-template-columns: minmax(0, 1fr); padding: 1.5rem 16px 3rem; }
-  header, footer { padding-left: 16px; padding-right: 16px; }
-  aside { position: static; max-height: 16rem; border-right: 0; border-bottom: 1px solid var(--border); padding: 0 0 1rem; }
-  h1 { font-size: 2.2rem; }
-  table { display: block; overflow-x: auto; }
+details.body > summary { cursor: pointer; color: var(--primary); font-size: 0.9rem; }
+svg { max-width: 100%; height: auto; font-family: var(--body); }
+svg text { fill: var(--fg); font-size: 14px; }
+svg .m { font-family: var(--mono); font-size: 12px; }
+svg .small { font-size: 12px; fill: var(--fg-muted); }
+svg .click { cursor: pointer; }
+svg .click:hover rect { stroke: var(--primary); }
+@media (max-width: 1350px) {
+  .cols.paneled { grid-template-columns: 9.5rem 14rem minmax(0, 1fr); }
+  .panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(37rem, 94vw); z-index: 5; }
+}
+@media (max-width: 900px) {
+  html, body { height: auto; }
+  .cols, .cols.paneled { display: block; }
+  .col { border-right: 0; border-bottom: 1px solid var(--border); max-height: 13rem; }
+  .sheet { padding: 1rem 16px 3rem; }
+  .panel { width: 100%; }
+  header .warn { margin-left: 0; }
 }
 </style>
 </head>
 <body>
-<header><a class="mark" href="#/">specimen</a><nav id="nav"></nav></header>
-<div class="page" id="page"></div>
-<footer id="footer"></footer>
+<header id="header"></header>
+<div class="cols" id="cols"></div>
 <script id="data" type="application/json">{{data}}</script>
 <script>
 "use strict";
 const data = JSON.parse(document.getElementById("data").textContent);
 const x = data.extraction;
+const transverse = "—";
 
 // h("a", { href: "#" }, "text", node) -> an element; null and false children are left out
 function h(tag, attrs, ...children) {
   const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs ?? {})) if (v != null && v !== false) el.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs ?? {})) {
+    if (v == null || v === false) continue;
+    if (k === "onclick") el.addEventListener("click", v); else el.setAttribute(k, v === true ? "" : v);
+  }
   el.append(...children.flat(Infinity).filter((c) => c != null && c !== false));
   return el;
 }
-const route = (concept, name) => `#/${concept}` + (name === undefined ? "" : `/${encodeURIComponent(name)}`);
-const link = (concept, name, text) => h("a", { href: route(concept, name) }, text ?? name);
-const code = (value) => h("code", null, typeof value === "string" ? value : JSON.stringify(value));
-const json = (value) => h("pre", null, JSON.stringify(value, null, 2));
-const dot = () => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 6 6"); s.setAttribute("aria-hidden", "true"); const c = document.createElementNS("http://www.w3.org/2000/svg", "circle"); for (const a of ["cx", "cy", "r"]) c.setAttribute(a, "3"); s.append(c); return s; };
-const pill = (word) => h("span", { class: `pill ${word}` }, dot(), word);
-const table = (heads, rows) => rows.length === 0 ? h("p", { class: "muted" }, "None.") : h("table", null, h("thead", null, h("tr", null, heads.map((t) => h("th", null, t)))), h("tbody", null, rows.map((r) => h("tr", null, r.map((c) => h("td", null, c))))));
-const section = (title, ...body) => [h("h2", null, title), ...body];
+function s(tag, attrs, ...children) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs ?? {})) {
+    if (v == null || v === false) continue;
+    if (k === "onclick") el.addEventListener("click", v); else el.setAttribute(k, v);
+  }
+  el.append(...children.flat(Infinity).filter((c) => c != null && c !== false));
+  return el;
+}
+// a rule is two names, each one segment: "#/rule/<operation>/<rule>"
+const ruleRoute = (name, rule) => `#/rule/${encodeURIComponent(name)}/${encodeURIComponent(rule)}`;
+const decoded = (text) => { try { return decodeURIComponent(text); } catch { return text; } };
+const route = (concept, name) => `#/${concept}${name === undefined ? "" : `/${name.split("/").map(encodeURIComponent).join("/")}`}`;
+const code = (v) => h("code", null, typeof v === "string" ? v : JSON.stringify(v));
+const json = (v) => h("pre", null, JSON.stringify(v, null, 2));
 const commas = (nodes) => nodes.flatMap((n, i) => (i === 0 ? [n] : [", ", n]));
+const toStructure = (name) => h("a", { href: route("structure", name) }, name);
+const toOperation = (name) => h("a", { href: route("operation", name) }, name);
+const table = (heads, rows) => rows.length === 0 ? h("p", { class: "muted" }, "None.") : h("table", null, h("thead", null, h("tr", null, heads.map((t) => h("th", null, t)))), h("tbody", null, rows.map((r) => h("tr", null, r.map((c) => h("td", null, c))))));
 
-// the lists, by concept: what the side column and the routes read
-const concepts = {
-  operation: { title: "Operations", all: x.operations.map((o) => o.operation), name: (o) => o.operation },
-  fact: { title: "Facts", all: x.facts, name: (f) => f.fact },
-  structure: { title: "Structures", all: x.structures, name: (s) => s.structure },
-  interface: { title: "Interfaces", all: x.interfaces, name: (i) => i.interface },
-  projection: { title: "Projections", all: x.projections, name: (p) => p.projection },
-  trigger: { title: "Triggers", all: x.triggers, name: (t) => t.trigger },
-  scenario: { title: "Scenarios", all: x.scenarios, name: (s) => s.path },
-};
-const find = (concept, name) => concepts[concept].all.find((e) => concepts[concept].name(e) === name);
+// ---- what the page reads from the data
+const operation = (name) => x.operations.find((o) => o.operation.operation === name)?.operation;
+const placed = (name) => data.placed.find((p) => p.operation === name);
+const groupOf = (name) => placed(name)?.home ?? transverse;
+const others = (name) => (placed(name)?.touches ?? []).filter((t) => t.structure !== placed(name).home);
+const operationsOf = (group) => x.operations.map((o) => o.operation).filter((o) => groupOf(o.operation) === group);
+const scenariosOf = (name) => x.scenarios.filter((e) => e.scenario.act.call.operation === name);
 const referenceOf = (path) => x.references.find((r) => r.path === path)?.reference;
-const judgedRule = (operation, rule) => data.rules.find((r) => r.operation === operation && r.rule === rule);
-const judgedBinding = (trigger) => data.bindings.find((b) => b.trigger === trigger);
+const triggerOf = (name) => x.triggers.find((t) => t.operation === name);
+const interfaceOf = (name) => x.interfaces.find((i) => i.interface === triggerOf(name)?.interface);
+const judged = (name, rule) => data.rules.find((r) => r.operation === name && r.rule === rule);
+const provenanceOf = (name, rule) => judged(name, rule)?.provenance ?? "declared-only";
+const colors = { verified: "#3dbf9e", refuted: "#f65e5e", some: "#d97706", none: "#d1d5db" };
+const dot = (color, title) => h("span", { class: "dot", style: `background:${color}`, title });
+const provenanceDot = (word) => dot(colors[word] ?? colors.none, word);
+// one colour for several verdicts: red if one is refuted, green if all are verified, amber if some
+const blend = (words) => words.includes("refuted") ? colors.refuted : words.length > 0 && words.every((w) => w === "verified") ? colors.verified : words.includes("verified") ? colors.some : colors.none;
 
-// what cites a concept, grouped by the word of the link
-function citedBy(concept, name) {
-  const citing = data.links.filter(({ to }) => to.concept === concept && to.name === name);
-  if (citing.length === 0) return [];
-  const words = [...new Set(citing.map(({ from, as }) => `${from.concept} that ${as} it`))];
-  return section("Cited by", table(["As", "By"], words.map((word) => [
-    word,
-    commas(citing.filter(({ from, as }) => `${from.concept} that ${as} it` === word).map(({ from }) => link(from.concept, from.name))),
-  ])));
-}
-
-function provenance(judged) {
-  if (judged === undefined) return h("span", { class: "muted" }, "not judged");
-  return [pill(judged.provenance), judged.reason ? h("span", { class: "muted" }, ` ${judged.reason}`) : null];
-}
-const byScenario = (judged) => table(["Scenario", "Verdict", "Reason"], (judged?.by ?? []).map((b) => [
-  link("scenario", b.scenario), pill(b.verdict), b.reason ?? (b.status === undefined ? "" : `status ${b.status}`),
-]));
-
-const views = {
-  operation(o) {
-    const ruleCell = (rule) => [h("span", { id: `rule-${rule}` }, code(rule))];
-    const whenOf = (when) => when === undefined ? "always" : typeof when === "string" ? link("fact", when) : when[0] === "given" ? ["given ", code(when[1])] : ["not ", link("fact", when[1])];
-    const thenOf = (then) => typeof then === "string" ? then : "says" in then ? then.says : [
-      ...Object.entries(then.fact ?? {}).map(([f, v]) => h("div", null, link("fact", f), ` becomes ${v}`)),
-      ...(then.field ?? []).map(({ of, change }) => h("div", null, link("structure", of[0]), `.${of[1]} `, code(change))),
-    ];
-    const inputRules = Object.entries(o.takes).flatMap(([input, t]) => (t.rules ?? []).map((r) => ({ input, ...r })));
-    const allRules = [...inputRules.map((r) => r.rule), ...o.requires.map((r) => r.rule), ...o.effects.map((r) => r.rule)];
-    return [
-      h("p", { class: "eyebrow" }, "Operation"), h("h1", null, o.operation),
-      h("p", null, "Answers ", o.answers === null ? "nothing" : link("structure", o.answers), ". Triggered by ",
-        commas(x.triggers.filter((t) => t.operation === o.operation).map((t) => link("trigger", t.trigger))), "."),
-      section("Takes", table(["Input", "Is", "Optional"], Object.entries(o.takes).map(([name, t]) => [
-        code(name),
-        "field" in t ? [link("structure", t.field[0]), `.${t.field[1]}`] : [t.type, t.default === undefined ? "" : [" — default ", code(t.default)]],
-        t.optional ? "yes" : "",
-      ]))),
-      section("Input rules", table(["Rule", "Input", "Violates", "Otherwise", "Provenance"], inputRules.map((r) => [
-        ruleCell(r.rule), code(r.input), r.violates, code(r.otherwise), provenance(judgedRule(o.operation, r.rule)),
-      ]))),
-      section("Requires", table(["Rule", "Fact", "Otherwise", "Provenance"], o.requires.map((r) => [
-        ruleCell(r.rule), link("fact", r.fact), code(r.otherwise), provenance(judgedRule(o.operation, r.rule)),
-      ]))),
-      section("Effects", table(["Rule", "When", "Then", "Provenance"], o.effects.map((e) => [
-        ruleCell(e.rule), whenOf(e.when), thenOf(e.then), provenance(judgedRule(o.operation, e.rule)),
-      ]))),
-      section("What the scenarios say of each rule", [...new Set(allRules)].map((rule) => [h("h3", null, code(rule)), byScenario(judgedRule(o.operation, rule))])),
-      citedBy("operation", o.operation),
-    ];
-  },
-  fact(f) {
-    return [
-      h("p", { class: "eyebrow" }, "Fact"), h("h1", null, f.fact),
-      section("Condition", table(["Term"], f.condition.map((term) => ["caller" in term ? ["the caller is ", code(term.caller)] : [
-        link("structure", term.structure), " where ", commas(Object.entries(term.where).map(([field, from]) => [code(field), " is the call's ", code(from[1])])),
-        term.field ? [", field ", code(term.field.join("."))] : null, " must be ", code(term["must-be"].join(" ")),
-      ]]))),
-      section("Read through", table(["Projection", "Interface"], x.projections.filter((p) => f.condition.some((t) => p.shows.some((s) => s.structure === t.structure))).map((p) => [link("projection", p.projection), link("interface", p.interface)]))),
-      citedBy("fact", f.fact),
-    ];
-  },
-  structure(s) {
-    return [
-      h("p", { class: "eyebrow" }, "Structure"), h("h1", null, s.structure),
-      h("p", null, "Identified by ", code(s.identity), "."),
-      section("Fields", table(["Field", "Is", "Constraints"], Object.entries(s.fields).map(([name, field]) => [
-        code(name),
-        "structure" in field ? [field.many ? "many " : "", link("structure", field.structure), field.by ? ` by ${field.by}` : ""] : field.type,
-        "structure" in field ? "" : commas(Object.entries(field).filter(([k]) => k !== "type").map(([k, v]) => code(`${k}: ${v}`))),
-      ]))),
-      citedBy("structure", s.structure),
-    ];
-  },
-  interface(i) {
-    const named = [...new Set(JSON.stringify(i).match(/\["schema","[^"]+"\]/g) ?? [])].map((m) => JSON.parse(m)[1]);
-    return [
-      h("p", { class: "eyebrow" }, "Interface"), h("h1", null, i.interface),
-      h("p", null, h("span", { class: "method" }, i.method), code(i.pattern)),
-      section("Request", json(i.request)),
-      section("Responses", Object.entries(i.responses).map(([status, r]) => [h("h3", null, status), json(r.body)])),
-      named.length === 0 ? null : section("Named shapes", named.map((n) => [h("h3", null, n), json(x.schemas.find((s) => s.schema === n)?.shape ?? "not declared")])),
-      citedBy("interface", i.interface),
-    ];
-  },
-  projection(p) {
-    return [
-      h("p", { class: "eyebrow" }, "Projection"), h("h1", null, p.projection),
-      h("p", null, "Reads through ", link("interface", p.interface), p.absent === undefined ? "." : [": status ", code(p.absent), " means there is no such instance."]),
-      section("Shows", table(["Structure", "At"], p.shows.map((s) => [link("structure", s.structure), code(s.at.join("."))]))),
-      section("Locates an instance", table(["Field", "Sent in"], Object.entries(p.locates ?? {}).map(([field, place]) => [code(field), code(place.join(" "))]))),
-    ];
-  },
-  trigger(t) {
-    const judged = judgedBinding(t.trigger);
-    return [
-      h("p", { class: "eyebrow" }, "Trigger"), h("h1", null, t.trigger),
-      h("p", null, "Calls ", link("interface", t.interface), " for ", link("operation", t.operation), ". ", provenance(judged)),
-      section("Sends", table(["Input", "Place"], Object.entries(t.sends).map(([input, place]) => [code(input), code(place.join(" "))]))),
-      section("Answers", h("p", null, "Status ", code(t.answers.status), t.answers.shows.length === 0 ? "." : [", showing ", commas(t.answers.shows.map((s) => [link("structure", s.structure), " at ", code(s.at.join("."))])), "."])),
-      section("Refuses", table(["Refusal", "Status"], Object.entries(t.refuses).map(([refusal, { status }]) => [code(refusal), code(status)]))),
-      section("What the scenarios say", byScenario(judged)),
-    ];
-  },
-  scenario({ path, scenario: s }) {
-    const reference = referenceOf(path);
-    const operation = s.act.call.operation;
-    const call = (written, played, act) => h("div", { class: act ? "call act" : "call" },
-      h("div", null, h("span", { class: "eyebrow" }, act ? "Act" : "Arrange"), link("operation", written.call.operation),
-        written.call.caller ? h("span", { class: "muted" }, `as ${written.call.caller}`) : null,
-        played ? pill(`status ${played.response.status}`) : null),
-      Object.keys(written.call.with ?? {}).length === 0 ? null : json(written.call.with),
-      played ? [h("div", { class: "eyebrow" }, "Answered"), json(played.response.body)] : null);
-    const verdicts = data.rules.filter((r) => r.operation === operation).flatMap((r) => r.by.filter((b) => b.scenario === path).map((b) => [
-      h("a", { href: route("operation", operation) }, code(r.rule)), pill(b.verdict), b.reason ?? "",
-    ]));
-    const binding = data.bindings.flatMap((b) => b.by.filter((v) => v.scenario === path).map((v) => [link("trigger", b.trigger), pill(v.verdict), v.reason ?? ""]));
-    const statuses = (entries) => commas(entries.map((e) => code("unreadable" in e ? `unreadable: ${e.unreadable}` : e.status)));
-    return [
-      h("p", { class: "eyebrow" }, "Scenario"), h("h1", null, s.scenario),
-      h("p", null, s.says),
-      h("p", null, "Proves ", commas(s.proves.map((rule) => h("a", { href: route("operation", operation) }, code(rule)))), " of ", link("operation", operation), "."),
-      section("Verdicts", reference ? table(["Claim", "Verdict", "Reason"], [...verdicts, ...binding]) : h("p", { class: "muted" }, "No reference yet: nothing is judged.")),
-      section("Calls", s.arrange.map((a, n) => call(a, reference?.arrange[n], false)), call(s.act, reference?.act, true)),
-      reference ? section("Reference", h("p", null, "Recorded on ", code(reference.run.target), " at version ", code(reference.run.version), ", ", reference.run.at, ". ", `${reference.noise.length} place(s) differ between two executions.`),
-        table(["Looked at", "As", "Before", "After"], (reference.readings ?? []).map((r) => [
-          "fact" in r.of ? link("fact", r.of.fact) : [link("structure", r.of.shows.structure), `.${r.of.shows.field.join(".")}`],
-          r.as ?? "nobody", statuses(r.before), statuses(r.after),
-        ]))) : null,
-    ];
-  },
-};
-
-function overview() {
-  const bar = (title, counts) => {
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    return [h("h3", null, title), h("div", { class: "bar" }, Object.entries(counts).map(([word, n]) => h("i", { class: word, style: `width:${total === 0 ? 0 : (100 * n) / total}%` }))),
-      h("div", { class: "legend" }, Object.entries(counts).map(([word, n]) => h("span", { class: `pill ${word}` }, dot(), `${n} ${word}`)))];
-  };
-  const notVerified = data.rules.filter((r) => r.provenance !== "verified");
+// the lines of an operation's specification, in the order it applies them
+function lines(o) {
+  const status = (refusal) => triggerOf(o.operation)?.refuses[refusal]?.status;
+  const thenSay = (then) => typeof then === "string" ? "nothing changes." : "says" in then ? then.says : commas([
+    ...Object.entries(then.fact ?? {}).map(([f, v]) => [h("b", null, f), ` becomes ${v}`]),
+    ...(then.field ?? []).map(({ of, change }) => [toStructure(of[0]), `.${of[1]} `, code(change.join(" "))]),
+  ]);
+  const whenSay = (when) => when === undefined ? "Always: " : typeof when === "string" ? ["When ", h("b", null, when), ": "] : when[0] === "given" ? ["When ", code(when[1]), " is given: "] : ["Unless ", h("b", null, when[1]), ": "];
   return [
-    h("h1", null, "The specimen of ", h("b", null, x.target?.target ?? data.name), "."),
-    h("p", { class: "muted" }, x.target ? ["Target at ", code(x.target.api["base-url"]), ". "] : null, "Every verdict below is computed from the references, each time this page is made."),
-    h("div", { class: "stats" }, Object.entries(concepts).map(([concept, { title, all }]) => h("a", { class: "stat", href: route(concept) }, h("strong", null, String(all.length)), h("span", null, title))),
-      h("a", { class: "stat", href: "#/findings" }, h("strong", null, String(data.problems.length + data.gaps.length)), h("span", null, "Problems and gaps"))),
-    section("What holds", bar("Rules", data.counts.rules), bar("Bindings", data.counts.bindings)),
-    section("Rules not verified", table(["Operation", "Rule", "Provenance"], notVerified.map((r) => [link("operation", r.operation), code(r.rule), provenance(r)]))),
+    ...Object.entries(o.takes).flatMap(([input, t]) => (t.rules ?? []).map((r) => ({ kind: "input", rule: r.rule, otherwise: r.otherwise, status: status(r.otherwise),
+      say: ["Refuses ", code(r.otherwise), " when ", code(input), " breaks ", h("b", null, r.violates)], short: `${input}: ${r.violates}` }))),
+    ...o.requires.map((r) => ({ kind: "requires", rule: r.rule, fact: r.fact, otherwise: r.otherwise, status: status(r.otherwise),
+      say: ["Refuses ", code(r.otherwise), " unless ", h("b", null, r.fact)], short: r.fact })),
+    ...o.effects.map((e) => ({ kind: "effect", rule: e.rule, fact: typeof e.when === "string" ? e.when : e.when?.[0] === "not" ? e.when[1] : undefined,
+      say: [whenSay(e.when), thenSay(e.then)], short: typeof e.then === "string" ? "nothing changes" : "says" in e.then ? e.then.says : "changes what is kept" })),
+  ];
+}
+const operationColor = (o) => blend(lines(o).map((l) => provenanceOf(o.operation, l.rule)));
+// what the references say of one scenario: its rules' verdicts, then its trigger's
+const verdictsOf = (path) => { const name = x.scenarios.find((e) => e.path === path)?.scenario.act.call.operation; return [
+  ...data.rules.filter((r) => r.operation === name).flatMap((r) => r.by.filter((b) => b.scenario === path).map((b) => ({ claim: r.rule, ...b }))),
+  ...data.bindings.flatMap((b) => b.by.filter((v) => v.scenario === path).map((v) => ({ claim: `trigger ${b.trigger}`, binding: true, ...v }))),
+]; };
+const scenarioColor = (path) => blend(verdictsOf(path).filter((v) => !v.binding).map((v) => v.verdict));
+
+// ---- diagrams
+// One scenario as a sequence: who calls the target, what it answers, what is read around the judged call.
+function sequence(path) {
+  const sc = x.scenarios.find((e) => e.path === path).scenario, ref = referenceOf(path);
+  const who = (call) => call.caller ?? "nobody";
+  const actors = [...new Set([...sc.arrange.map((a) => who(a.call)), who(sc.act.call)])];
+  const col = 170, left = 70, targetX = left + actors.length * col, width = targetX + 430;
+  const steps = [...sc.arrange.map((a, n) => ({ call: a.call, response: ref?.arrange[n]?.response })), { readings: "before" }, { call: sc.act.call, response: ref?.act.response, act: true }, { readings: "after" }];
+  const readings = ref?.readings ?? [], els = [];
+  let y = 64;
+  for (const step of steps) {
+    if (step.readings) {
+      if (readings.length === 0) continue;
+      const height = 22 + readings.length * 17;
+      els.push(s("rect", { x: targetX + 24, y, width: 390, height, rx: 6, fill: "#f7f7f8", stroke: "#e5e7eb" }),
+        s("text", { x: targetX + 36, y: y + 16, class: "small" }, `read ${step.readings} the judged call`),
+        readings.map((r, n) => { const e = r[step.readings], answered = e.length === 0 ? "nothing to ask" : e.map((v) => ("unreadable" in v ? "unreadable" : v.status)).join(", ");
+          return s("text", { x: targetX + 36, y: y + 33 + n * 17, class: "small" }, `${"fact" in r.of ? r.of.fact : `${r.of.shows.structure}.${r.of.shows.field.join(".")}`}  →  ${answered}`); }));
+      y += height + 34;
+      continue;
+    }
+    const ax = left + actors.indexOf(who(step.call)) * col, color = step.act ? "#f65e5e" : "#1e416e", given = JSON.stringify(step.call.with ?? {});
+    els.push(s("line", { x1: ax, y1: y, x2: targetX - 6, y2: y, stroke: color, "stroke-width": step.act ? 2.5 : 1.5, "marker-end": `url(#q-${step.act ? "act" : "call"})` }),
+      s("text", { x: ax + 8, y: y - 7, "font-weight": step.act ? 700 : 400 }, step.call.operation),
+      given === "{}" ? null : s("text", { x: ax + 8, y: y + 15, class: "m small" }, given.length > 60 ? `${given.slice(0, 59)}…` : given),
+      s("line", { x1: targetX, y1: y + 26, x2: ax + 6, y2: y + 26, stroke: "#4b5563", "stroke-dasharray": "5 4", "marker-end": "url(#q-back)" }),
+      s("text", { x: targetX + 10, y: y + 30, class: "m", "font-weight": 600 }, step.response ? String(step.response.status) : "not recorded"));
+    y += 62;
+  }
+  const lifeline = (at, label) => [s("text", { x: at, y: 24, "text-anchor": "middle", "font-weight": 600 }, label), s("line", { x1: at, y1: 34, x2: at, y2: y, stroke: "#d1d5db" })];
+  const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
+  return s("svg", { viewBox: `0 0 ${width} ${y + 10}`, width, role: "img", "aria-label": `Sequence of ${path}` },
+    s("defs", null, marker("q-call", "#1e416e"), marker("q-act", "#f65e5e"), marker("q-back", "#4b5563")),
+    actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"), els);
+}
+
+// An operation as a column of gates: each rule that can refuse is an exit to the right, the effects are
+// below. With a scenario, the path it was written to take is red, and a status the target answered
+// otherwise is written beside the exit.
+function gates(o, path, picked) {
+  const all = lines(o), gate = all.filter((l) => l.kind !== "effect"), effects = all.filter((l) => l.kind === "effect");
+  const sc = path ? x.scenarios.find((e) => e.path === path)?.scenario : null;
+  const exitAt = sc ? gate.findIndex((g) => sc.proves.includes(g.rule)) : -2; // -1: through to the end
+  const answered = path ? referenceOf(path)?.act.response.status : undefined;
+  const cx = 150, bw = 260, els = [];
+  let y = 20;
+  const stroke = (rule) => colors[provenanceOf(o.operation, rule)] ?? colors.none;
+  const taken = (n) => sc && (exitAt === -1 || n <= exitAt), through = sc && exitAt === -1;
+  const spine = (y1, y2, on) => s("line", { x1: cx, y1, x2: cx, y2, stroke: on ? "#f65e5e" : "#d1d5db", "stroke-width": on ? 3 : 1.5 });
+  const open = (rule) => () => { location.hash = ruleRoute(o.operation, rule); };
+  const clip = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
+  const inputs = `${o.operation}(${Object.keys(o.takes).join(", ")})`;
+  els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#172741" }), s("text", { x: cx, y: y + 25, "text-anchor": "middle", style: "fill:#fff", "font-weight": 600 }, inputs.length > 34 ? `${clip(o.operation, 30)}(…)` : inputs));
+  y += 40;
+  gate.forEach((g, n) => {
+    els.push(spine(y, y + 20, taken(n)));
+    y += 20;
+    const out = sc && exitAt === n;
+    els.push(s("g", { class: "click", onclick: open(g.rule) },
+      s("rect", { x: cx - bw / 2, y, width: bw, height: 44, rx: 6, fill: picked === g.rule ? "#d9e3f1" : "#fff", stroke: stroke(g.rule), "stroke-width": 2.5 }),
+      s("text", { x: cx, y: y + 19, "text-anchor": "middle", class: "m" }, clip(g.rule, 34)),
+      s("text", { x: cx, y: y + 36, "text-anchor": "middle", class: "small" }, clip(g.short, 38))),
+      s("line", { x1: cx + bw / 2, y1: y + 22, x2: cx + bw / 2 + 60, y2: y + 22, stroke: out ? "#f65e5e" : "#d1d5db", "stroke-width": out ? 3 : 1.5, "marker-end": `url(#g-${out ? "on" : "off"})` }),
+      s("text", { x: cx + bw / 2 + 68, y: y + 19, class: "m" }, g.otherwise),
+      s("text", { x: cx + bw / 2 + 68, y: y + 35, class: "small" }, g.status === undefined ? "no status declared" : `refused with ${g.status}`),
+      out && answered !== undefined && answered !== g.status ? s("text", { x: cx + bw / 2 + 180, y: y + 35, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
+    y += 44;
+  });
+  effects.forEach((e) => {
+    els.push(spine(y, y + 20, through));
+    y += 20;
+    els.push(s("g", { class: "click", onclick: open(e.rule) },
+      s("rect", { x: cx - bw / 2, y, width: bw + 200, height: 44, rx: 6, fill: picked === e.rule ? "#d9e3f1" : "#f7f7f8", stroke: stroke(e.rule), "stroke-width": 2.5 }),
+      s("text", { x: cx - bw / 2 + 12, y: y + 19, class: "m" }, clip(e.rule, 60)),
+      s("text", { x: cx - bw / 2 + 12, y: y + 36, class: "small" }, clip(e.short, 66))));
+    y += 44;
+  });
+  els.push(spine(y, y + 20, through));
+  y += 20;
+  const t = triggerOf(o.operation), accepted = t?.answers.status;
+  els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#fff", stroke: through ? "#f65e5e" : "#172741", "stroke-width": through ? 3 : 1.5 }),
+    s("text", { x: cx, y: y + 25, "text-anchor": "middle" }, `accepted${t ? ` · ${accepted}` : ""}${o.answers ? ` · answers ${o.answers}` : ""}`),
+    through && answered !== undefined && answered !== accepted ? s("text", { x: cx + bw / 2 + 12, y: y + 25, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
+  const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
+  return s("svg", { viewBox: `0 0 640 ${y + 60}`, width: 640, role: "img", "aria-label": `Gates of ${o.operation}` }, s("defs", null, marker("g-on", "#f65e5e"), marker("g-off", "#d1d5db")), els);
+}
+
+// ---- the sheets
+function structureSheet(name) {
+  const st = x.structures.find((e) => e.structure === name);
+  const by = (verb) => data.placed.filter((p) => p.touches.some((t) => t.structure === name && t.as.some((a) => a.verb === verb))).map((p) => p.operation);
+  const referring = x.structures.filter((e) => Object.values(e.fields).some((f) => f.structure === name)).map((e) => e.structure);
+  const shown = x.projections.filter((p) => p.shows.some((sh) => sh.structure === name));
+  return [
+    h("p", { class: "eyebrow" }, "Structure"), h("h1", null, name),
+    h("p", null, "Identified by ", code(st.identity), ".", referring.length ? [" Referred to by ", commas(referring.map(toStructure)), "."] : ""),
+    h("h2", null, "Fields"),
+    table(["Field", "Is", "Constraints"], Object.entries(st.fields).map(([n, f]) => [code(n),
+      f.structure ? [f.many ? "many " : "one ", toStructure(f.structure)] : f.type,
+      f.structure ? "" : Object.entries(f).filter(([k]) => k !== "type").map(([k, v]) => `${k}: ${v}`).join(", ")])),
+    h("h2", null, "Its life"),
+    table(["", "Operations"], [["answers", "Answered by"], ["changes", "Changed by"], ["takes", "Named by"], ["requires", "Guards"]].map(([verb, label]) => [label,
+      by(verb).length ? h("div", { class: "chips" }, by(verb).map((o) => h("a", { class: "chip", href: route("operation", o) }, o))) : h("span", { class: "muted" }, "nothing")])),
+    h("h2", null, "On the wire"),
+    table(["Projection", "Interface", "At"], shown.map((p) => { const i = x.interfaces.find((e) => e.interface === p.interface);
+      return [code(p.projection), i ? code(`${i.method.toUpperCase()} ${i.pattern}`) : code(p.interface), code(p.shows.find((sh) => sh.structure === name).at.join("."))]; })),
   ];
 }
 
+// the panel of one rule: what it says, the fact it rests on, and each scenario that judges it
+function rulePanel(o, line) {
+  const j = judged(o.operation, line.rule), f = line.fact ? x.facts.find((e) => e.fact === line.fact) : null;
+  return [
+    h("a", { class: "close", href: route("operation", o.operation) }, "Close"),
+    h("p", { class: "eyebrow" }, `Rule of ${o.operation}`), h("h2", null, code(line.rule)), h("p", null, line.say),
+    h("p", null, provenanceDot(j?.provenance ?? "declared-only"), h("b", null, j?.provenance ?? "declared-only"), j?.reason ? ` — ${j.reason}` : ""),
+    line.otherwise ? h("p", { class: "muted" }, code(line.otherwise), line.status === undefined ? " has no status declared." : [" is answered ", code(line.status), " on the wire."]) : null,
+    f ? [h("h3", null, "The fact"), h("p", null, f.condition.length === 0 ? "Declared without a condition: nothing can read it." : commas(f.condition.map((t) => "caller" in t ? ["the caller is ", code(t.caller)]
+      : [toStructure(t.structure), " where ", Object.entries(t.where).map(([k, v]) => `${k} is the call's ${v[1]}`).join(", "), t.field ? `, ${t.field.join(".")}` : "", " must be ", code(t["must-be"].join(" "))])))] : null,
+    h("h3", null, "The scenarios"),
+    (j?.by ?? []).length === 0 ? h("p", { class: "muted" }, "None judges it.") : j.by.map((b) => [
+      h("p", null, provenanceDot(b.verdict), h("a", { href: route("scenario", b.scenario) }, h("b", null, b.scenario.split("/")[1])), ` — ${b.verdict}`, b.reason ? `: ${b.reason}` : ""),
+      sequence(b.scenario)]),
+  ];
+}
+function operationHead(o) {
+  const i = interfaceOf(o.operation), touches = placed(o.operation)?.touches ?? [];
+  return [
+    h("p", null, "Takes ", Object.keys(o.takes).length === 0 ? "nothing" : commas(Object.entries(o.takes).map(([n, t]) => [code(n), t.field ? [" (", toStructure(t.field[0]), `.${t.field[1]})`] : ` (${t.type})`, t.optional ? ", optional" : ""])),
+      ". Answers ", o.answers ? toStructure(o.answers) : "nothing", "."),
+    touches.length === 0 ? h("p", null, "Touches no structure.") : h("p", null, "Touches ", commas(touches.map((t) => [toStructure(t.structure), ` (${t.as.map((a) => [a.verb, a.what.join(", ")].filter(Boolean).join(" ")).join(" · ")})`])), "."),
+    i ? h("p", { class: "muted" }, "On the wire: ", code(`${i.method.toUpperCase()} ${i.pattern}`), `, accepted with ${triggerOf(o.operation).answers.status}.`) : h("p", { class: "muted" }, "No trigger: nothing calls it on the wire."),
+  ];
+}
+function operationSheet(o, path, picked) {
+  return [
+    h("p", { class: "eyebrow" }, "Operation"), h("h1", null, o.operation), operationHead(o),
+    h("div", { class: "card" }, gates(o, path, picked), h("div", { class: "legend" },
+      [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]].map(([key, word]) => h("span", null, h("i", { style: `border-color:${colors[key]}` }), word)),
+      path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof; a scenario draws its path."))),
+    h("p", { class: "eyebrow" }, "Scenarios"),
+    scenariosOf(o.operation).length === 0 ? h("p", { class: "muted" }, "None.") : h("div", { class: "chips" }, scenariosOf(o.operation).map((e) =>
+      h("a", { class: `chip ${e.path === path ? "on" : ""}`, href: e.path === path ? route("operation", o.operation) : route("scenario", e.path) }, dot(scenarioColor(e.path)), e.path.split("/")[1]))),
+  ];
+}
+// the panel of one scenario: what it proves, what the references say of it, and what happened
+function scenarioPanel({ path, scenario: sc }) {
+  const name = sc.act.call.operation, ref = referenceOf(path);
+  const call = (written, played, label) => h("div", { class: "card" },
+    h("p", null, h("span", { class: "word" }, `${label}  `), toOperation(written.call.operation), written.call.caller ? ` as ${written.call.caller}` : " as nobody", played ? [" — answered ", code(played.response.status)] : ""),
+    Object.keys(written.call.with ?? {}).length ? json(written.call.with) : null,
+    played ? h("details", { class: "body" }, h("summary", null, "What the target answered"), json(played.response.body)) : null);
+  return [
+    h("a", { class: "close", href: route("operation", name) }, "Close"),
+    h("p", { class: "eyebrow" }, `Scenario of ${name}`), h("h2", null, sc.scenario), h("p", null, sc.says),
+    h("p", null, "Proves ", commas(sc.proves.map((rule) => h("a", { href: ruleRoute(name, rule) }, code(rule)))), "."),
+    ref ? [h("h3", null, "Verdicts"), table(["Claim", "Verdict", "Reason"], verdictsOf(path).map((v) => [code(v.claim), [provenanceDot(v.verdict), v.verdict], v.reason ?? ""])),
+      h("p", { class: "muted" }, `Recorded on ${ref.run.target} at ${ref.run.version}, ${ref.run.at}. ${ref.noise.length} place(s) differ between two executions.`)]
+      : h("p", { class: "muted" }, "No reference yet: nothing is judged."),
+    h("h3", null, "What happens"), sequence(path),
+    h("h3", null, "The calls"), sc.arrange.map((a, n) => call(a, ref?.arrange[n], "ARRANGE")), call(sc.act, ref?.act, "ACT"),
+  ];
+}
+function overview() {
+  const bar = (title, counts) => { const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    return [h("p", { class: "eyebrow" }, title), h("div", { class: "bar" }, Object.entries(counts).map(([word, n]) => h("i", { style: `background:${colors[word] ?? colors.none};width:${total ? (100 * n) / total : 0}%` }))),
+      h("p", null, Object.entries(counts).map(([word, n]) => [provenanceDot(word), `${n} ${word}   `]))]; };
+  return [
+    h("h1", null, "The specification of ", h("b", null, x.target?.target ?? data.name), "."),
+    h("p", { class: "muted" }, "Walk it from a structure to its operations, then to the scenarios that prove them. Every verdict is computed from the references, each time this page is made."),
+    h("h2", null, "What holds"), bar("Rules", data.counts.rules), bar("Bindings", data.counts.bindings),
+    h("h2", null, "Rules not verified"),
+    table(["Operation", "Rule", "Provenance", "Why"], data.rules.filter((r) => r.provenance !== "verified").map((r) => [toOperation(r.operation), code(r.rule), [provenanceDot(r.provenance), r.provenance], r.reason ?? r.by.map((b) => b.reason).filter(Boolean)[0] ?? ""])),
+  ];
+}
 function findings() {
   return [
     h("h1", null, "Problems and gaps"),
-    section("Problems", h("p", { class: "muted" }, "The extraction is wrong."), table(["File", "At", "Message"], data.problems.map((p) => [code(p.file), p.at ? code(p.at) : "", p.message]))),
-    section("Gaps", h("p", { class: "muted" }, "The extraction is incomplete."), table(["Kind", "Name", "Message"], data.gaps.map((g) => [g.kind, code(g.name), g.message]))),
+    h("h2", null, "Problems"), h("p", { class: "muted" }, "The extraction is wrong."), table(["File", "At", "Message"], data.problems.map((p) => [code(p.file), p.at ? code(p.at) : "", p.message])),
+    h("h2", null, "Gaps"), h("p", { class: "muted" }, "The extraction is incomplete."), table(["Kind", "Name", "Message"], data.gaps.map((g) => [g.kind, code(g.name), g.message])),
   ];
 }
 
-// the side column: the names of one concept; a scenario's under its operation
-function side(concept, current) {
-  const { all, name } = concepts[concept];
-  const filter = h("input", { type: "search", placeholder: "Filter", "aria-label": "Filter" });
-  const list = h("div");
-  const item = (n, text) => h("li", null, h("a", { href: route(concept, n), "aria-current": n === current ? "page" : null }, text ?? n));
-  const fill = () => {
-    const names = all.map(name).filter((n) => n.toLowerCase().includes(filter.value.toLowerCase())).sort();
-    const groups = concept !== "scenario" ? [[null, names]] : [...new Set(names.map((n) => n.split("/")[0]))].map((g) => [g, names.filter((n) => n.split("/")[0] === g)]);
-    list.replaceChildren(...groups.flatMap(([group, of]) => [group ? h("h4", null, group) : null, h("ul", null, of.map((n) => item(n, group ? n.slice(group.length + 1) : n)))]).filter(Boolean));
-  };
-  filter.addEventListener("input", fill);
-  fill();
-  return h("aside", null, filter, list);
-}
-
+// ---- the page: structures, the operations of one, a sheet, and a panel for a rule or a scenario
 function render() {
   const [, concept, ...rest] = location.hash.split("/");
-  const name = rest.length === 0 ? undefined : decodeURIComponent(rest.join("/"));
-  const page = document.getElementById("page");
-  document.getElementById("nav").replaceChildren(
-    ...Object.entries(concepts).map(([c, { title, all }]) => h("a", { href: route(c), "aria-current": c === concept ? "page" : null }, title, " ", h("small", null, String(all.length)))),
-    h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, "Problems and gaps ", h("small", null, String(data.problems.length + data.gaps.length))));
-  if (Object.hasOwn(concepts, concept)) {
-    const first = concepts[concept].all[0];
-    const shown = name === undefined ? first : find(concept, name);
-    const shownName = shown === undefined ? undefined : concepts[concept].name(shown);
-    page.className = "page";
-    page.replaceChildren(side(concept, shownName), h("main", null, shown === undefined ? h("p", { class: "muted" }, name === undefined ? "None declared." : `No ${concept} named ${name}.`) : views[concept](shown)));
-    page.querySelector("aside a[aria-current]")?.scrollIntoView({ block: "nearest" });
-  } else {
-    page.className = "page wide";
-    page.replaceChildren(h("main", null, concept === "findings" ? findings() : overview()));
-  }
+  const name = rest.length === 0 ? undefined : rest.map(decoded).join("/");
+  const sc = concept === "scenario" ? x.scenarios.find((e) => e.path === name) : undefined;
+  const ruleOf = concept === "rule" ? { operation: decoded(rest[0] ?? ""), rule: decoded(rest[1] ?? "") } : undefined;
+  const o = concept === "operation" ? operation(name) : sc ? operation(sc.scenario.act.call.operation) : ruleOf ? operation(ruleOf.operation) : undefined;
+  const line = o && ruleOf ? lines(o).find((l) => l.rule === ruleOf.rule) : undefined;
+  const groups = [...x.structures.map((st) => st.structure), transverse].filter((g) => g !== transverse || operationsOf(g).length > 0);
+  const group = o ? groupOf(o.operation) : concept === "structure" && groups.includes(name) ? name : undefined;
+  const row = (href, on, ...children) => h("a", { class: `row ${on ? "on" : ""}`, href }, children);
+  const columns = [
+    h("nav", { class: "col", "aria-label": "Structures" }, h("p", { class: "eyebrow" }, "Structures"),
+      groups.map((g) => row(route("structure", g), g === group, null, h("span", { class: "n" }, g === transverse ? h("i", null, "Transverse") : g), h("span", { class: "word" }, String(operationsOf(g).length))))),
+    h("nav", { class: "col", "aria-label": "Operations" }, h("p", { class: "eyebrow" }, "Operations"),
+      group === undefined ? h("p", { class: "eyebrow muted" }, "Pick a structure") : operationsOf(group).length === 0 ? h("p", { class: "eyebrow muted" }, "None") : operationsOf(group).map((e) => row(route("operation", e.operation), e.operation === o?.operation,
+        dot(operationColor(e)), h("span", { class: "n" }, e.operation, others(e.operation).length ? h("span", { class: "also" }, `→ ${others(e.operation).map((t) => t.structure).join(", ")}`) : null)))),
+  ];
+  const panel = sc ? scenarioPanel(sc) : line ? rulePanel(o, line) : null;
+  const sheet = o ? operationSheet(o, sc?.path, line?.rule) : concept === "findings" ? findings()
+    : group === transverse ? [h("p", { class: "eyebrow" }, "Operations"), h("h1", null, "Transverse"), h("p", null, "They answer no structure, and name several in what they take, or none.")]
+    : group ? structureSheet(group) : overview();
+  const cols = document.getElementById("cols"), was = { sheet: cols.querySelector(".sheet")?.scrollTop ?? 0, of: cols.dataset.operation };
+  cols.className = `cols ${o && panel ? "paneled" : ""}`;
+  // a scenario of an operation the files do not hold has no sheet to sit beside
+  cols.replaceChildren(...[...columns, h("main", { class: "sheet" }, o || !panel ? sheet : panel), o && panel ? h("aside", { class: "panel" }, panel) : null].filter(Boolean));
+  // picking a rule or a scenario leaves the operation's sheet where the reader was
+  cols.dataset.operation = o?.operation ?? "";
+  if (o && was.of === o.operation) cols.querySelector(".sheet").scrollTop = was.sheet;
+  document.getElementById("header").replaceChildren(
+    h("a", { class: "mark", href: "#/" }, "specimen"), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
+    h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Problems and gaps ${data.problems.length + data.gaps.length}`),
+    h("span", { class: "warn" }, "This page holds what the target answered, tokens included: mind who it is sent to."));
+  for (const on of cols.querySelectorAll(".row.on")) on.scrollIntoView({ block: "nearest" });
   document.title = `specimen — ${name ?? x.target?.target ?? data.name}`;
-  window.scrollTo(0, 0);
 }
-document.getElementById("footer").textContent = `specimen — ${data.dir}. This page holds what the target answered, tokens included: mind who it is sent to.`;
 window.addEventListener("hashchange", render);
 render();
 </script>

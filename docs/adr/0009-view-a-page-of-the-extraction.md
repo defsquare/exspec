@@ -18,12 +18,20 @@ a command found, not the specification.
   agent: the page is for a person, and would pour every recorded answer into a session
   that has `status` and `verdicts` for the same facts.
 - **The page is made from the files, each time**: the extraction as parsed, its problems
-  and gaps, every rule and trigger judged, and the links between the concepts. It holds
+  and gaps, every rule and trigger judged, and where each operation is filed. It holds
   them as data and draws from them; nothing in it is computed twice by hand.
-- **The links between concepts are derived once, in `derive`**: every reference between
-  the concepts the page has a sheet for, with the word the files use for it. What a
-  scenario proves and the reference of a scenario are read from the verdicts and the path. Read backwards, it is what cites a
-  concept — which no file says.
+- **The page is walked from the specification**: the structures, then the operations of
+  one, and a sheet for whichever is picked. On an operation's sheet, a rule or a scenario
+  opens in a panel beside it: the sheet stays in sight. A fact, an
+  interface, a projection, a trigger have no sheet of their own: they are shown where a
+  rule, a structure or an operation needs them.
+- **An operation is filed under the structure it answers; failing that, under the one
+  structure its inputs name.** One that names several, or none, is transverse. No file
+  says where an operation belongs: it is derived, in `derive`, with what the operation
+  does to every structure it touches.
+- **Two drawings, both a single line of steps**: an operation as its rules in the order
+  they apply, each refusal an exit; a scenario as its calls and what is read around the
+  judged one. No graph of the structures is drawn.
 - **`view` is not a reader of the event stream.** It is the one command whose output is
   not events: a page is for a browser, and `--format json` on the other commands remains
   the data for a program.
@@ -37,6 +45,11 @@ a command found, not the specification.
   around the same page later.
 - **A viewer of the event stream**, as ADR-0002 named it. The stream would have to carry
   the whole specification to be browsed.
+- **A map of the structures as a graph**, operations hanging from them. Tried on three
+  targets: a layout to compute, and legible only while the operations that cross several
+  structures stay few.
+- **A sheet per concept, each reference a link.** The first version: every file shown as
+  tables, much to read and nothing to follow.
 - **A front-end application built with the tool.** A build step and a dependency for a
   page a few hundred lines draw.
 - **Publishing the page somewhere.** A reference holds what the target answered, tokens
