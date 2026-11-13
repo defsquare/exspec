@@ -5,18 +5,6 @@ The only backlog. An item is written to be picked up cold: *Seen* (the evidence)
 deleted, never ticked: its commit says which item it closes. Order is the order to take
 them in; each of the first five is a branch of its own.
 
-## 5 — The verdicts, derived
-
-- **Seen.** On the spike's data every requirement verified (30 of 30 on each of two
-  targets); no effect could be verified, none having a `:then`. Distinct refusals answer one
-  status on both targets (401, 404): the fact evaluated before the call says which one.
-- **Settled.** A rule's verdict from a played copy and the operation; a binding's from the
-  answer and the trigger; the provenance of a rule from all its verdicts. Two kinds of gap:
-  the rule refuted, or the binding refuted.
-- **Next.** Derive both verdicts for the scenarios of item 4, including Conduit's unknown
-  article (401 where 404 is declared), and show them in the terminal.
-- **Source.** `docs/brief/shapes.edn` › "DÉRIVÉ"; `docs/brief/fit-*.md` › the verdict test.
-
 ## 6 — What the two targets need that the shapes do not say yet
 
 - **Seen.** 78 of 167 scenarios of Conduit and 111 of 183 of Petclinic fitted the shapes
@@ -166,9 +154,6 @@ them in; each of the first five is a branch of its own.
 
 ## Open questions, no item yet
 
-- A fact evaluated for another actor than the caller: does its name take the actor as a
-  parameter?
-- Who chooses what `:assert` looks at: the scenario, or the facts its operation cites?
 - A fact the interfaces do not show ("the email is not registered yet").
 - A constraint between two inputs ("the end is after the start").
 - The decision on a refuted claim — the claim was wrong, or the target has a bug — and how
