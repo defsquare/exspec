@@ -43,6 +43,31 @@ for what the agent could not reach; any observable.
   creating an article with no tag list throws inside the target. What the terms could not
   say: six facts of ten have an empty condition (who wrote what, is this value already
   taken, do these credentials match), every effect is a sentence.
+- **Petclinic, live** (`specimen-targets/petclinic`, a clean clone at afc8fc1, model
+  sonnet). Every gate passed on the first session of its phase.
+
+  | phase | turns | time | cost |
+  |---|---|---|---|
+  | target | 22 | 214 s | $0.28 |
+  | interfaces | 6 | 26 s | $0.11 |
+  | specification | 19 | 130 s | $0.51 |
+  | scenarios | 21 | 222 s | $0.36 |
+  | record | — | two fresh stacks, 192 scenarios | — |
+
+  36 interfaces, 8 structures, 11 facts, 24 operations, 165 rules, 12 projections, 24
+  triggers, 192 scenarios, 192 references; no rule left without a scenario. The agent
+  moved the target to its Postgres profile and turned its security on (three actors by
+  basic auth, written by the seed). Reported and not bent: a caller with the wrong role
+  answers 500 where 403 is declared (24 operations); the contract says 200 where the code
+  answers 201 on a create and 204 on an update or a delete; a telephone must be exactly
+  ten digits where the contract allows twenty; `update-pet-type` is never accepted as
+  bound (the body needs the id the trigger sends in the path); deleting an owner who has
+  pets fails where the declared effect says they go with it. Seen on the agent's side:
+  the gate of the target passed although the agent had not confirmed that a reset gives
+  the same identifiers back; it wrote the 192 scenarios with a generator script of its
+  own; it left out the scenarios at a bound the target refuses (a twenty-digit telephone)
+  instead of keeping them as contradictions; its final messages — the only place these
+  contradictions are told — live on the event stream alone.
 
 ## Backlog
 
