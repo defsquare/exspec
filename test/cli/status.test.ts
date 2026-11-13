@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import { status } from "../../src/cli/status.ts";
+import { verdicts } from "../../src/cli/verdicts.ts";
 import type { Event } from "../../src/shapes/event.ts";
+import { bindings, facts, interfaces, operation, reference, target } from "../files.ts";
 
 const files = [
   {
@@ -55,6 +57,12 @@ test("status of a directory with an extraction", async () => {
       },
     },
     {
+      type: "extraction-judged",
+      rules: { verified: 0, refuted: 0, "declared-only": 0 },
+      bindings: { verified: 0, refuted: 0, "not-observed": 0 },
+    },
+    { type: "not-observed", what: "side-effects" },
+    {
       type: "problem",
       file: "notes.yaml",
       at: "",
@@ -67,5 +75,75 @@ test("status of a directory with an extraction", async () => {
       message: "no projection shows it",
     },
     { type: "command-finished", command: "status", ok: false },
+  ]);
+});
+
+const judged = [
+  { path: "target.yaml", text: target },
+  { path: "interfaces.yaml", text: interfaces },
+  { path: "facts.yaml", text: facts },
+  { path: "operations/f.yaml", text: operation },
+  { path: "bindings.yaml", text: bindings },
+  { path: "references/f/a.yaml", text: reference },
+];
+
+const examined = (run: typeof status) =>
+  Array.fromAsync(
+    run({ dir: "/abs/dir", exists: async () => true, readFiles: async () => judged }),
+  );
+
+const declaredOnly: Event[] = [
+  {
+    type: "rule-judged",
+    operation: "f",
+    rule: "q",
+    provenance: "declared-only",
+    reason: "no scenario proves it",
+    by: [],
+  },
+  {
+    type: "rule-judged",
+    operation: "f",
+    rule: "r",
+    provenance: "declared-only",
+    by: [
+      {
+        scenario: "f/a",
+        verdict: "unjudged",
+        reason: "it was played before readings were taken",
+      },
+    ],
+  },
+];
+
+test("status counts the claims by provenance and shows those not verified", async () => {
+  expect(
+    (await examined(status)).filter(({ type }) =>
+      ["extraction-judged", "rule-judged", "binding-judged", "not-observed"].includes(
+        type,
+      ),
+    ),
+  ).toEqual<Event[]>([
+    {
+      type: "extraction-judged",
+      rules: { verified: 0, refuted: 0, "declared-only": 2 },
+      bindings: { verified: 1, refuted: 0, "not-observed": 0 },
+    },
+    ...declaredOnly,
+    { type: "not-observed", what: "side-effects" },
+  ]);
+});
+
+test("verdicts shows every claim, verified ones included", async () => {
+  expect(await examined(verdicts)).toEqual<Event[]>([
+    { type: "command-started", command: "verdicts", dir: "/abs/dir" },
+    ...declaredOnly,
+    {
+      type: "binding-judged",
+      trigger: "t",
+      provenance: "verified",
+      by: [{ scenario: "f/a", verdict: "verified" }],
+    },
+    { type: "command-finished", command: "verdicts", ok: true },
   ]);
 });

@@ -15,6 +15,7 @@ const commandSchema = z.enum([
   "record",
   "replay",
   "extract",
+  "verdicts",
 ]);
 
 export const phaseSchema = z.enum([
@@ -79,6 +80,32 @@ export const bindingVerdictSchema = z
   .readonly();
 
 export type BindingVerdict = z.infer<typeof bindingVerdictSchema>;
+
+// a rule over every reference: refuted if one refutes it, else verified if one verifies
+// it, else declared only — reason: why no scenario judges it
+export const ruleJudgedSchema = z.object({
+  type: z.literal("rule-judged"),
+  operation: z.string(),
+  rule: z.string(),
+  provenance: z.enum(["verified", "refuted", "declared-only"]),
+  reason: z.string().optional(),
+  by: z
+    .array(
+      ruleVerdictSchema.unwrap().omit({ rule: true }).extend({ scenario: z.string() }),
+    )
+    .readonly(),
+});
+
+export type RuleJudged = z.infer<typeof ruleJudgedSchema>;
+
+export const bindingJudgedSchema = z.object({
+  type: z.literal("binding-judged"),
+  trigger: z.string(),
+  provenance: z.enum(["verified", "refuted", "not-observed"]),
+  by: z.array(bindingVerdictSchema.unwrap().extend({ scenario: z.string() })).readonly(),
+});
+
+export type BindingJudged = z.infer<typeof bindingJudgedSchema>;
 
 const agentSaid = z.object({ type: z.literal("agent-said"), text: z.string() });
 // about: the file a tool works on, or the first line of a shell command
@@ -152,6 +179,22 @@ export const eventSchema = z.discriminatedUnion("type", [
     path: z.string(),
     differences: z.array(differenceSchema).readonly(),
   }),
+  // the verdicts of one played copy, its noise unknown
+  z.object({
+    type: z.literal("scenario-judged"),
+    path: z.string(),
+    rules: z.array(ruleVerdictSchema).readonly(),
+    binding: bindingVerdictSchema,
+  }),
+  ruleJudgedSchema,
+  bindingJudgedSchema,
+  z.object({
+    type: z.literal("extraction-judged"),
+    rules: z.object({ verified: z.int(), refuted: z.int(), "declared-only": z.int() }),
+    bindings: z.object({ verified: z.int(), refuted: z.int(), "not-observed": z.int() }),
+  }),
+  // what no verdict sees: a refused call that still wrote something
+  z.object({ type: z.literal("not-observed"), what: z.literal("side-effects") }),
   z.object({ type: z.literal("phase-started"), phase: phaseSchema }),
   // the files say it is done already
   z.object({ type: z.literal("phase-skipped"), phase: phaseSchema }),

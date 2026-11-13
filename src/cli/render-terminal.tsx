@@ -1,6 +1,42 @@
 import { Box, render, Text, useApp } from "ink";
 import { useEffect, useState } from "react";
-import type { Event } from "../shapes/event.ts";
+import type {
+  BindingJudged,
+  BindingVerdict,
+  Event,
+  RuleJudged,
+} from "../shapes/event.ts";
+
+// {verdict: refuted, expected: "y declared 404", observed: 401} -> "y declared 404, answered 401"
+function bindingLine({ verdict, expected, observed }: BindingVerdict): string {
+  if (observed === undefined) return verdict;
+  return expected === undefined
+    ? `answered ${observed}`
+    : `${expected}, answered ${observed}`;
+}
+
+// the scenarios that make the provenance, or all of them when none does
+function ruleBy({ provenance, by }: RuleJudged): string {
+  const making = by.filter(({ verdict }) => verdict === provenance);
+  return (making.length > 0 ? making : by)
+    .map(({ scenario, verdict, reason }) => {
+      const said =
+        verdict === provenance ? reason : `${verdict}${reason ? `: ${reason}` : ""}`;
+      return said === undefined ? scenario : `${scenario} (${said})`;
+    })
+    .join(", ");
+}
+
+function bindingBy({ provenance, by }: BindingJudged): string {
+  const making = by.filter(({ verdict }) => verdict === provenance);
+  return (making.length > 0 ? making : by)
+    .map(({ scenario, ...verdict }) =>
+      verdict.verdict === provenance && verdict.observed === undefined
+        ? scenario
+        : `${scenario}: ${bindingLine(verdict)}`,
+    )
+    .join(", ");
+}
 
 export function describeEvent(event: Event): string {
   switch (event.type) {
@@ -47,6 +83,30 @@ export function describeEvent(event: Event): string {
                 `${at.join(".")}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
             )
             .join("\n  ")}`;
+    case "scenario-judged":
+      return `judged   ${event.path}  ${[
+        ...event.rules.map(
+          ({ rule, verdict, reason }) =>
+            `${rule} ${verdict}${reason === undefined ? "" : ` (${reason})`}`,
+        ),
+        `binding ${bindingLine(event.binding)}`,
+      ].join(", ")}`;
+    case "rule-judged":
+      return `rule     ${event.operation}/${event.rule}  ${event.provenance}  ${
+        event.by.length === 0 ? (event.reason ?? "") : `by ${ruleBy(event)}`
+      }`;
+    case "binding-judged":
+      return `binding  ${event.trigger}  ${event.provenance}${
+        event.by.length === 0 ? "" : `  by ${bindingBy(event)}`
+      }`;
+    case "extraction-judged":
+      return `judged   rules ${Object.entries(event.rules)
+        .map(([provenance, count]) => `${count} ${provenance}`)
+        .join(", ")}; bindings ${Object.entries(event.bindings)
+        .map(([provenance, count]) => `${count} ${provenance}`)
+        .join(", ")}`;
+    case "not-observed":
+      return "side effects are not observed: a refused call that still wrote something is not seen";
     case "phase-started":
       return `phase    ${event.phase}`;
     case "phase-skipped":

@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { checkExtraction } from "../derive/check.ts";
 import { countExtraction } from "../derive/count.ts";
 import { phasesOf } from "../derive/phases.ts";
+import { countJudged, judgeExtraction } from "../derive/provenance.ts";
 import type { Event } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 
@@ -11,9 +12,10 @@ export type Examination = {
   readonly readFiles: (dir: string) => Promise<readonly SourceFile[]>;
 };
 
-// what check and status share; status counts and shows the phases as well
+// What check, status and verdicts share. Status counts, shows the phases and every claim
+// not verified; verdicts shows every claim.
 export async function* examine(
-  command: "status" | "check",
+  command: "status" | "check" | "verdicts",
   { dir, exists, readFiles }: Examination,
 ): AsyncIterable<Event> {
   yield { type: "command-started", command, dir };
@@ -26,14 +28,24 @@ export async function* examine(
   const parsed = parseExtraction(await readFiles(dir));
   const checked = checkExtraction(parsed.extraction);
   const problems = [...parsed.problems, ...checked.problems];
-  if (command === "status") {
+  const judged = command === "check" ? undefined : judgeExtraction(parsed.extraction);
+  if (command === "status" && judged !== undefined) {
     yield { type: "extraction-counted", counts: countExtraction(parsed.extraction) };
     yield {
       type: "extraction-phases",
       phases: phasesOf({ extraction: parsed.extraction, problems, gaps: checked.gaps }),
     };
+    yield { type: "extraction-judged", ...countJudged(judged) };
+    yield* judged.rules.filter(({ provenance }) => provenance !== "verified");
+    yield* judged.bindings.filter(({ provenance }) => provenance !== "verified");
+    yield { type: "not-observed", what: "side-effects" };
   }
   for (const problem of problems) yield { type: "problem", ...problem };
-  for (const gap of checked.gaps) yield { type: "gap", ...gap };
+  if (command === "verdicts" && judged !== undefined) {
+    yield* judged.rules;
+    yield* judged.bindings;
+  } else {
+    for (const gap of checked.gaps) yield { type: "gap", ...gap };
+  }
   yield { type: "command-finished", command, ok: problems.length === 0 };
 }

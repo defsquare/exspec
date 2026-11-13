@@ -107,3 +107,92 @@ test("describeEvent words each event", () => {
     "check failed",
   ]);
 });
+
+test("describeEvent words the verdicts", () => {
+  const events: readonly Event[] = [
+    {
+      type: "rule-judged",
+      operation: "rename-item",
+      rule: "owner",
+      provenance: "refuted",
+      by: [
+        {
+          scenario: "rename-item/not-the-owner",
+          verdict: "refuted",
+          reason: "accepted where the fact was false",
+        },
+        { scenario: "rename-item/owner", verdict: "verified" },
+      ],
+    },
+    {
+      type: "rule-judged",
+      operation: "f",
+      rule: "r",
+      provenance: "declared-only",
+      by: [{ scenario: "f/a", verdict: "ambiguous", reason: "q: the fact is unknown" }],
+    },
+    {
+      type: "rule-judged",
+      operation: "f",
+      rule: "q",
+      provenance: "declared-only",
+      reason: "no scenario proves it",
+      by: [],
+    },
+    {
+      type: "rule-judged",
+      operation: "f",
+      rule: "s",
+      provenance: "verified",
+      by: [{ scenario: "f/a", verdict: "verified" }],
+    },
+    {
+      type: "binding-judged",
+      trigger: "put-item",
+      provenance: "refuted",
+      by: [
+        { scenario: "rename-item/owner", verdict: "verified" },
+        {
+          scenario: "rename-item/unknown",
+          verdict: "refuted",
+          expected: "not-found declared 404",
+          observed: 401,
+        },
+      ],
+    },
+    {
+      type: "binding-judged",
+      trigger: "t",
+      provenance: "not-observed",
+      by: [{ scenario: "f/a", verdict: "not-exercised" }],
+    },
+    { type: "binding-judged", trigger: "u", provenance: "not-observed", by: [] },
+    {
+      type: "extraction-judged",
+      rules: { verified: 3, refuted: 1, "declared-only": 2 },
+      bindings: { verified: 1, refuted: 1, "not-observed": 0 },
+    },
+    {
+      type: "scenario-judged",
+      path: "f/a",
+      rules: [
+        { rule: "q", verdict: "ambiguous", reason: "p: the fact was false" },
+        { rule: "r", verdict: "verified" },
+      ],
+      binding: { verdict: "refuted", observed: 500 },
+    },
+    { type: "not-observed", what: "side-effects" },
+  ];
+  expect(events.map(describeEvent)).toEqual([
+    "rule     rename-item/owner  refuted  by rename-item/not-the-owner (accepted where the fact was false)",
+    "rule     f/r  declared-only  by f/a (ambiguous: q: the fact is unknown)",
+    "rule     f/q  declared-only  no scenario proves it",
+    "rule     f/s  verified  by f/a",
+    "binding  put-item  refuted  by rename-item/unknown: not-found declared 404, answered 401",
+    "binding  t  not-observed  by f/a: not-exercised",
+    "binding  u  not-observed",
+    "judged   rules 3 verified, 1 refuted, 2 declared-only; bindings 1 verified, 1 refuted, 0 not-observed",
+    "judged   f/a  q ambiguous (p: the fact was false), r verified, binding answered 500",
+    "side effects are not observed: a refused call that still wrote something is not seen",
+  ]);
+});

@@ -21,8 +21,9 @@ import { extractCommand } from "./extract.ts";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
 import { status } from "./status.ts";
+import { verdicts } from "./verdicts.ts";
 
-const usage = `usage: specimen <status|check> <dir> [--format json]
+const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
        specimen <up|down> <dir>
        specimen <play|replay> <dir> [<operation>/<slug>…]
        specimen record <dir> [<operation>/<slug>…] [--force]
@@ -69,6 +70,8 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
       return status(examination);
     case "check":
       return check(examination);
+    case "verdicts":
+      return verdicts(examination);
     case "up":
     case "down":
     case "play":

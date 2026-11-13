@@ -1,10 +1,12 @@
 import { expect, test } from "bun:test";
 import { playScenario } from "../../src/run/play.ts";
+import { play } from "../../src/run/target-commands.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
 import type { HttpRequest, TargetResponse } from "../../src/shapes/scenario.ts";
 import { scenarioSchema } from "../../src/shapes/scenario.ts";
-import { target } from "../files.ts";
+import { bindings, facts, operation, target } from "../files.ts";
 import { run } from "../played.ts";
+import { extract, fakeIo, scenarioFile } from "./fake.ts";
 
 const { extraction } = parseExtraction(
   Object.entries({
@@ -99,4 +101,34 @@ test("the readings are taken after the arrange, before the judged call and after
       ],
     },
   });
+});
+
+test("play shows the verdicts of each copy it played", async () => {
+  const { io } = fakeIo({ "http://h/f/x": [{ status: 404, body: null }] });
+  const events = await Array.fromAsync(
+    play(
+      {
+        dir: "/d",
+        extraction: extract({
+          "facts.yaml": facts,
+          "operations/f.yaml": operation,
+          "bindings.yaml": bindings,
+          "scenarios/f/a.yaml": scenarioFile("x").replace("[r]", "[q, r]"),
+        }),
+        paths: [],
+      },
+      io,
+    ),
+  );
+  expect(events.filter(({ type }) => type === "scenario-judged")).toEqual([
+    {
+      type: "scenario-judged",
+      path: "f/a",
+      rules: [
+        { rule: "q", verdict: "unjudged", reason: "the fact has no condition" },
+        { rule: "r", verdict: "not-exercised", reason: "refused" },
+      ],
+      binding: { verdict: "verified" },
+    },
+  ]);
 });
