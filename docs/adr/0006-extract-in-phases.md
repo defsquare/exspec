@@ -49,6 +49,11 @@ declaration the target contradicts is decided by a human.
 
 ## Consequences
 
+- A gate checks that the files hold together and that every scenario plays. It does not
+  check that a scenario reaches the rule it says it proves: both targets passed every gate
+  on the first session, one of them with a scenario answered 400 by a missing identifier
+  where it claims to prove "not found". That is what a rule's verdict says, once it
+  exists; a gate is not made stricter with heuristics meanwhile.
 - The agent has a shell: the confinement of its file tools is a guard against a mistake,
   not a sandbox. `extract` is run on a checkout one is willing to let it work in.
 - A phase's "already done" is weaker than its gate (the target is not restarted to find

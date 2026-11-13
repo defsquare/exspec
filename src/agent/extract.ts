@@ -92,7 +92,7 @@ async function* playGate(
 }
 
 // the references recorded, those that exist kept
-async function* recordGate(
+async function* recordReferences(
   { extraction }: Examined,
   { dir, io }: Extracting,
 ): AsyncGenerator<Event, readonly string[]> {
@@ -135,7 +135,7 @@ async function* gate(
   if (target === undefined) return ["no target is declared"];
   if (phase === "target") return yield* lifecycleGate(target, extracting);
   if (phase === "scenarios") return yield* playGate(examined, target, extracting);
-  return yield* recordGate(examined, extracting);
+  return yield* recordReferences(examined, extracting);
 }
 
 async function* withPhase(

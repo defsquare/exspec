@@ -6,9 +6,12 @@ import { directoryExists, readExtractionFiles } from "../io/files.ts";
 import type { Io } from "../run/io.ts";
 import type { Event, Phase } from "../shapes/event.ts";
 
-// "bun /abs/src/cli/main.ts" from the sources, "/abs/specimen" when compiled
+// "bun '/abs/src/cli/main.ts'" from the sources, "'/abs/specimen'" when compiled
 function specimenCommandLine(): string {
-  return basename(process.execPath) === "bun" ? `bun ${Bun.main}` : process.execPath;
+  const quoted = (path: string) => `'${path.replaceAll("'", "'\\''")}'`;
+  return basename(process.execPath) === "bun"
+    ? `bun ${quoted(Bun.main)}`
+    : quoted(process.execPath);
 }
 
 // no specimen/ yet: no file

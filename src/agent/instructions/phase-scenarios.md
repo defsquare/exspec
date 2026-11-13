@@ -16,8 +16,9 @@ scenario proves yet):
 - **A requirement**: one scenario where that fact — and **only that one** — does not
   hold. A call that is refused for two reasons at once proves neither.
 - **An input rule**: one scenario where that constraint — and only that one — is
-  violated. For a bound (a minimum length of 8), two scenarios, one on each side: the
-  shortest value accepted, the longest refused.
+  violated. For a bound, two scenarios, one on each side: the value at the bound,
+  accepted, and the nearest value past it, refused (a minimum length of 8: eight
+  characters, then seven; a maximum of 80: eighty, then eighty-one).
 - **A read with inputs** (a filter, a page): a scenario per input that changes what is
   answered.
 
@@ -37,10 +38,18 @@ scenario proves yet):
 
 ## Play each one, and read the answer
 
+Write each scenario yourself, one at a time, and play it before writing the next: no
+script that produces them in bulk. Each `says` states its own rule — no two rules share
+a sentence.
+
 After writing a scenario, play it. Compare the answer with what you meant:
 
-- The call went through where you meant a refusal, or the reverse: your scenario does not
-  reach the situation. Fix the scenario.
+- The call went through where you meant a refusal, or the reverse: find out why. If the
+  scenario misses the situation (a wrong identifier, a missing `arrange` call, the wrong
+  caller), fix the scenario. If it does reach the situation and the target simply does
+  not do what the rule says, the scenario stays as written — **a scenario is never
+  deleted or weakened because of what the target answered**; it is what shows the
+  contradiction.
 - A status the trigger does not declare, an answer of another shape than the interface
   declares: read the code again. If you had misread it, correct the binding or the
   interface. If the code or the contract says one thing and the target answers another,
