@@ -1,7 +1,6 @@
 # ADR-0007 — What is read around the judged call: the facts its operation cites, through a projection that locates
 
-Status: Proposed (2026-11-13) — written by the main thread working alone, challenged, to be
-reviewed by the user.
+Status: Accepted (2026-11-13)
 
 ## Context
 
@@ -25,8 +24,8 @@ on the first target whose route says `{ownerId}` where the field is `id`.
   judged. **A scenario's `assert` adds looks**: the same fact as another actor, a shown
   field.
 - **A fact is evaluated for an actor**; "the caller" in its name is the actor the reading
-  is taken as — the judged call's caller unless the scenario says another. A condition's
-  `seen-by` therefore says nothing more, and is left to be removed.
+  is taken as — the judged call's caller unless the scenario says another. A condition
+  therefore carries no `seen-by`.
 - **A reading is kept raw and whole**: what the projection's interface answered, status
   and body, per term of the fact that reads. The value at the place read and whether the
   fact held are derived from it, every time: correcting where a projection shows a
