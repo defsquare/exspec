@@ -72,6 +72,10 @@ them in; each of the first five is a branch of its own.
 - **Settled.** specimen holds no driver (ADR-0004); the check uses the interfaces alone.
 - **Next.** Once a projection can be read: read every projection that takes no input, play
   a scenario that writes, reset, read again, compare. Make it the last step of `up`.
+  Cheaper, and with what exists: `record` plays the second stack's scenarios in reverse
+  order — identifiers that drift then differ between the two executions and the scenario
+  is unstable. On Petclinic the gate of the target passed although the agent had not
+  confirmed that a reset gives the same identifiers back.
 - **Source.** ADR-0004 › Consequences; `docs/branches/feat-play.md` at `f8bd037`.
 
 ## What a reference leaves free is measured
@@ -99,6 +103,66 @@ them in; each of the first five is a branch of its own.
 - **Next.** When a reference is replaced and the status of its judged call changes, emit
   it as an event of its own; decide whether `--force` alone may do it.
 - **Source.** `docs/brief/spike-journal.md` › Journal 5; `src/run/record.ts`.
+
+## Conditions that say "the caller's" and "already taken"
+
+- **Seen.** Six facts of ten on Conduit and four of eleven on Petclinic are written with an
+  empty condition: the caller wrote the article, the caller is an owner administrator, the
+  email is not used by another user, some owner matches the search. The terms have no
+  value for the caller (a `where` or a `must-be` that names who is calling) and no way to
+  say that no instance has a value. The agent's instructions even show such a fact with
+  an empty condition.
+- **Settled.** A fact is evaluated for an actor (ADR-0007); a fact with no condition is
+  unknown, and makes ambiguous the rules of its operation that answer the same status
+  (ADR-0008).
+- **Next.** An ADR for two terms, each with the scenario of each target that needs it: the
+  caller as a value (what of the caller — the actor's name is not its username), and
+  absence over a list a projection shows. Then extract both targets again and count the
+  facts left empty.
+- **Source.** `specimen-targets/*/specimen/facts.yaml` of the two extractions;
+  `docs/branches/feat-extract.md` at `c1c9ef0`.
+
+## Effects in terms: something appears, something goes
+
+- **Seen.** Every effect of both extractions is a sentence (`then: {says: …}`): the terms
+  say a fact becoming true and a field moving by a number, and what these targets do is
+  create and delete. A rule whose effect is a sentence is never judged.
+- **Settled.** An effect written as a sentence stays declared only (ADR-0008).
+- **Next.** Terms for an instance that appears (shown by a projection after, absent
+  before) and one that goes; a field that takes the value of an input. With the scenario
+  that needs each, one target at a time.
+- **Source.** `docs/brief/fit-conduit.md`, `docs/brief/fit-petclinic.md` (a `:then` for
+  each effect); `docs/branches/feat-extract.md` at `c1c9ef0`.
+
+## What the agent could not explain has a place, and comes back to a human
+
+- **Seen.** On both targets the agent reported real contradictions and bent nothing: 401
+  where the code raises 404 and 403 (Conduit); 500 for a wrong role, 200 in the contract
+  where the code answers 201 and 204, a cascade that fails (Petclinic). They are told in
+  its last message of each phase, which lives on the event stream alone. One was written
+  as contract instead: a server error declared as a refusal's status (`role-missing: 500`).
+- **Settled.** A declaration the target contradicts is left as the code says and decided
+  by a human (ADR-0001, ADR-0006).
+- **Next.** Decide where a contradiction is declared (beside the claim it contradicts, with
+  the line of code read) and how the decision on it — the claim was wrong, or the target
+  has a bug — is recorded and named. A refuted verdict is the same thing seen from the
+  other side: one place for both.
+- **Source.** `specimen-targets/*-extract.jsonl` (`agent-said`); the backlog's open
+  question on a refuted claim; `docs/branches/feat-extract.md` at `c1c9ef0`.
+
+## Loose ends of `extract`
+
+- **Seen.** The gate of the target catches any error, a bug of specimen's included, and
+  hands it to the agent as a finding. In the scenarios phase a `stop` that fails hides the
+  session's error. `bun run build` does not produce a working binary (an optional
+  dependency of Ink), so the compiled path of the command line given to the agent is
+  untested. The examples of the agent's instructions parse one by one and do not make one
+  consistent extraction: copied literally, the tool flags them.
+- **Settled.** The instructions' examples are parsed by a test.
+- **Next.** Each is small and independent: let through what is not a failure of the
+  target's own commands; keep the first error; make the build work or drop the script;
+  make the examples one extraction the checks pass.
+- **Source.** `docs/branches/feat-extract.md` at `c1c9ef0`.
 
 ## Open questions, no item yet
 
