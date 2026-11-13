@@ -1,6 +1,6 @@
 # ADR-0005 — A reference is a played copy, and its noise is kept beside it
 
-Status: Proposed (2026-11-13) — written by the main thread working alone, challenged, to be
+Status: Accepted (2026-11-13) — written by the main thread working alone, challenged,
 reviewed by the user.
 
 ## Context
