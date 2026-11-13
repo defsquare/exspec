@@ -90,6 +90,16 @@ test("the fixture has no problem, and these gaps", async () => {
     problems: [],
     gaps: [
       {
+        kind: "fact-unreadable",
+        name: "the article exists",
+        message: "no projection locates Article by slug",
+      },
+      {
+        kind: "fact-unreadable",
+        name: "the caller has favorited the article",
+        message: "no projection locates Article by slug",
+      },
+      {
         kind: "fact-without-condition",
         name: "the caller is the article's author",
         message: "its condition is not written",
@@ -716,6 +726,7 @@ triggers:
       }),
     ).gaps,
   ).toEqual([
+    { kind: "fact-unreadable", name: "p", message: "no projection locates S by a" },
     {
       kind: "fact-without-condition",
       name: "o",

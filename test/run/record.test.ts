@@ -7,12 +7,14 @@ const playedWith = (a: string, response: TargetResponse): PlayedScenario => ({
   scenario: "s",
   says: "s",
   proves: ["r"],
+  assert: [],
   run: { target: "t", version: "v", at, clock: null },
   arrange: [],
   act: {
     call: { operation: "f", with: { a }, caller: "u" },
     response,
   },
+  readings: [],
 });
 
 test("two executions that agree but for their noise give a reference", async () => {

@@ -1,6 +1,7 @@
 import type { Extraction, Gap } from "../shapes/extraction.ts";
 import type { Structure } from "../shapes/specification.ts";
 import { refusalsOf, rulesOf } from "./operation.ts";
+import { locating } from "./reading.ts";
 import { writtenAlike } from "./written.ts";
 
 // [A] -> [A, B] when A has a field {structure: B}; a field {structure: C, by: identity}
@@ -95,6 +96,18 @@ export function findGaps({
         name: fact,
         message: "its condition is not written",
       })),
+    ...facts.flatMap(({ fact, condition }): readonly Gap[] => {
+      const unread = condition.flatMap((term) => {
+        if (!("structure" in term)) return [];
+        const keys = Object.keys(term.where);
+        return locating(projections, term.structure, keys)
+          ? []
+          : [`no projection locates ${term.structure} by ${keys.join(", ")}`];
+      });
+      return unread.length === 0
+        ? []
+        : [{ kind: "fact-unreadable", name: fact, message: unread.join("; ") }];
+    }),
     ...references.flatMap(({ path, reference }): readonly Gap[] => {
       const scenario = scenarioAt.get(path);
       if (scenario === undefined) {

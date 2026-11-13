@@ -1,6 +1,7 @@
+import type { Trigger } from "../shapes/bindings.ts";
 import type { Extraction } from "../shapes/extraction.ts";
 import type { Call, HttpRequest } from "../shapes/scenario.ts";
-import type { Credentials } from "../shapes/target.ts";
+import type { Credentials, Interface } from "../shapes/target.ts";
 import { isMap } from "./json.ts";
 
 export class UnplayableCall extends Error {
@@ -21,10 +22,69 @@ function setIn(
 const text = (value: unknown) =>
   typeof value === "string" ? value : JSON.stringify(value);
 
-// {operation: f, with: {s: "a b", x: 1, t: "c"}, caller: u}, the trigger of f sending
-// s to [path, s], x to [query, x], t to [body, a, t], on "delete /s/{s}" of base-url h
-//   -> {method: "delete", url: "h/s/a%20b?x=1", headers: {...u's, Content-Type},
+// u -> u's headers; no actor -> none; an actor with no credentials -> undefined
+export function headersOf(
+  credentials: Credentials,
+  actor: string | null | undefined,
+): Readonly<Record<string, string>> | undefined {
+  if (actor === undefined || actor === null) return {};
+  return Object.hasOwn(credentials, actor) ? credentials[actor] : undefined;
+}
+
+// the values {s: "a b", x: 1, t: "c"} sent to {s: [path, s], x: [query, x], t: [body, a, t]}
+// on "delete /s/{s}" of base-url h
+//   -> {method: "delete", url: "h/s/a%20b?x=1", headers: {...headers, Content-Type},
 //       body: {a: {t: "c"}}}
+// or why it cannot be sent: {refused: "…"}
+export function fillRequest({
+  base,
+  bound,
+  sends,
+  values,
+  headers,
+  by,
+}: {
+  readonly base: string;
+  readonly bound: Interface;
+  readonly sends: Trigger["sends"];
+  readonly values: Readonly<Record<string, unknown>>;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly by: string;
+}): HttpRequest | { readonly refused: string } {
+  const query = new URLSearchParams();
+  let path = bound.pattern;
+  let body: unknown;
+  for (const [name, value] of Object.entries(values)) {
+    const place = Object.hasOwn(sends, name) ? sends[name] : undefined;
+    if (place === undefined) return { refused: `"${name}" is sent nowhere by "${by}"` };
+    if (place[0] === "body") {
+      const [, ...keys] = place;
+      body = setIn(body, keys, value);
+    } else if (place[0] === "query") {
+      query.append(place[1], text(value));
+    } else {
+      path = path.replaceAll(`{${place[1]}}`, encodeURIComponent(text(value)));
+    }
+  }
+  const unfilled = /\{([^}]+)\}/.exec(path)?.[1];
+  if (unfilled !== undefined) {
+    return {
+      refused: `the path parameter "${unfilled}" of ${bound.pattern} is not given`,
+    };
+  }
+  const search = query.size > 0 ? `?${query}` : "";
+  const url = `${base}${path}${search}`;
+  if (body === undefined) return { method: bound.method, url, headers };
+  return {
+    method: bound.method,
+    url,
+    headers: { ...headers, "Content-Type": "application/json" },
+    body,
+  };
+}
+
+// {operation: f, with: {s: "a b"}, caller: u}, the trigger of f sending s to [path, s]
+//   -> the request fillRequest makes of it, with u's headers
 export function requestOf({
   call,
   extraction: { target, triggers, interfaces },
@@ -41,50 +101,17 @@ export function requestOf({
   const bound = interfaces.find((i) => i.interface === trigger.interface);
   if (bound === undefined)
     throw new UnplayableCall(`no interface "${trigger.interface}"`);
-  const query = new URLSearchParams();
-  const filled = Object.entries(call.with).reduce<{
-    readonly path: string;
-    readonly body: unknown;
-  }>(
-    ({ path, body }, [name, value]) => {
-      const place = Object.hasOwn(trigger.sends, name) ? trigger.sends[name] : undefined;
-      if (place === undefined) {
-        throw new UnplayableCall(`"${name}" is sent nowhere by "${trigger.trigger}"`);
-      }
-      if (place[0] === "body") {
-        const [, ...keys] = place;
-        return { path, body: setIn(body, keys, value) };
-      }
-      const [where, key] = place;
-      if (where === "query") {
-        query.append(key, text(value));
-        return { path, body };
-      }
-      return { path: path.replaceAll(`{${key}}`, encodeURIComponent(text(value))), body };
-    },
-    { path: bound.pattern, body: undefined },
-  );
-  const unfilled = /\{([^}]+)\}/.exec(filled.path)?.[1];
-  if (unfilled !== undefined) {
-    throw new UnplayableCall(
-      `the path parameter "${unfilled}" of ${bound.pattern} is not given`,
-    );
-  }
-  const caller = call.caller;
-  const headers =
-    caller === undefined
-      ? {}
-      : Object.hasOwn(credentials, caller)
-        ? credentials[caller]
-        : undefined;
-  if (headers === undefined) throw new UnplayableCall(`no credentials for "${caller}"`);
-  const search = query.size > 0 ? `?${query}` : "";
-  const url = `${target.api["base-url"]}${filled.path}${search}`;
-  if (filled.body === undefined) return { method: bound.method, url, headers };
-  return {
-    method: bound.method,
-    url,
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: filled.body,
-  };
+  const headers = headersOf(credentials, call.caller);
+  if (headers === undefined)
+    throw new UnplayableCall(`no credentials for "${call.caller}"`);
+  const filled = fillRequest({
+    base: target.api["base-url"],
+    bound,
+    sends: trigger.sends,
+    values: call.with,
+    headers,
+    by: trigger.trigger,
+  });
+  if ("refused" in filled) throw new UnplayableCall(filled.refused);
+  return filled;
 }

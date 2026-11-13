@@ -55,9 +55,11 @@ const playedCopy: PlayedScenario = {
   scenario: "s",
   says: "s",
   proves: ["r"],
+  assert: [],
   run: { target: "t", version: "v", at, clock: null },
   arrange: [],
   act: { call: { operation: "f", with: { a: "x" }, caller: "u" }, response: answered },
+  readings: [{ of: { fact: "p" }, as: "u", before: [], after: [] }],
 };
 
 const ended = (phase: Phase): Event => ({

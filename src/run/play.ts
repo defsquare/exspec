@@ -1,14 +1,16 @@
+import { readingsToTake, requestsOfReading } from "../derive/reading.ts";
 import { requestOf, UnplayableCall } from "../derive/request.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Extraction } from "../shapes/extraction.ts";
-import type { PlayedScenario, Run, Scenario } from "../shapes/scenario.ts";
+import type { PlayedScenario, Reading, Run, Scenario } from "../shapes/scenario.ts";
 import type { Credentials, Target } from "../shapes/target.ts";
 import type { Io } from "./io.ts";
 import { resetTarget, startTarget, stopTarget } from "./lifecycle.ts";
 
-// each arrange call, then the act call, in order; the run says when and on what
+// each arrange call; every reading; the act call; every reading again. The run says when
+// and on what.
 export async function playScenario({
-  scenario: { scenario, says, proves, arrange, act },
+  scenario: { scenario, says, proves, assert, arrange, act },
   extraction,
   credentials,
   send,
@@ -24,9 +26,41 @@ export async function playScenario({
     call,
     response: await send(requestOf({ call, extraction, credentials })),
   });
+  const takes = readingsToTake({ scenario: { act, assert }, extraction });
+  const requests = takes.map((take) =>
+    requestsOfReading({ ...take, call: act.call, extraction, credentials }),
+  );
+  const read = async () => {
+    const entries: Reading["before"][] = [];
+    for (const each of requests) {
+      const answered: Reading["before"][number][] = [];
+      for (const request of each) {
+        answered.push("unreadable" in request ? request : await send(request));
+      }
+      entries.push(answered);
+    }
+    return entries;
+  };
   const played: PlayedScenario["arrange"][number][] = [];
   for (const call of arrange) played.push(await answer(call));
-  return { scenario, says, proves, run, arrange: played, act: await answer(act) };
+  const before = await read();
+  const judged = await answer(act);
+  const after = await read();
+  return {
+    scenario,
+    says,
+    proves,
+    assert,
+    run,
+    arrange: played,
+    act: judged,
+    readings: takes.map(({ of, as }, i) => ({
+      of,
+      as,
+      before: before[i] ?? [],
+      after: after[i] ?? [],
+    })),
+  };
 }
 
 export type Selected = readonly { readonly path: string; readonly scenario: Scenario }[];

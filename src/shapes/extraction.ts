@@ -32,6 +32,7 @@ export const gapSchema = z
       "interface-not-bound",
       "operation-without-trigger",
       "fact-without-condition",
+      "fact-unreadable",
       "refusal-not-translated",
       "reference-stale",
       "reference-without-scenario",
