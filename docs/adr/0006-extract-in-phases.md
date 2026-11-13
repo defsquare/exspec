@@ -1,7 +1,6 @@
 # ADR-0006 — `extract` is phases with gates, and the agent's tools are the CLI's commands
 
-Status: Proposed (2026-11-13) — written by the main thread working alone, challenged, to be
-reviewed by the user.
+Status: Accepted (2026-11-13)
 
 ## Context
 
@@ -62,10 +61,12 @@ declaration the target contradicts is decided by a human.
 ## Consequences
 
 - A gate checks that the files hold together and that every scenario plays. It does not
-  check that a scenario reaches the rule it says it proves: both targets passed every gate
-  on the first session, one of them with a scenario answered 400 by a missing identifier
-  where it claims to prove "not found". That is what a rule's verdict says, once it
-  exists; a gate is not made stricter with heuristics meanwhile.
+  check that a scenario reaches the rule it says it proves: the first two targets passed
+  every gate on the first session, one of them with a scenario answered 400 by a missing
+  identifier where it claims to prove "not found"; on a third, twelve of sixteen scenarios
+  written to prove an accepted path were recorded as refusals, and the phase was done.
+  That is what a rule's verdict says: a gate may come to rest on the verdicts; it is not
+  made stricter with heuristics.
 - The confinement of the file tools does not reach a shell: without the mark, `record`
   typed by the agent would write references. The mark closes that hole and is not
   redundant with the confinement.
