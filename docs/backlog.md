@@ -107,7 +107,7 @@ them in; each of the first five is a branch of its own.
   caller as a value (what of the caller — the actor's name is not its username), and
   absence over a list a projection shows. Then extract both targets again and count the
   facts left empty.
-- **Source.** `specimen-targets/*/specimen/facts.yaml` of the two extractions;
+- **Source.** `targets/*/specimen/facts.yaml` of the two extractions;
   `docs/branches/feat-extract.md` at `c1c9ef0`.
 
 ## Effects in terms: something appears, something goes
@@ -135,7 +135,7 @@ them in; each of the first five is a branch of its own.
   the line of code read) and how the decision on it — the claim was wrong, or the target
   has a bug — is recorded and named. A refuted verdict is the same thing seen from the
   other side: one place for both.
-- **Source.** `specimen-targets/*-extract.jsonl` (`agent-said`); the backlog's open
+- **Source.** `targets/*-extract.jsonl` (`agent-said`); the backlog's open
   question on a refuted claim; `docs/branches/feat-extract.md` at `c1c9ef0`.
 
 ## Loose ends of `extract`
@@ -164,7 +164,7 @@ them in; each of the first five is a branch of its own.
 - **Next.** A `pattern` (the regular expression the code holds) beside `format`, computed;
   say in the agent's instructions that a format is a pattern when the code has one. A date
   rule relative to today waits for the clock.
-- **Source.** `specimen-targets/petclinic/specimen/structures.yaml`;
+- **Source.** `targets/petclinic/specimen/structures.yaml`;
   `docs/branches/feat-verdicts.md` at `591b23f`.
 
 ## Loose ends of the verdicts
