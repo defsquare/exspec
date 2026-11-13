@@ -57,6 +57,29 @@ export const countsSchema = z
 
 export type Counts = z.infer<typeof countsSchema>;
 
+// what one scenario says of a rule it proves
+export const ruleVerdictSchema = z
+  .object({
+    rule: z.string(),
+    verdict: z.enum(["verified", "refuted", "not-exercised", "unjudged", "ambiguous"]),
+    reason: z.string().optional(),
+  })
+  .readonly();
+
+export type RuleVerdict = z.infer<typeof ruleVerdictSchema>;
+
+// what one scenario says of its operation's trigger: expected, what was declared and not
+// seen ("not-found declared 404"); observed, the status answered
+export const bindingVerdictSchema = z
+  .object({
+    verdict: z.enum(["verified", "refuted", "not-exercised"]),
+    expected: z.string().optional(),
+    observed: z.int().optional(),
+  })
+  .readonly();
+
+export type BindingVerdict = z.infer<typeof bindingVerdictSchema>;
+
 const agentSaid = z.object({ type: z.literal("agent-said"), text: z.string() });
 // about: the file a tool works on, or the first line of a shell command
 const agentUsed = z.object({
