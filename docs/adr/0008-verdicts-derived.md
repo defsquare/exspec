@@ -19,19 +19,27 @@ scenario says it proves:
   was refused, and **nothing else explains the refusal**: no other required fact false or
   unknown, no input violated, whose refusal the trigger translates to the status observed.
   Refused with another explanation at hand: *ambiguous*.
-  False and accepted: refuted. True: not exercised. Unknown: not judged.
+  False and accepted: refuted. True: *not-exercised*. Unknown: *unjudged*.
 - **An input rule** the same way, the violation computed from the values the call gives
   and the form its field carries.
 - **An effect** is verified when the call was accepted, its condition held before, and
   what it says changes is seen between the readings before and after. An effect written
-  as a sentence is not judged; one that needs a reading nobody took is not judged.
+  as a sentence is unjudged; so is one that needs a reading nobody took, or whose
+  readings cannot be read.
 - **The binding** is judged apart: an accepted answer shows what the trigger says where
-  it says; a refusal has the status the trigger gives the refusal the scenario proves.
+  it says; a refusal has the status the trigger gives the refusal the scenario proves —
+  judged only where that refusal is known to be the one that happened, the proved rule
+  being verified or ambiguous. Where it is not known, the binding is not-exercised in that
+  scenario.
 - **Accepted** is the trigger's accepted status; **refused** is a 4xx; anything else is
   neither, and refutes the binding.
 - **A rule's provenance** over all references: refuted if one scenario refutes it,
   verified if one verifies it, declared only otherwise — with the reason (no scenario, no
-  reference yet, not exercised, ambiguous, not judged).
+  reference yet, not-exercised, ambiguous, unjudged). A trigger's provenance is named the
+  same way.
+- **No unknown counts as evidence**: a fact that cannot be read, a format that is not
+  computed, a reading that answers neither a success nor the declared absence are never
+  taken as false, as unchanged or as not violated.
 
 `status` shows the counts and every claim that is not verified; a refuted claim is a
 finding for a human, not a failure of the command.
@@ -48,6 +56,14 @@ finding for a human, not a failure of the command.
 
 ## Consequences
 
+- A rule's verdict leans on the bindings of the other refusals: another explanation is
+  set aside because the trigger *declares* another status for it. A trigger that declares
+  a wrong status can so let a rule through; the binding's own verdict is where that shows.
+- On a target that answers one status for "unknown" and "not allowed" alike, the reading
+  of an instance that does not exist is unreadable, its rule unjudged and its binding
+  not-exercised — until a human declares, on the projection, the status that target
+  really gives for absence. The contradiction with the contract is then shown by the
+  binding, for the right reason.
 - One fact that cannot be read makes ambiguous every rule of its operation whose refusal
   answers the same status: on a target with one status for every refusal, a rule is
   verified only once all the facts of its operation are readable.
