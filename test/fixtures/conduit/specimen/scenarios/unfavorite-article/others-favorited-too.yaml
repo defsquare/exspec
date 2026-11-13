@@ -11,3 +11,6 @@ act:
     operation: unfavorite-article
     with: { slug: how-to-train-your-dragon }
     caller: bob
+assert:
+  - { fact: the caller has favorited the article, as: alice }
+  - { shows: { structure: Article, where: { slug: [call, slug] }, field: [favoritesCount] } }

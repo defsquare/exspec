@@ -2,6 +2,8 @@ projections:
   - projection: article
     interface: get-article
     shows: [{ structure: Article, at: [article] }]
+    locates: { slug: [path, slug] }
+    absent: 404
   - projection: articles
     interface: get-articles
     shows: [{ structure: Article, at: [articles, each] }]
@@ -11,6 +13,8 @@ projections:
   - projection: profile
     interface: get-profile-by-username
     shows: [{ structure: User, at: [profile] }]
+    locates: { username: [path, username] }
+    absent: 404
 
 triggers:
   - trigger: delete-article-favorite

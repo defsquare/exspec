@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { againstTarget } from "../src/cli/against-target.ts";
 import { status } from "../src/cli/status.ts";
+import { verdicts } from "../src/cli/verdicts.ts";
 import {
   checkoutVersion,
   directoryExists,
@@ -54,7 +55,7 @@ afterAll(async () => {
 });
 
 test(
-  "Conduit's four scenarios are recorded, then replay green",
+  "Conduit's four scenarios are recorded, replay green, and are judged",
   async () => {
     const recorded = await timed(
       againstTarget("record", examination, (extraction) =>
@@ -68,6 +69,17 @@ test(
     );
     const counted = (await Array.fromAsync(status(examination))).flatMap((event) =>
       event.type === "extraction-counted" ? [event.counts.references] : [],
+    );
+    const judged = await Array.fromAsync(verdicts(examination));
+    const rules = judged.flatMap((event) =>
+      event.type === "rule-judged" && event.by.length > 0
+        ? [[`${event.operation}/${event.rule}`, event.provenance, event.by]]
+        : [],
+    );
+    const bindings = judged.flatMap((event) =>
+      event.type === "binding-judged" && event.by.length > 0
+        ? [[event.trigger, event.provenance, event.by]]
+        : [],
     );
     console.log(
       JSON.stringify({
@@ -88,12 +100,77 @@ test(
       ),
       finished: replayed.events.at(-1),
       references: counted,
+      rules,
+      bindings,
     }).toEqual({
       written: scenarios,
       recorded: { type: "command-finished", command: "record", ok: true },
       replayed: scenarios.map((path) => [path, []]),
       finished: { type: "command-finished", command: "replay", ok: true },
       references: [4],
+      rules: [
+        [
+          "register/creates-user",
+          "declared-only",
+          [
+            {
+              scenario: "register/password-of-eight-characters",
+              verdict: "unjudged",
+              reason: "declared in a sentence",
+            },
+          ],
+        ],
+        [
+          "register/password-length",
+          "declared-only",
+          [
+            {
+              scenario: "register/password-of-seven-characters",
+              verdict: "ambiguous",
+              reason: "email-free: the fact is unknown",
+            },
+          ],
+        ],
+        [
+          "unfavorite-article/exists",
+          "declared-only",
+          [
+            {
+              scenario: "unfavorite-article/unknown-article",
+              verdict: "unjudged",
+              reason: "the reading answered 401",
+            },
+          ],
+        ],
+        [
+          "unfavorite-article/leaves-favorites",
+          "verified",
+          [{ scenario: "unfavorite-article/others-favorited-too", verdict: "verified" }],
+        ],
+      ],
+      bindings: [
+        [
+          "create-user",
+          "verified",
+          [
+            { scenario: "register/password-of-eight-characters", verdict: "verified" },
+            { scenario: "register/password-of-seven-characters", verdict: "verified" },
+          ],
+        ],
+        [
+          "delete-article-favorite",
+          "refuted",
+          [
+            { scenario: "unfavorite-article/others-favorited-too", verdict: "verified" },
+            {
+              scenario: "unfavorite-article/unknown-article",
+              verdict: "refuted",
+              expected: "not-found declared 404",
+              observed: 401,
+            },
+          ],
+        ],
+      ],
     });
   },
   { timeout: 900_000 },
