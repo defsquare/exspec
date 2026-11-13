@@ -128,7 +128,7 @@ test("play shows the verdicts of each copy it played", async () => {
         { rule: "q", verdict: "unjudged", reason: "the fact has no condition" },
         { rule: "r", verdict: "not-exercised", reason: "refused" },
       ],
-      binding: { verdict: "verified" },
+      binding: { verdict: "not-exercised" },
     },
   ]);
 });

@@ -9,7 +9,6 @@
   condition:
     - structure: Article
       where: { slug: [call, slug] }
-      seen-by: caller
       field: [favorited]
       must-be: [eq, true]
 

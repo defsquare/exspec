@@ -46,7 +46,6 @@ const termSchema = z.union([
       where: z
         .record(z.string(), z.tuple([z.literal("call"), z.string()]).readonly())
         .readonly(),
-      "seen-by": z.literal("caller").optional(),
       field: z.array(z.string()).readonly().optional(),
       "must-be": z.union([
         z.tuple([z.literal("exists")]).readonly(),

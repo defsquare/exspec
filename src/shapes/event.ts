@@ -101,11 +101,21 @@ export type RuleJudged = z.infer<typeof ruleJudgedSchema>;
 export const bindingJudgedSchema = z.object({
   type: z.literal("binding-judged"),
   trigger: z.string(),
-  provenance: z.enum(["verified", "refuted", "not-observed"]),
+  provenance: z.enum(["verified", "refuted", "declared-only"]),
   by: z.array(bindingVerdictSchema.unwrap().extend({ scenario: z.string() })).readonly(),
 });
 
 export type BindingJudged = z.infer<typeof bindingJudgedSchema>;
+
+// a fact unknown before the judged call, and the rules it leaves ambiguous or unjudged
+export const factBlocksSchema = z.object({
+  type: z.literal("fact-blocks"),
+  fact: z.string(),
+  why: z.string(),
+  rules: z.array(z.string()).readonly(),
+});
+
+export type FactBlocks = z.infer<typeof factBlocksSchema>;
 
 const agentSaid = z.object({ type: z.literal("agent-said"), text: z.string() });
 // about: the file a tool works on, or the first line of a shell command
@@ -188,10 +198,11 @@ export const eventSchema = z.discriminatedUnion("type", [
   }),
   ruleJudgedSchema,
   bindingJudgedSchema,
+  factBlocksSchema,
   z.object({
     type: z.literal("extraction-judged"),
     rules: z.object({ verified: z.int(), refuted: z.int(), "declared-only": z.int() }),
-    bindings: z.object({ verified: z.int(), refuted: z.int(), "not-observed": z.int() }),
+    bindings: z.object({ verified: z.int(), refuted: z.int(), "declared-only": z.int() }),
   }),
   // what no verdict sees: a refused call that still wrote something
   z.object({ type: z.literal("not-observed"), what: z.literal("side-effects") }),

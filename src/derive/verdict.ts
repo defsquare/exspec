@@ -7,10 +7,18 @@ import { factAt, type Judging, outcomeOf } from "./judging.ts";
 import { inputRulesOf, violationOf } from "./violations.ts";
 
 // The other rules that could have refused with the status observed: a required fact
-// false or unknown before, an input violated; a refusal the trigger does not translate
-// could answer any status.
-//   ["email-free: the fact is unknown"]
-function otherExplanations(judging: Judging, except: string): readonly string[] {
+// false or unknown before, an input violated or maybe violated (a format not computed);
+// a refusal the trigger does not translate could answer any status. unknown: the fact
+// that is not known.
+//   [{rule: "email-free", says: "the fact is unknown", unknown: "the email is free"}]
+export function otherExplanations(
+  judging: Judging,
+  except: string,
+): readonly {
+  readonly rule: string;
+  readonly says: string;
+  readonly unknown?: string;
+}[] {
   const { played, extraction, operation, trigger } = judging;
   const observed = played.act.response.status;
   const could = (refusal: string) => {
@@ -22,22 +30,25 @@ function otherExplanations(judging: Judging, except: string): readonly string[] 
       .filter(({ rule, otherwise }) => rule !== except && could(otherwise))
       .flatMap(({ rule, fact }) => {
         const before = factAt(judging, fact, "before");
-        if ("unknown" in before) return [`${rule}: the fact is unknown`];
-        return before.truth ? [] : [`${rule}: the fact was false`];
+        if ("unknown" in before)
+          return [{ rule, says: "the fact is unknown", unknown: fact }];
+        return before.truth ? [] : [{ rule, says: "the fact was false" }];
       }),
     ...inputRulesOf(operation)
-      .filter(
-        (rule) =>
-          rule.rule !== except &&
-          could(rule.otherwise) &&
-          violationOf({
-            call: played.act.call,
-            operation,
-            structures: extraction.structures,
-            rule,
-          }) === "present",
-      )
-      .map(({ rule }) => `${rule}: its input is violated`),
+      .filter((rule) => rule.rule !== except && could(rule.otherwise))
+      .flatMap((rule) => {
+        const violation = violationOf({
+          call: played.act.call,
+          operation,
+          structures: extraction.structures,
+          rule,
+        });
+        if (violation === "present")
+          return [{ rule: rule.rule, says: "its input is violated" }];
+        return violation === "not-computed"
+          ? [{ rule: rule.rule, says: "its input may be violated" }]
+          : [];
+      }),
   ];
 }
 
@@ -56,7 +67,11 @@ function refusalVerdict(judging: Judging, rule: string, accepted: string): RuleV
   const others = otherExplanations(judging, rule);
   return others.length === 0
     ? { rule, verdict: "verified" }
-    : { rule, verdict: "ambiguous", reason: others.join("; ") };
+    : {
+        rule,
+        verdict: "ambiguous",
+        reason: others.map(({ rule, says }) => `${rule}: ${says}`).join("; "),
+      };
 }
 
 function ruleVerdict(judging: Judging, rule: string): RuleVerdict {

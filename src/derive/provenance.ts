@@ -79,7 +79,7 @@ export function judgeExtraction(extraction: Extraction): {
         trigger,
         provenance: provenanceOf(
           by.map(({ verdict }) => verdict),
-          "not-observed",
+          "declared-only",
         ),
         by,
       };
@@ -103,7 +103,7 @@ export function countJudged({ rules, bindings }: ReturnType<typeof judgeExtracti
     bindings: {
       verified: count(ofBindings, "verified"),
       refuted: count(ofBindings, "refuted"),
-      "not-observed": count(ofBindings, "not-observed"),
+      "declared-only": count(ofBindings, "declared-only"),
     },
   };
 }

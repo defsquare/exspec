@@ -159,15 +159,10 @@ test(
         ],
         [
           "delete-article-favorite",
-          "refuted",
+          "verified",
           [
             { scenario: "unfavorite-article/others-favorited-too", verdict: "verified" },
-            {
-              scenario: "unfavorite-article/unknown-article",
-              verdict: "refuted",
-              expected: "not-found declared 404",
-              observed: 401,
-            },
+            { scenario: "unfavorite-article/unknown-article", verdict: "not-exercised" },
           ],
         ],
       ],

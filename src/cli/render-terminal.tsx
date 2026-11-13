@@ -105,6 +105,8 @@ export function describeEvent(event: Event): string {
         .join(", ")}; bindings ${Object.entries(event.bindings)
         .map(([provenance, count]) => `${count} ${provenance}`)
         .join(", ")}`;
+    case "fact-blocks":
+      return `blocks   ${event.fact} (${event.why}): ${event.rules.length} rules`;
     case "not-observed":
       return "side effects are not observed: a refused call that still wrote something is not seen";
     case "phase-started":

@@ -163,14 +163,14 @@ test("describeEvent words the verdicts", () => {
     {
       type: "binding-judged",
       trigger: "t",
-      provenance: "not-observed",
+      provenance: "declared-only",
       by: [{ scenario: "f/a", verdict: "not-exercised" }],
     },
-    { type: "binding-judged", trigger: "u", provenance: "not-observed", by: [] },
+    { type: "binding-judged", trigger: "u", provenance: "declared-only", by: [] },
     {
       type: "extraction-judged",
       rules: { verified: 3, refuted: 1, "declared-only": 2 },
-      bindings: { verified: 1, refuted: 1, "not-observed": 0 },
+      bindings: { verified: 1, refuted: 1, "declared-only": 0 },
     },
     {
       type: "scenario-judged",
@@ -181,6 +181,12 @@ test("describeEvent words the verdicts", () => {
       ],
       binding: { verdict: "refuted", observed: 500 },
     },
+    {
+      type: "fact-blocks",
+      fact: "p",
+      why: "it has no condition",
+      rules: ["f/q", "f/r"],
+    },
     { type: "not-observed", what: "side-effects" },
   ];
   expect(events.map(describeEvent)).toEqual([
@@ -189,10 +195,11 @@ test("describeEvent words the verdicts", () => {
     "rule     f/q  declared-only  no scenario proves it",
     "rule     f/s  verified  by f/a",
     "binding  put-item  refuted  by rename-item/unknown: not-found declared 404, answered 401",
-    "binding  t  not-observed  by f/a: not-exercised",
-    "binding  u  not-observed",
-    "judged   rules 3 verified, 1 refuted, 2 declared-only; bindings 1 verified, 1 refuted, 0 not-observed",
+    "binding  t  declared-only  by f/a: not-exercised",
+    "binding  u  declared-only",
+    "judged   rules 3 verified, 1 refuted, 2 declared-only; bindings 1 verified, 1 refuted, 0 declared-only",
     "judged   f/a  q ambiguous (p: the fact was false), r verified, binding answered 500",
+    "blocks   p (it has no condition): 2 rules",
     "side effects are not observed: a refused call that still wrote something is not seen",
   ]);
 });

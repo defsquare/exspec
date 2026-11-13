@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { readingsToTake, requestsOfReading } from "../../src/derive/reading.ts";
-import { truthOf } from "../../src/derive/truth.ts";
+import { judgeFact } from "../../src/derive/truth.ts";
 import { type Extraction, parseExtraction } from "../../src/shapes/extraction.ts";
 import { scenarioSchema } from "../../src/shapes/scenario.ts";
 import { interfaces, target } from "../files.ts";
@@ -102,10 +102,15 @@ test("a fact is true, false or unknown from what its terms read", () => {
   const { facts, projections } = extraction;
   const truth = (
     name: string,
-    entries: Parameters<typeof truthOf>[0]["entries"],
+    entries: Parameters<typeof judgeFact>[0]["entries"],
     as: string | null = "u",
   ) =>
-    truthOf({ fact: facts.find(({ fact }) => fact === name), entries, as, projections });
+    judgeFact({
+      fact: facts.find(({ fact }) => fact === name),
+      entries,
+      as,
+      projections,
+    });
   expect([
     truth("p", []),
     truth("p", [], null),
@@ -124,21 +129,21 @@ test("a fact is true, false or unknown from what its terms read", () => {
     truth("k", [{ status: 200, body: { s: { a: "x" } } }]),
     truth("k", [{ status: 200, body: { s: { a: "x", b: null } } }]),
   ]).toEqual([
-    true,
-    false,
-    true,
-    false,
-    "unknown",
-    "unknown",
-    true,
-    false,
-    false,
-    false,
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown",
-    true,
+    { truth: true },
+    { truth: false },
+    { truth: true },
+    { truth: false },
+    { unknown: "the reading answered 401" },
+    { unknown: "u" },
+    { truth: true },
+    { truth: false },
+    { truth: false },
+    { truth: false },
+    { unknown: "the reading answered 401" },
+    { unknown: "the fact has no condition" },
+    { unknown: "the value is not in the answer" },
+    { unknown: "the value is not in the answer" },
+    { unknown: "the value is not in the answer" },
+    { truth: true },
   ]);
 });

@@ -71,8 +71,3 @@ export function judgeFact({ fact, entries, as, projections }: Judging): Judged {
     terms.find((t) => "unknown" in t) ?? { truth: true }
   );
 }
-
-export function truthOf(judging: Judging): boolean | "unknown" {
-  const judged = judgeFact(judging);
-  return "truth" in judged ? judged.truth : "unknown";
-}

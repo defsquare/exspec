@@ -371,8 +371,14 @@ test("the binding: what an accepted call shows, the status of the refusal proved
   expect([
     binding(copy({ proves: ["e3"], status: 200 })),
     binding(copy({ proves: ["e3"], status: 200, body: { t: {} } })),
-    binding(copy({ proves: ["exists"], status: 401 }), split),
-    binding(copy({ proves: ["exists"], status: 404 }), split),
+    binding(
+      copy({ proves: ["exists"], status: 401, read: readings(absent, absent) }),
+      split,
+    ),
+    binding(
+      copy({ proves: ["exists"], status: 404, read: readings(absent, absent) }),
+      split,
+    ),
     binding(copy({ proves: ["e3"], status: 401 })),
     binding(copy({ proves: ["e3"], status: 500 })),
   ]).toEqual([
@@ -491,5 +497,61 @@ test("a noisy place above the value read: arithmetic is not judged, nothing-chan
     [{ rule: "e1", verdict: "unjudged", reason: "S.c is noise" }],
     [{ rule: "e2", verdict: "verified" }],
     [{ rule: "e2", verdict: "refuted", reason: "something read changed" }],
+  ]);
+});
+
+test("a refusal whose rule is not judged says nothing of the binding", () => {
+  expect(
+    judged(
+      copy({
+        proves: ["free"],
+        status: 401,
+        operation: "g",
+        given: { e: "e@x.test", p: "abc" },
+        caller: null,
+        read: [{ of: { fact: "o" }, as: null, before: [], after: [] }],
+      }),
+      extract({
+        "bindings.yaml":
+          files["bindings.yaml"]?.replace(
+            "taken: {status: 400}",
+            "taken: {status: 403}",
+          ) ?? "",
+      }),
+    ),
+  ).toEqual({
+    rules: [{ rule: "free", verdict: "unjudged", reason: "the fact has no condition" }],
+    binding: { verdict: "not-exercised" },
+  });
+});
+
+test("an input whose format is not computed may explain a refusal it translates to the status seen", () => {
+  const g = (malformed: number) =>
+    rulesOf(
+      copy({
+        proves: ["p-length"],
+        status: 400,
+        operation: "g",
+        given: { e: "e@x.test", p: "ab", h: "h" },
+        caller: null,
+        read: [{ of: { fact: "o" }, as: null, before: [], after: [] }],
+      }),
+      extract({
+        "bindings.yaml":
+          files["bindings.yaml"]
+            ?.replace("taken: {status: 400}", "taken: {status: 409}")
+            .replace("malformed: {status: 400}", `malformed: {status: ${malformed}}`) ??
+          "",
+      }),
+    );
+  expect([g(400), g(422)]).toEqual([
+    [
+      {
+        rule: "p-length",
+        verdict: "ambiguous",
+        reason: "h-shaped: its input may be violated",
+      },
+    ],
+    [{ rule: "p-length", verdict: "verified" }],
   ]);
 });

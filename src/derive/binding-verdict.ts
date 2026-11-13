@@ -12,8 +12,9 @@ function shown(value: unknown, [key, ...rest]: readonly string[]): boolean {
 }
 
 // An accepted answer shows what the trigger says where it says; a refusal has the status
-// the trigger gives the refusal of each rule the scenario proves and exercises: a rule
-// whose fact held, or whose input was not violated, did not refuse.
+// the trigger gives the refusal of each rule the scenario proves whose situation is
+// established — verified or ambiguous: a rule not exercised or not judged says nothing of
+// which refusal happened.
 export function bindingVerdict(
   judging: Pick<Judging, "played" | "operation" | "trigger">,
   rules: readonly RuleVerdict[],
@@ -34,7 +35,9 @@ export function bindingVerdict(
   }
   const refusals = [...operation.requires, ...inputRulesOf(operation)]
     .filter(({ rule }) =>
-      rules.some((r) => r.rule === rule && r.verdict !== "not-exercised"),
+      rules.some(
+        (r) => r.rule === rule && (r.verdict === "verified" || r.verdict === "ambiguous"),
+      ),
     )
     .map(({ otherwise }) => otherwise);
   if (refusals.length === 0) return { verdict: "not-exercised" };

@@ -59,7 +59,7 @@ test("status of a directory with an extraction", async () => {
     {
       type: "extraction-judged",
       rules: { verified: 0, refuted: 0, "declared-only": 0 },
-      bindings: { verified: 0, refuted: 0, "not-observed": 0 },
+      bindings: { verified: 0, refuted: 0, "declared-only": 0 },
     },
     { type: "not-observed", what: "side-effects" },
     {
@@ -127,7 +127,7 @@ test("status counts the claims by provenance and shows those not verified", asyn
     {
       type: "extraction-judged",
       rules: { verified: 0, refuted: 0, "declared-only": 2 },
-      bindings: { verified: 1, refuted: 0, "not-observed": 0 },
+      bindings: { verified: 1, refuted: 0, "declared-only": 0 },
     },
     ...declaredOnly,
     { type: "not-observed", what: "side-effects" },

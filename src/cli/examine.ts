@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { factBlocks } from "../derive/blocks.ts";
 import { checkExtraction } from "../derive/check.ts";
 import { countExtraction } from "../derive/count.ts";
 import { phasesOf } from "../derive/phases.ts";
@@ -38,6 +39,7 @@ export async function* examine(
     yield { type: "extraction-judged", ...countJudged(judged) };
     yield* judged.rules.filter(({ provenance }) => provenance !== "verified");
     yield* judged.bindings.filter(({ provenance }) => provenance !== "verified");
+    yield* factBlocks(parsed.extraction);
     yield { type: "not-observed", what: "side-effects" };
   }
   for (const problem of problems) yield { type: "problem", ...problem };
