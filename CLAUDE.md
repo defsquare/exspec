@@ -28,7 +28,9 @@ work there, and integrate via merge only when the work is done.
 the fix-ups are squashed into the commit they fix, a step undone by a later step disappears
 with it, no "wip" — each commit left is one step with the message and trailers it had to
 carry. Clean tree: `git status` shows nothing, no stray file (screenshots, scratch scripts,
-a copied target). The merge is `--no-ff`, its commit carrying the challenger's verdict.
+a copied target). The merge is fast-forward only (`--ff-only`): `main` stays linear, and the
+branch's last commit — the one that deletes its working file — carries the challenger's
+verdict.
 
 ## Backlog
 
@@ -40,7 +42,7 @@ verdicts), *Backlog* (this branch's items) — and **move** the items it takes o
 into `docs/backlog.md`.
 
 At the merge, empty the working file: each open item goes back to `docs/backlog.md` or is
-dropped with its reason in the merge commit; a design worth keeping becomes an ADR; then
+dropped with its reason in the commit that deletes the file; a design worth keeping becomes an ADR; then
 delete the file — the branch's commits are its record. An item that goes back is written
 to be picked up cold — *Seen*, *Settled*, *Next*, *Source* — its Source pinned to the last
 commit that holds the working file. A done item is deleted from `docs/backlog.md`, never
@@ -51,8 +53,9 @@ item says. A commit may cite one.
 
 ## The metamodel
 
-**A concept exists because a target uses it.** The ADR index is the list of the concepts;
-a concept removed from the code gets its ADR marked `Deprecated`. Keep no concept because it
+**A concept exists because a target uses it.** Adding, removing or renaming
+a concept is what calls for an ADR — the index is not a list of the concepts; a concept
+removed from the code gets its ADR marked `Deprecated`. Keep no concept because it
 already exists, and add none a target has not asked for: the spike's fit test
 (`docs/brief/fit-*.md`) lists what two targets need.
 
