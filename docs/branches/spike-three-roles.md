@@ -134,51 +134,113 @@ move.
     the trial; in the tool it is a schema for what the reader writes — shapes, so the
     challenger and an ADR.
 
+- **What a reader's tokens go to, measured on the 27 transcripts of the readers run by
+  hand.** A reader's context is 43 000 tokens before it reads anything — the harness's
+  system prompt, its tools, the project's instructions; it then reads 13 000 tokens of the
+  target in 15 turns and writes 11 000. Two thirds of "75 000 tokens per reader" is the
+  harness, not the target: nothing to gain by cutting the reading further, everything by
+  running the roles in the tool, whose sessions have a prompt of their own.
+- **The three roles run by the tool** (`3f0358a`, ADR-0010 Proposed; the challenger's
+  verdict on the design: keep for a spike, three corrections, all taken — the folder is
+  `roles/`, not `reading/`, a name ADR-0007 already uses; the reader is refused the other
+  roles' files; a judgement carries a hash of what the judge was given). `specimen roles
+  read | build | judge | play | page`: the tool walks `interfaces.yaml`, one reader, one
+  builder, one judge per interface, several at once. The separation is built: the reader's
+  target is not started; the builder has no shell and one tool, `play` (steps in, the
+  target reset, the answers out), so the evidence is the tool's recording; the judge has no
+  tool and is never given the builder's words. The reviewer: no leak found, two Important
+  left open (an unreadable evidence file fails the whole command; the reset's events are
+  dropped inside a play), and Minors for the pre-merge challenger: `Bun.hash` and
+  `Bun.YAML` inside `derive`, `eventSchema` a plain union, the target started before
+  deciding what is skipped, a symlink leaves the confinement.
+- **Three whole targets through the tool, default model** (files under each checkout's
+  `specimen/roles/`; events, scripts and the first run kept under
+  `targets/spike-snapshots/8-tool-petclinic/`; the pages under `targets/pages/roles-*.html`).
+
+  | | interfaces judged | rules | scenarios | holds | contradicted | refused unexpectedly | not shown | USD |
+  |---|---|---|---|---|---|---|---|---|
+  | Petclinic | 36 of 36 | 263 | 333 | 267 | 44 | 2 | 20 | 9 |
+  | Conduit | 19 of 19 | 182 | 231 | 181 | 32 | 0 | 18 | 5 |
+  | Kadai | 93 of 93 | 946 | 1 255 | 1 037 | 79 | 4 | 135 | 56 |
+
+  - *The perimeter is the interface list.* Kadai: 93 of 93, where three runs of one session
+    had declared 18, 10 and 8 operations. Every gate that failed (a file that is not YAML,
+    a hole that resolves to nothing, a verdict outside the four words) was repaired in the
+    same session; one interface failed on Petclinic — a builder wrote a scenario for what
+    the call answers, which the check refused: fixed in the same commit, a scenario may name
+    `answers`.
+  - *An operation costs about 0.25 USD on Petclinic and Conduit, 0.60 on Kadai* (a third
+    each role there: the evidence of a list is long). By hand it was 250 000 tokens.
+  - *The contradictions come in families.* Petclinic: 29 of 44 are one line of the common
+    reading — the exception's name in a refusal's body, read `AccessDenied…`, answered
+    `AuthorizationDenied…`. Conduit: all 32 are one fact — an unknown thing or a forbidden
+    act is answered 401 where the code reads 404 or 403. Kadai: an error key paraphrased by
+    the reader (judged at 0.5–0.6, the judge saying "may be a loose paraphrase"), and what
+    a human wants to see: page 0 and page size 0 accepted, an export answered 200 and
+    empty to a caller without the role.
+  - *One line of the reading corrected, then `roles judge` again*: the hashes tell which
+    judgements are stale; Petclinic goes to 301 holds, 12 contradicted, 4 refused
+    unexpectedly, 16 not shown. The 16 are the target's: paging bounds answered 500 (7), a
+    malformed date 500 (3), an empty name 500, an id sent in a creation 500 (2), a valid
+    update of an owner 500, a specialty still used refused.
+  - *The evidence replays.* Petclinic, every scenario played again from a reset: 333 of
+    333 answer the same statuses, 190 the same to the character (the rest: a timestamp in
+    an error body).
+  - *The judge twice on the same evidence* (Petclinic, 333): the same word for 321; of the
+    12 that move, 5 cross between "holds" and a contradiction, all on the misread exception
+    name or a bound, none above 0.85; 3 go between "contradicted" and "refused
+    unexpectedly"; 25 cross 0.9 with no change of word.
+  - *The builder writes more than it explores*: one or two `play` before writing for 31
+    builders of 35; the gate's play is where a scenario meets the target. 6 scenarios say
+    "not reached" on Petclinic, 19 on Conduit, 99 on Kadai. The bodies it chose were read
+    on Petclinic: names of things (`neurology`, `Zed Zorn`), no comment in disguise.
+  - *The reader is as deep as its model.* On three operations of Petclinic the default
+    model gives 7, 6 and 4 rules for 0.08 USD each; a stronger one 19, 10 and 6 for 0.6 to
+    1 USD — as the readers run by hand did — and it finds what explains a contradiction
+    left open above: the entity wants exactly ten digits where the contract allows twenty.
+    The shallow reader folds "present, short enough, well formed" into one rule per field;
+    the builder makes up for it with a scenario per bound.
+  - *What the evidence lacks*: the headers of an answer (6 "not shown" on a `Location`),
+    a body that is not JSON (an upload is refused 415: 4 "refused unexpectedly" on Kadai
+    are the tool's).
+- **Read against the Frame.** Generic: the same code, briefs and judge on three targets of
+  two stacks, nothing written for one. Coherent: nothing predicted (a scenario has no
+  place for an answer, the evidence is the tool's); only the interfaces are compared; a
+  judgement is stored, as what a judge said once — ADR-0010, the user's to accept.
+  Proportionate: under a dollar an operation, and the perimeter no longer moves. What it
+  does not give: a verdict that is the same twice in every case (96 % of words), a rule's
+  name that holds from one run of the reader to the next, and a reader that reads
+  everything at the default model.
+
 ## Backlog
 
+- **The two specifications.** The roles' files live beside `operations/`, facts' terms,
+  projections and triggers, which serve nothing in the roles' path; `target up` and
+  `status` refuse a checkout whose old files no longer parse while `roles` runs on it.
+  Fold the reader's sentences into the operation shape, or let the roles' form be the
+  specification — and deprecate what no target uses any more. The user's, with its ADRs.
+- **ADR-0010 is Proposed.** To accept, amend or drop; with it the stored judgement and
+  the builder's own tool where ADR-0006 gave a shell.
+- **Which model reads.** The default one misses rules a stronger one finds, at a tenth of
+  the price. A stronger reader only; or the reader again where the judge contradicts.
+- **A contradiction that is the reader's.** One line of the common reading made 29
+  contradictions; corrected by hand here. Who corrects — the reader, sent back with the
+  evidence? — and how the page tells a misreading from a bug of the target. A family of
+  contradictions with one cause should read as one.
 - **What identifies a rule from one run to the next, and from one version to the next.**
-  Its name moves (5 of 13 the same on one operation); the lines of code it cites nearly
-  do not. An anchor in the code as the identity, the name free for the reader? A version
-  that moves the code moves the anchor.
-- **A rule the reader is unsure of.** It made the one judgement that flipped. A place to
-  say "unsure, and why" that the judge reads as such.
-- **What the reader writes has a schema in the tool.** Tried as a script; in the tool
-  it is a shape: the existing operation shape filled with sentences, or the trial's form
-  (`common`, `otherwise` with its status and body, `source`, `unsure`)? To the challenger.
-- **What a reader's tokens go to.** The shared file spared a sixth. Is the rest the
-  operation's own code, or files every reader opens again (the contract, the generated
-  types)? Measure before splitting further.
-- **A whole target.** One operation cost about 250 000 tokens across the three roles.
-  What does a target of 80 operations cost, and does the tool walk the interfaces one by
-  one — the perimeter fixed by the tool, not by a session?
-- **A word for an effect whose call is refused where no requirement says so.** One
-  judge said "contradicted", another "not shown"; it is the case a human most wants to
-  see, and it must not depend on the judge.
-- **How the reader writes a refusal.** What is expected, apart from what the contract or
-  the code says elsewhere: a sentence mixing both made a judge refute the plainest case.
-- **Which judge.** A decision model is nearly free and right on plain cases; an agent
-  that reasons compares exactly and names its evidence — the exchange, the field, the
-  values — which a human reading needs. One, or the first as a filter for the second.
-- **Is the judgement stored?** It is not reproducible: stored with what produced it (the
-  rule, the evidence, the model), or made again at each reading. One of the three rules
-  of the design: to the user, through the challenger, with an ADR.
-- **What the builder records, and whether it replays.** The trials recorded raw
-  exchanges — before, the call, after — outside the scenario and reference shapes, with a
-  fresh instance per scenario because the reset was not allowed to the agent. A
-  comparison of two versions needs a recording that plays again.
-- **Where the reader's hints live.** Passed from one role to the next and not kept, or a
-  place in the files — then a key and an ADR. The specification points at nothing below
-  it.
-- **What the reader misses.** A rule that is not on the operation's path in the code (a
-  caller not signed in) was missed on one target and found on the other. The repository's
-  tests helped to reach situations; they said nothing of roles nor of a cascade.
-- **Showing that a situation was reached**, without taking the builder's word: what a
-  caller sees before the call was enough on one target; where a setting or a role is
-  shown by no interface, the reading must say the evidence is indirect.
-- **Who the caller is for the target.** The actor's name in a scenario is not the
-  target's user; a judge inferred it from the bodies of refusals.
-- **What becomes of the terms.** If the judge concludes, a fact's condition and an
-  effect in terms are optional, perhaps unused. No concept is kept because it exists:
-  decided after the trials, each removal with its ADR marked `Deprecated`.
-- **The page.** The reading is for a human: the rule, the evidence beside it, the
-  judgement and what it rests on. `view` is where it shows.
+  Its name moves; the lines of code it cites nearly do not. Not touched by the tool.
+- **Comparing two versions.** The evidence replays to the status (333 of 333); no
+  `roles replay` yet, no noise beside the evidence (a timestamp differs in 143), and a
+  reading that follows the code's change is to design.
+- **A judge that says the same twice.** 96 % of words on the same evidence; the moves are
+  near-matches of a text and "contradicted" against "refused unexpectedly". Two judges
+  and their disagreement shown; or the text of a body judged apart from its status.
+- **What the evidence records.** No header of an answer, no body other than JSON.
+- **"Not shown" on Kadai: 135.** Read which are the builder's (a situation not reached:
+  99 scenarios say so), which the interface's (a setting nothing shows), which the
+  reader's (a rule no caller can reach).
+- **The reviewer's open findings** on `3f0358a`: an unreadable evidence file fails the
+  whole command; a play drops the reset's events; evidence older than its scenario counts
+  as done.
+- **The page.** It lists every operation and every exchange; it does not yet group the
+  contradictions by cause, nor sit in `view`.
