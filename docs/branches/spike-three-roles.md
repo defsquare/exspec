@@ -57,14 +57,44 @@ move.
   - A judge is as good as what it is sent: on references whose readings were derived
     from terms, a decision model agreed with the tool on 83 % of 973 cases and took a
     scenario that is not a case of the rule for a contradiction half the time.
-- **One run of each role, one operation per target**: nothing yet on what moves from a
-  run to the next, nor on a whole target.
+- **A second run of each role, to see what moves** (files under
+  `targets/spike-snapshots/6-roles-trial/run2/` and `petclinic/run2/`; fresh agents, the
+  same briefs; the builder and the judge given the first run's rules and recordings, so
+  that what moves is theirs).
+  - *The reader.* Petclinic's `delete-owner`: the same 7 rules, same names, same
+    cutting. Kadai's `claim-task`: the same five requirements in the same order with the
+    same refusals and the same effects on the same lines of code — but 5 names of 13 the
+    same, one rule cut in two (claimed time, modified time), two made one (the owner's
+    long name), and two written that the first run had seen and not written (an
+    administrator passes the permission checks; a claim again by the owner is accepted).
+    What a rule says is steady; its name and its cutting are not. The lines of code it
+    cites nearly coincide: an anchor in the code identifies a rule better than its name.
+  - *The builder.* Petclinic: the same 7 situations reached and the same observed, the
+    refused cascade (404) in the three scenarios with a pet. Kadai: the same 12 rules
+    reached and the same one not (a setting no interface shows), in 21 recordings where
+    the first run made 18 — it tried the three end states and both ways a task is held.
+    The recordings differ in detail (how many pets, which route reads a visit), not in
+    what they show.
+  - *The judge.* Kadai, 18 recordings: the same word for all 18 (17 "holds", 1 "not
+    shown"); the confidence moves by up to a tenth — 14 at 0.9 or more, then 10: a sharp
+    threshold would turn four cases on no change of judgement. Petclinic, 7 recordings:
+    the same word for 6; the seventh, "contradicted" at 0.55 then "holds" at 0.7, is the
+    rule the reader itself wrote as unsure (a 500 with an exception's name near the one
+    it guessed).
+  - *Read.* Steady enough in substance on two operations; names are what does not
+    compare. A rule the reader is unsure of gives a judgement that flips: unsure is to be
+    said by the reader as such, not left to the judge. main's tool does not read the
+    extractions under `targets/` (keys of the closed spike): the targets were started
+    with the commands of their `target.yaml`.
 
 ## Backlog
 
-- **A second run of each role on the same two operations.** The first worry was that
-  two extractions do not compare. Which rules, names and judgements move? Before
-  anything is built.
+- **What identifies a rule from one run to the next, and from one version to the next.**
+  Its name moves (5 of 13 the same on one operation); the lines of code it cites nearly
+  do not. An anchor in the code as the identity, the name free for the reader? A version
+  that moves the code moves the anchor.
+- **A rule the reader is unsure of.** It made the one judgement that flipped. A place to
+  say "unsure, and why" that the judge reads as such.
 - **A whole target.** One operation cost about 250 000 tokens across the three roles.
   What does a target of 80 operations cost, and does the tool walk the interfaces one by
   one — the perimeter fixed by the tool, not by a session?
