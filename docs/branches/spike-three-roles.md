@@ -86,6 +86,29 @@ move.
     said by the reader as such, not left to the judge. main's tool does not read the
     extractions under `targets/` (keys of the closed spike): the targets were started
     with the commands of their `target.yaml`.
+- **A whole target, begun and stopped: Petclinic's 36 interfaces, one reader each** (files
+  under `targets/spike-snapshots/7-whole-petclinic/`). Briefs made generic — they name
+  no target and no operation — with three things the trials asked for: the reader's doubts
+  in a list of their own (`unsure`), a refusal that says only what is expected, and a
+  fourth word for the judge, `refused-unexpectedly`. Stopped by the user after 24 readers;
+  no builder, no judge.
+  - 24 readers, about 75 000 tokens each, 1.8 million in all. 281 rules on the 23 files
+    that parse — 151 requirements, 130 effects — from 5 rules for a plain read to 32 for a
+    creation with a constraint per field. 169 doubts, 7 per operation.
+  - One rule every operation shares is named `signed-in` by 21 readers of 22: the name in
+    the brief's example aligns the names.
+  - What they found by reading, before any call: the contract and the code differ nearly
+    everywhere (200 said, 201 or 204 answered; an error body promised, an empty 404; a 404
+    on an empty list the contract does not list; an ETag and a 304 never built); two
+    operations never check that the pet is the owner's of the path; deleting a pet may
+    delete its type and the other pets of that type; a visit with no date would hit a
+    database constraint answered 404.
+  - **Two problems.** Nothing checks what a reader writes: a checker written after the
+    fact (`check.ts` there) finds 33 problems in 19 of the 24 folders — 7 files that are
+    not YAML, doubts and hints naming a rule that is not one, a status written "unsure".
+    And what holds for the whole target — the security setting, how an error becomes an
+    answer, the contract's habits — is read again and doubted again by each reader: most
+    of the 169 doubts and of the cost.
 
 ## Backlog
 
