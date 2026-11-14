@@ -109,6 +109,11 @@ them in; each of the first five is a branch of its own.
   facts left empty.
 - **Source.** `targets/*/specimen/facts.yaml` of the two extractions;
   `docs/branches/feat-extract.md` at `c1c9ef0`.
+- **Tried.** On a closed spike: a fact compares a value read with another value read —
+  "the caller wrote it" through the instance the target shows as the caller's own. Used
+  by one fact on each of two targets; "already taken" needs a list read whole, left. A
+  seed that says what each actor is was rejected by the challenger: a role is a state of
+  the target, to be read. Source: `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## Effects in terms: something appears, something goes
 
@@ -121,6 +126,10 @@ them in; each of the first five is a branch of its own.
   that needs each, one target at a time.
 - **Source.** `docs/brief/fit-conduit.md`, `docs/brief/fit-petclinic.md` (a `:then` for
   each effect); `docs/branches/feat-extract.md` at `c1c9ef0`.
+- **Tried.** On a closed spike: an effect says which instance (`where`), takes a value
+  from an input, sees an instance appear, read by the identity the answer gives. Written
+  by the agent on three targets; on the largest, 111 effects stayed sentences. Source:
+  `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## What the agent could not explain has a place, and comes back to a human
 
@@ -166,6 +175,11 @@ them in; each of the first five is a branch of its own.
   rule relative to today waits for the clock.
 - **Source.** `targets/petclinic/specimen/structures.yaml`;
   `docs/branches/feat-verdicts.md` at `591b23f`.
+- **Tried.** On a closed spike: `pattern` on a field, a regular expression on the whole
+  value, and a gap for a format the tool does not compute. One target used it (5 fields,
+  10 rules); 24 rules unjudged and 20 ambiguous there went away. An expression of another
+  dialect that compiles here with another meaning must not be computed. Source:
+  `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## Loose ends of the verdicts
 
@@ -202,6 +216,10 @@ them in; each of the first five is a branch of its own.
   value an earlier call answered. Then the gate below, then extract Kadai again.
 - **Source.** `specimen/` of the Kadai extraction (copied flat under `targets/kadai/`);
   `scenarios/claim-task/accepted.yaml` and its reference.
+- **Tried.** On a closed spike, with no new term: the target phase asks for a starting
+  state identical on every fresh start — a snapshot kept as a file where the target draws
+  its identifiers. Twelve accepted paths recorded as 404 on one target went away. Source:
+  `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## A scenario that proves an effect and is refused fails the gate
 
@@ -218,6 +236,10 @@ them in; each of the first five is a branch of its own.
   session that ended on an API error. Render past events once (Ink's `Static`).
 - **Source.** The run on Kadai of 2026-11-13; `src/agent/extract.ts`,
   `src/cli/render-terminal.tsx`.
+- **Tried.** On a closed spike: the gate was built, then removed. On one target it met a
+  real contradiction — the target refuses what its code accepts — and the agent, told the
+  gate had failed, deleted the scenario. The tool cannot tell a scenario that misses its
+  situation from a target that contradicts its code. Source: `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## An extraction kept apart from the target's checkout
 
@@ -228,6 +250,129 @@ them in; each of the first five is a branch of its own.
   the code still read in `<dir>`; the agent's writes confined to that place. It amends
   ADR-0003.
 - **Source.** `targets/kadai/`; ADR-0003 › Alternatives, "Outside the target's checkout".
+
+## A fact's condition says "one of", "holds", "or"
+
+- **Seen.** After `spike/proof-completeness`, a fact with no condition is the first cause
+  of a rule not judged on the three targets. On Kadai extracted whole (80 operations, 597
+  rules) the agent left 74 facts empty: about 25 rules wait on "the task is one of several
+  states" (`must-be` has `eq` only), about 30 on a role the target shows as a list on the
+  caller's own instance (the administrator, the monitor), several on "the caller owns it
+  or is an administrator". Conduit has one disjunction, Petclinic none of the three.
+- **Settled.** A condition reads through a projection and nothing else (ADR-0007); what an
+  actor is comes from an interface or stays unknown — a seed that says it was reviewed and
+  dropped (a role is a state of the target; the specification would name a file of the
+  target group).
+- **Next.** An ADR for `[in, [v…]]`, `[has, v]` on a field that is a list, and a
+  condition's term that is one of several (`any-of`); then Kadai's facts revised and its
+  references recorded again — no new extraction is needed to measure it.
+- **Source.** `docs/branches/spike-proof-completeness.md` at its last commit on the
+  branch; `src/derive/truth.ts`.
+
+## Roles and permissions no interface shows
+
+- **Seen.** Petclinic: 3 facts, 35 rules, no interface shows a user or a role, and a wrong
+  role answers 500. Kadai: the permissions of a workbasket (read, append, edit its tasks)
+  block about 45 rules; access items are readable by an administrator only.
+- **Settled.** Declared only, and `status` says the fact has no condition.
+- **Next.** Decide what `status` says of a fact the interfaces cannot show at all — today
+  it reads like a fact the agent did not write — and whether a reading may be taken as
+  another actor than the caller (an administrator reading the caller's permissions).
+- **Source.** `docs/brief/fit-petclinic.md` › "Blind spots"; `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
+
+## How much of a target an extraction covers, and how steady it is
+
+- **Seen.** Three extractions of Kadai by the agent on Sonnet bound 18, 10 and 8
+  operations of 93 interfaces; one on Opus bound 80 (20 USD). The rate of rules verified
+  was 36 %, 50 %, 52 %, 49 %: it says nothing of the surface. On the third Sonnet run
+  facts the terms say since the first day were left empty.
+  Why, read in the code: `interface-not-bound` is not among the gaps the specification
+  phase must close (`closedBySpecification`, `src/derive/phases.ts`), so its gate passes
+  with one operation and the phase is done for good; the list of interfaces itself did
+  not move (one `interfaces.yaml`, byte for byte, under the three Sonnet runs). On a
+  smaller target writes are covered each run and reads are not (16, 15, 14 operations of
+  19 interfaces): the brief says "one per read that takes inputs worth a rule". Names
+  move too: an operation's name differs from its interface's on 10 of 14 operations of one
+  target, and from a run to the next (`follow-profile`, `follow-user`) — at an equal
+  count, two extractions still do not compare.
+- **Settled.** The specification is declared whole. The challenger, on a wider design:
+  no group of interfaces walked by the tool — the gate's loop already sends the unbound
+  interfaces back to the agent; no "reason" key for an interface left unbound; no slice
+  of code per interface handed to the agent (tried with `codegraph`: 91 of 93 interfaces
+  joined to their entry point by the contract's `operationId` on one target, 16 of 37 on
+  another; the 80-operation run needed none). A gate strict on every interface would make
+  the agent pad the reads no structure carries (configuration reads, a list of tags).
+- **Next.** (1) `status` shows the surface beside the rate: interfaces bound of
+  interfaces declared. (2) The specification's gate closes `interface-not-bound` for
+  every interface whose method is not `get` — each has a trigger; reads stay gaps to look
+  at. A short ADR amends ADR-0006 ("a gate is not made stricter with heuristics"). A
+  test on a fixture extraction with a `post` interface and no trigger. (3) One Sonnet run
+  on the largest target: the count, the cost, facts duplicated under two names. For the
+  user: whether an operation is named after its interface when it has one — steady names,
+  but it ties the specification to the API.
+- **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), "Why the count of operations moves" ;
+  `targets/spike-snapshots/`, and `4-codegraph-trial/` there for the design and the
+  slice script.
+
+## Comparing two versions of a target: extract once, replay, revise
+
+- **Seen.** The user wants a differential between two versions. Extracting each version
+  from nothing gives two specifications that do not compare (see the item above).
+  Replaying recorded scenarios against a fresh stack involves no agent
+  (`src/run/replay.ts`). Not exercised between two versions of a target.
+- **Settled.** By the user: where the list of routes comes from — the OpenAPI contract
+  first, then `codegraph`, then the code read ad hoc when both fail. `codegraph` gives no
+  verb or path today (annotations come out empty) and crashes on one checkout's root.
+- **Next.** (1) Carry the `specimen/` of version 1 into version 2's checkout — not
+  tooled. (2) See what version 2 adds: the interfaces phase is done as soon as its file
+  is not empty, so a new route is never seen. A check of `interfaces.yaml` against the
+  contract's `(method, path)` set — the contract's place a key of `target.yaml`, or the
+  running target serving it — puts the phase back to do; the specification's gate then
+  sends the agent only what is new. An ADR and the key. Prefer the comparison of the two
+  sets to generating `interfaces.yaml` from the contract in code (a converter of schemas,
+  of unknown size).
+- **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), same entry .
+
+## What an agent takes from the running target while it specifies
+
+- **Seen.** In the specification phase the agent starts the target to read the exact
+  message of each refusal, and writes it as the refusal's `body`; on Petclinic it declared
+  `forbidden` with the status 500 it observed. It left the target up (the scenarios phase
+  now stops it first).
+- **Settled.** A declaration is read in the code or the contract; the target contradicting
+  it is reported, not copied (ADR-0001, ADR-0006). A 500 is never a refusal: the triggers
+  were refuted all the same.
+- **Next.** Decide whether a refusal's body value may come from an answer — a library's
+  message is in no file of the target — and say so in the instructions either way; a check
+  for a refusal declared with a status of the 500s.
+- **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge); `src/agent/instructions/phase-specification.md`.
+
+## What a read answers, and an instance shown only in a list
+
+- **Seen.** Conduit: 9 rules of its two lists are `nothing-changes` with nothing read
+  around them, their real claim — newest first, filtered, paged — in the rule's name; 4
+  rules on a comment, shown only in its article's list. Petclinic and Kadai: the paged
+  searches.
+- **Settled.** Only what the interfaces expose is compared; a reference already holds the
+  whole answer of a read.
+- **Next.** Terms on the judged answer itself (an order, every element has a value, a
+  count), each with the scenario that needs it; reading one element of a list by its
+  identity needs the parent's locator, which is no field of the element.
+- **Source.** `docs/brief/fit-conduit.md`; `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
+
+## Three changes of a closed spike that do not depend on its terms
+
+- **Seen.** `spike/proof-completeness` was closed without a merge; three of its changes
+  are corrections or instructions, whatever becomes of the terms it added.
+- **Settled.** Nothing of that branch is on `main`.
+- **Next.** Take each on its own, from its commit: the scenarios phase stops the target
+  before starting it — a specification session that leaves the target up made the seed
+  play twice (`cb52059`); a starting state identical on every fresh start, in the target
+  phase's brief (`814c947`, without the gate of the same commit); a projection that shows
+  one instance locates every path parameter of its interface — 13 rules of one target
+  were unreadable and `check` said nothing (`d73043e`, `908a7de`). `cb52059` also bounds
+  `bun test` to `test/` (`bunfig.toml`): `bun run live` was not checked after it.
+- **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## Open questions, no item yet
 
