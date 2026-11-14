@@ -18,6 +18,8 @@ export type Session = {
   readonly system: string;
   readonly cwd: string;
   readonly model: string;
+  // how hard the model reasons; without it, the model's default
+  readonly effort?: "low" | "medium" | "high";
   // the id of the session this prompt continues
   readonly resume?: string;
   // the Claude Code executable to start; without it, the one the SDK installs beside itself
@@ -128,7 +130,7 @@ function playServer(play: NonNullable<Session["play"]>) {
 
 // one session, or one more round of it when `resume` is given
 export async function* driveAgent(session: Session): AsyncGenerator<AgentEvent, Ended> {
-  const { prompt, system, cwd, model, resume, executable, tools, play } = session;
+  const { prompt, system, cwd, model, effort, resume, executable, tools, play } = session;
   const canUseTool: CanUseTool = async (name, input) =>
     allowed(name, input, session)
       ? { behavior: "allow", updatedInput: input }
@@ -138,6 +140,7 @@ export async function* driveAgent(session: Session): AsyncGenerator<AgentEvent, 
     options: {
       cwd,
       model,
+      ...(effort === undefined ? {} : { effort }),
       systemPrompt: system,
       tools: [...tools],
       settingSources: [],

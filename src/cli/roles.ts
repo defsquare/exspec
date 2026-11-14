@@ -1,4 +1,4 @@
-import { driveAgent } from "../agent/drive.ts";
+import { driveAgent, type Session } from "../agent/drive.ts";
 import type { Roling } from "../agent/roles.ts";
 import { rolesBuild, rolesPlay } from "../agent/roles-build.ts";
 import { rolesJudge } from "../agent/roles-judge.ts";
@@ -20,6 +20,7 @@ export type RolesAsked = {
   readonly only: string | undefined;
   readonly jobs: number;
   readonly model: string;
+  readonly effort: Session["effort"];
   readonly io: Io;
 };
 
@@ -30,6 +31,7 @@ export function rolesEvents({
   only,
   jobs,
   model,
+  effort,
   io,
 }: RolesAsked): AsyncIterable<Event> {
   const executable = command === "roles-play" ? undefined : claudeExecutable();
@@ -39,7 +41,11 @@ export function rolesEvents({
     jobs,
     model,
     drive: (session) =>
-      driveAgent(executable === undefined ? session : { ...session, executable }),
+      driveAgent({
+        ...session,
+        ...(effort === undefined ? {} : { effort }),
+        ...(executable === undefined ? {} : { executable }),
+      }),
     io,
     readFiles: readExtractionFiles,
     writeFile: writeSpecimenFile,

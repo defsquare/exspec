@@ -25,6 +25,14 @@ about **this** call: the entry point, what it delegates to, the constraints on t
 this call sends, what is stored or removed with it, the role or permission this operation
 asks for, and the contract for this path if the checkout has one.
 
+The contract is not the code: what the contract states is a rule only as the code
+enforces it. Before you write, you have opened, for this operation: its entry point; the
+type its request is read into, with every constraint on its fields; the stored thing that
+request becomes or changes, with every constraint on its fields; what is done between the
+two; how it is stored or removed, and what goes with it — what it owns, what refers to it.
+Each rule's `source` is the place that decides it. A rule you could read in the contract
+only is written with that doubt under `unsure`.
+
 Then read the repository's own tests of this operation. They tell you which situations the
 authors exercise and how they set them up.
 

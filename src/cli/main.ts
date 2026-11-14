@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { z } from "zod";
 import { agentMark } from "../agent/drive.ts";
 import {
   checkoutVersion,
@@ -34,7 +35,7 @@ const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
        specimen replay <dir> [<operation>/<slug>…]
        specimen record <dir> [<operation>/<slug>…] [--force]
        specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]
-       specimen roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--format json]
+       specimen roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
        specimen roles play <dir> <interface>/<slug>`;
 
 const { positionals, values } = parseArgs({
@@ -44,6 +45,7 @@ const { positionals, values } = parseArgs({
     force: { type: "boolean", default: false },
     phase: { type: "string" },
     model: { type: "string", default: "sonnet" },
+    effort: { type: "string" },
     only: { type: "string" },
     jobs: { type: "string", default: "4" },
   },
@@ -157,6 +159,7 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
         only: values.only,
         jobs,
         model: values.model,
+        effort: z.enum(["low", "medium", "high"]).optional().parse(values.effort),
         io: await ioOf(),
       });
     }

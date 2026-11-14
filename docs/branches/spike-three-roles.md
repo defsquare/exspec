@@ -232,6 +232,27 @@ move.
   prefix where `%` matches every owner. The reader's hints failed their gate once on 17
   operations (`reachable` not in its three forms) and were repaired in the session.
 
+- **Why the default model read less, tried on three operations** (results under
+  `targets/spike-snapshots/8-tool-petclinic/reader-*`; one run per cell, the same structures
+  and common reading for all). The traces: at the default model the reader of a creation
+  opened the contract and searched once; the stronger one opened the request's type, the
+  entity, the mapping, the schema. Rules written (requirements + effects), for the creation,
+  the paged list, the deletion:
+
+  | reader | rules | finds the ten-digit phone | finds the type cascade | USD for the three |
+  |---|---|---|---|---|
+  | default model | 9, 8, 4 | in a doubt | no | 0.33 |
+  | default, high effort (`--effort high`, new) | 18, 10, 5 | yes | yes | 0.46 |
+  | default, the instruction made strict | 11, 10, 5 | yes | yes | 0.34 |
+  | default, both | 18, 11, 8 | yes | yes | 0.88 |
+  | stronger model | 24, 16, 5 | yes | yes | about 2.2 |
+
+  The instruction now says the contract is not the code and names what must have been
+  opened before writing: the entry point, the request's type, the stored thing, what is
+  between them, what goes with a removal. Kept: it costs nothing and finds both. The effort
+  is a flag, not a default. The readers run by hand were deep at the default model: the
+  harness's own prompt and effort were doing what these two do.
+
 ## Backlog
 
 - **The two specifications.** The roles' files live beside `operations/`, facts' terms,
@@ -241,9 +262,11 @@ move.
   specification — and deprecate what no target uses any more. The user's, with its ADRs.
 - **ADR-0010 is Proposed.** To accept, amend or drop; with it the stored judgement and
   the builder's own tool where ADR-0006 gave a shell.
-- **Which model reads.** The default one misses rules a stronger one finds, at a tenth of
-  the price: on Petclinic 263 rules for 3 USD, 504 for 23. A stronger reader only; or the
-  reader again where the judge contradicts.
+- **Which reader for a whole target.** On three operations the default model at high
+  effort with the strict instruction writes three quarters of the stronger model's rules
+  and finds the same two things, at a fifth to a third of its price. One run per cell: to
+  confirm on a whole target (Conduit, not yet read with its structures) before it becomes
+  the default.
 - **A structure with nothing under it, and one nothing shows.** `Role` has no operation;
   nothing says a structure is shown, where the terms had a projection. Derivable: a
   structure is shown when an operation that answers it has its `answers` judged to hold.
