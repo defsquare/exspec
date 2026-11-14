@@ -109,6 +109,30 @@ move.
     And what holds for the whole target — the security setting, how an error becomes an
     answer, the contract's habits — is read again and doubted again by each reader: most
     of the 169 doubts and of the cost.
+- **The two problems, corrected in the briefs and checked on three operations** (same
+  folder, `v2/`).
+  - *A check before the hand-over.* The reader runs the checker on its own folder and is
+    done when it reports nothing — as a phase of the tool is done when `check` is silent.
+    The list of facts, which repeated the fact of each requirement, is gone from the form.
+  - *What holds for the whole target is read once.* One reader before the others writes
+    `common.yaml`: how the target under trial is started, who a caller is, how an error
+    becomes an answer, where the contract and the code differ as a habit. It may read how
+    the target is started (`specimen/target.yaml`, `specimen/target/`). On Petclinic: 5
+    settings, 6 shared rules each with the operations it applies to, 5 kinds of error, 6
+    habits of the contract, 4 doubts; 76 000 tokens. It settles what the 24 readers each
+    doubted — security is on in what runs, off in what ships — and names the three actors
+    and their roles, which the trials only found by crossing answers.
+  - *Three operations read again with it* (`create-owner`, `list-owners-page`,
+    `delete-pet`): the checker silent on the three, where the first pass left one file
+    that was not YAML; doubts 23 → 14; tokens 230 000 → 192 000, a sixth less; each names
+    the shared rules that apply (`signed-in`, `owner-admin-role`) instead of writing them.
+    One reader corrected the shared file on its own operation — an empty page answers 200,
+    not the 404 said of an empty list — rather than follow it.
+  - *Left.* The shared reader wrote "not settled, see unsure" in the body of four
+    refusals: the checker reads a form, not a sentence. The saving in tokens is small:
+    most of a reader's cost is not what the shared file spares. The checker is a script of
+    the trial; in the tool it is a schema for what the reader writes — shapes, so the
+    challenger and an ADR.
 
 ## Backlog
 
@@ -118,6 +142,12 @@ move.
   that moves the code moves the anchor.
 - **A rule the reader is unsure of.** It made the one judgement that flipped. A place to
   say "unsure, and why" that the judge reads as such.
+- **What the reader writes has a schema in the tool.** Tried as a script; in the tool
+  it is a shape: the existing operation shape filled with sentences, or the trial's form
+  (`common`, `otherwise` with its status and body, `source`, `unsure`)? To the challenger.
+- **What a reader's tokens go to.** The shared file spared a sixth. Is the rest the
+  operation's own code, or files every reader opens again (the contract, the generated
+  types)? Measure before splitting further.
 - **A whole target.** One operation cost about 250 000 tokens across the three roles.
   What does a target of 80 operations cost, and does the tool walk the interfaces one by
   one — the perimeter fixed by the tool, not by a session?
