@@ -1,7 +1,7 @@
 # ADR-0009 — `view` makes one page of the extraction, and it is the command's output
 
-Status: Proposed (2026-11-13) — the form (a page made, not a server) chosen by the user
-after the challenger's review; the text to be reviewed by the user.
+Status: Accepted (2026-11-15) — by the user; the form (a page made, not a server) chosen
+by the user after the challenger's review.
 
 ## Context
 
