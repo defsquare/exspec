@@ -30,9 +30,26 @@ list of an operation holds no requirement about one input's form unless it does 
   input; looked at on a copy of one reading with the key guessed from the names, 18
   requirements of one operation in five rows.
 
+- **Conduit read again, with the key and the reads held** (default model at high effort;
+  the run kept before is under `targets/spike-snapshots/9-tool-conduit/run2-effort-high/`,
+  the events `c3-*.jsonl` beside it; 5.8 USD: 2.7 read, 1.9 build, 1.1 judge).
+  - *The key.* 25 of 46 requirements have `on`, every one about presence, type, length or
+    form (a wrapper present, a field not blank, an email well formed, a limit an integer).
+    The 21 without are existence, authorship, a login, and the three uniqueness checks
+    answered as a form check is — none misfiled, going by each rule's name and status.
+  - *The page.* An operation with a requirement on an input that does not hold
+    (`limit-not-zero`, contradicted) shows it twice as designed: a red mark in the stop,
+    and its own gate.
+  - *Beside the run kept before:* 19 of 19 interfaces; 46 requirements (46), 85 effects
+    (108), 224 scenarios (276); 210 hold, 3 contradicted, 11 not shown (236, 22, 18). The
+    21 contradictions that were one fact are gone: the readers wrote the 401 the target
+    answers where the earlier ones wrote 404 or 403. One run of each: nothing here says
+    whether fewer effects come from the reads now held or from the run.
+  - The three contradictions left are all a 401 answered to a signed-in caller where the
+    rule expects something else; not read further.
+
 ## Backlog
 
-- **One target read again with the key**, its page looked at.
 - **The runs were made before the reads were held** (moved from `docs/backlog.md`).
   - **Seen.** Until the last fixes of the branch a session's reads were held by a callback
     the SDK calls only for what it would ask a person: nothing inside the checkout. Read in
