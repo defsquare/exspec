@@ -169,7 +169,7 @@ function lines(o) {
   ]);
   const whenSay = (when) => when === undefined ? "Always: " : typeof when === "string" ? ["When ", h("b", null, when), ": "] : when[0] === "given" ? ["When ", code(when[1]), " is given: "] : ["Unless ", h("b", null, when[1]), ": "];
   return [
-    ...Object.entries(o.takes).flatMap(([input, t]) => (t.rules ?? []).map((r) => ({ kind: "input", rule: r.rule, otherwise: r.otherwise, status: status(r.otherwise),
+    ...Object.entries(o.takes).flatMap(([input, t]) => (t.rules ?? []).map((r) => ({ kind: "input", input, rule: r.rule, otherwise: r.otherwise, status: status(r.otherwise),
       say: ["Refuses ", code(r.otherwise), " when ", code(input), " breaks ", h("b", null, r.violates)], short: `${input}: ${r.violates}` }))),
     ...o.requires.map((r) => ({ kind: "requires", rule: r.rule, fact: r.fact, otherwise: r.otherwise, status: status(r.otherwise),
       say: ["Refuses ", code(r.otherwise), " unless ", h("b", null, r.fact)], short: r.fact })),
@@ -250,7 +250,13 @@ function steps(e) {
 function gates(o, path, picked) {
   const all = lines(o), gate = all.filter((l) => l.kind === "input" || l.kind === "requires"), effects = all.filter((l) => !gate.includes(l));
   const e = path ? scenarioAt(path) : null, sc = e ? (e.scenario ?? { proves: [e.rule] }) : null;
-  const exitAt = sc ? gate.findIndex((g) => sc.proves.includes(g.rule)) : -2; // -1: through to the end
+  // The requirements on one input share one stop, drawn where the first of them is: a mark each, by input.
+  // One that does not hold keeps a gate of its own as well.
+  const onInput = gate.filter((g) => g.input !== undefined);
+  const stops = gate.flatMap((g) => g.input === undefined ? [{ gate: g }] : [...(g === onInput[0] ? [{ inputs: onInput }] : []), ...(bad(provenanceOf(o.operation, g.rule)) ? [{ gate: g }] : [])]);
+  const proven = (g) => sc.proves.includes(g.rule);
+  const held = (g) => proven(g) && !bad(provenanceOf(o.operation, g.rule)); // one that does not hold exits by its own gate
+  const exitAt = sc ? stops.findIndex((st) => st.gate ? proven(st.gate) : st.inputs.some(held)) : -2; // -1: through to the end
   const answered = !path ? undefined : e?.steps ? e.steps.find((st) => st.when === "call")?.status : referenceOf(path)?.act.response.status;
   const cx = 150, bw = 260, els = [];
   let y = 20;
@@ -262,19 +268,48 @@ function gates(o, path, picked) {
   const inputs = `${o.operation}(${Object.keys(o.takes ?? {}).join(", ")})`;
   els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#172741" }), s("text", { x: cx, y: y + 25, "text-anchor": "middle", style: "fill:#fff", "font-weight": 600 }, inputs.length > 34 ? `${clip(o.operation, 30)}(…)` : inputs));
   y += 40;
-  gate.forEach((g, n) => {
+  const exit = (y, h, out, refusal, status, answeredElse) => [
+    s("line", { x1: cx + bw / 2, y1: y + h / 2, x2: cx + bw / 2 + 60, y2: y + h / 2, stroke: out ? "#f65e5e" : "#d1d5db", "stroke-width": out ? 3 : 1.5, "marker-end": `url(#g-${out ? "on" : "off"})` }),
+    s("text", { x: cx + bw / 2 + 68, y: y + h / 2 - 3, class: "m" }, refusal),
+    s("text", { x: cx + bw / 2 + 68, y: y + h / 2 + 13, class: "small" }, status),
+    answeredElse ? s("text", { x: cx + bw / 2 + 180, y: y + h / 2 + 13, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null];
+  const one = (values, word) => { const set = [...new Set(values)]; return set.length === 1 ? set[0] : `${set.length} ${word}`; };
+  stops.forEach((st, n) => {
     els.push(spine(y, y + 20, taken(n)));
     y += 20;
     const out = sc && exitAt === n;
-    els.push(s("g", { class: "click", onclick: open(g.rule) },
-      s("rect", { x: cx - bw / 2, y, width: bw, height: 44, rx: 6, fill: picked === g.rule ? "#d9e3f1" : "#fff", stroke: stroke(g.rule), "stroke-width": 2.5 }),
-      s("text", { x: cx, y: y + 19, "text-anchor": "middle", class: "m" }, clip(g.rule, 34)),
-      s("text", { x: cx, y: y + 36, "text-anchor": "middle", class: "small" }, clip(g.short, 38))),
-      s("line", { x1: cx + bw / 2, y1: y + 22, x2: cx + bw / 2 + 60, y2: y + 22, stroke: out ? "#f65e5e" : "#d1d5db", "stroke-width": out ? 3 : 1.5, "marker-end": `url(#g-${out ? "on" : "off"})` }),
-      s("text", { x: cx + bw / 2 + 68, y: y + 19, class: "m" }, g.otherwise),
-      s("text", { x: cx + bw / 2 + 68, y: y + 35, class: "small" }, g.status === undefined ? "no status declared" : `refused with ${g.status}`),
-      out && answered !== undefined && answered !== g.status ? s("text", { x: cx + bw / 2 + 180, y: y + 35, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
-    y += 44;
+    if (st.gate) {
+      const g = st.gate;
+      els.push(s("g", { class: "click", onclick: open(g.rule) },
+        s("rect", { x: cx - bw / 2, y, width: bw, height: 44, rx: 6, fill: picked === g.rule ? "#d9e3f1" : "#fff", stroke: stroke(g.rule), "stroke-width": 2.5 }),
+        s("text", { x: cx, y: y + 19, "text-anchor": "middle", class: "m" }, clip(g.rule, 34)),
+        s("text", { x: cx, y: y + 36, "text-anchor": "middle", class: "small" }, clip(g.short, 38))),
+        exit(y, 44, out, g.otherwise, g.status === undefined ? "no status declared" : `refused with ${g.status}`, out && answered !== undefined && answered !== g.status));
+      y += 44;
+      return;
+    }
+    // wide as an effect: a mark and a word per requirement, the word being its name without its input's
+    const perRow = 4, wide = bw + 200, left = cx - bw / 2, words = st.inputs.map((g) => provenanceOf(o.operation, g.rule)), exited = out ? st.inputs.find(proven) : undefined;
+    const dashed = (name) => name.replace(/([A-Z])/g, "-$1").toLowerCase(), wordOf = (g) => g.rule.startsWith(`${dashed(g.input)}-`) ? g.rule.slice(dashed(g.input).length + 1) : g.rule;
+    const rows = [...new Set(st.inputs.map((g) => g.input))].flatMap((input) => {
+      const marks = st.inputs.filter((g) => g.input === input);
+      return Array.from({ length: Math.ceil(marks.length / perRow) }, (_, r) => ({ input: r === 0 ? input : "", marks: marks.slice(r * perRow, (r + 1) * perRow) }));
+    });
+    const height = 34 + rows.length * 22 + 6, status = (g) => g.status === undefined ? "no status declared" : `${g.status}`;
+    els.push(s("rect", { x: left, y, width: wide, height, rx: 6, fill: "#fff", stroke: blend(words), "stroke-width": 2.5 }),
+      s("text", { x: left + 12, y: y + 21, class: "m" }, "inputs"),
+      s("text", { x: left + 70, y: y + 21, class: "small" }, `${words.filter(good).length} of ${words.length} hold`),
+      s("text", { x: left + wide - 12, y: y + 21, "text-anchor": "end", class: "small" }, `otherwise ${one(st.inputs.map((g) => g.otherwise), "refusals")} · ${one(st.inputs.map(status), "statuses")}`),
+      rows.map((row, r) => [
+        s("text", { x: left + 12, y: y + 34 + r * 22 + 14, class: "small", "font-weight": 600 }, clip(row.input, 13)),
+        row.marks.map((g, m) => s("g", { class: "click", onclick: open(g.rule) },
+          s("title", null, `${g.rule} — ${g.short}`),
+          picked === g.rule || g === exited ? s("rect", { x: left + 100 + m * 88, y: y + 34 + r * 22, width: 86, height: 20, rx: 10, fill: g === exited ? "#fde3e3" : "#d9e3f1" }) : null,
+          s("circle", { cx: left + 110 + m * 88, cy: y + 34 + r * 22 + 10, r: 5, fill: stroke(g.rule) }),
+          s("text", { x: left + 120 + m * 88, y: y + 34 + r * 22 + 14, class: "small" }, clip(wordOf(g), 11))))]),
+      exited ? [s("line", { x1: left + wide, y1: y + height / 2, x2: left + wide + 40, y2: y + height / 2, stroke: "#f65e5e", "stroke-width": 3, "marker-end": "url(#g-on)" }),
+        s("text", { x: left + wide + 46, y: y + height / 2 + 4, class: "small", style: answered !== undefined && answered !== exited.status ? "fill:#a62949;font-weight:600" : "" }, answered !== undefined && answered !== exited.status ? `answered ${answered}` : status(exited))] : null);
+    y += height;
   });
   effects.forEach((e) => {
     els.push(spine(y, y + 20, through));
@@ -349,7 +384,7 @@ function operationSheet(o, path, picked) {
     h("p", { class: "eyebrow" }, "Operation"), h("h1", null, o.operation), operationHead(o),
     h("div", { class: "card" }, gates(o, path, picked), h("div", { class: "legend" },
       (roles ? [["holds", "holds"], ["contradicted", "contradicted or refused unexpectedly"], ["not-shown", "not shown"], ["none", "unjudged"]] : [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]]).map(([key, word]) => h("span", null, h("i", { style: `border-color:${colors[key]}` }), word)),
-      path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof; a scenario draws its path."))),
+      path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof; a scenario draws its path. Under inputs, a mark is a requirement on that input alone."))),
     h("p", { class: "eyebrow" }, "Scenarios"),
     scenariosOf(o.operation).length === 0 ? h("p", { class: "muted" }, "None.") : h("div", { class: "chips" }, scenariosOf(o.operation).map((e) =>
       h("a", { class: `chip ${e.path === path ? "on" : ""}`, href: e.path === path ? route("operation", o.operation) : route("scenario", e.path) }, dot(scenarioColor(e.path)), e.path.split("/")[1]))),

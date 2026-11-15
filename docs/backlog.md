@@ -488,26 +488,6 @@ them in; each of the first five is a branch of its own.
 - **Next.** The three findings first, each with its test.
 - **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, its Backlog.
 
-## The runs were made before the reads were held
-
-- **Seen.** Until the last fixes of the branch a session's reads were held by a callback
-  the SDK calls only for what it would ask a person: nothing inside the checkout. Read in
-  the transcripts of the three targets: none of the 205 builder sessions read or searched
-  outside its own files; nearly every reader searched from the checkout's root at least
-  once, and 2 such searches on Conduit, 14 on Petclinic, 21 on Kadai came back naming
-  files of the earlier extraction or of the evidence. A hook holds every call now; a
-  reader refused its searches from the root narrows them and ends (one operation tried).
-  The judgements stored under the checkouts read as stale: their hash now covers the
-  requirements and what the target runs with.
-- **Settled.** The separation is built (ADR-0010): a hook on every call, not a brief.
-- **Next.** Read one whole target again with the hook — Conduit, 7 USD — and compare the
-  rules with the run kept: whether a reader that cannot search from the root reads less,
-  and whether any rule of the kept run came from a file it should not have seen. Judge
-  again what is kept, or drop it.
-- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "The challenger before
-  the merge"; the transcripts are under `~/.claude/projects/` of the machine that ran
-  them, not in the repository.
-
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").
