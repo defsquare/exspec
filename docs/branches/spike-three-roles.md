@@ -253,6 +253,20 @@ move.
   is a flag, not a default. The readers run by hand were deep at the default model: the
   harness's own prompt and effort were doing what these two do.
 
+- **Conduit read again with its structures, the readers on the default model at high
+  effort with the strict instruction** (the first pass kept under
+  `targets/spike-snapshots/9-tool-conduit/`; the page at `targets/pages/conduit.html`).
+  4 structures (`User`, `Tag`, `Article`, `Comment`); 19 of 19 interfaces; 215 rules where
+  the first pass gave 182 — the same requirements (46 for 45), the effects from 65 to 108;
+  276 scenarios; 236 hold, 22 contradicted, 18 not shown; 6.8 USD, 3.2 of them the readers
+  (0.17 an operation). 21 of the 22 contradictions are the one fact of the first pass: an
+  unknown article, profile or comment, or an act on someone else's, is answered 401 where
+  the code raises 404 or 403 — the common reader wrote it as a doubt ("sent through the
+  container's error page") and kept 404 and 403 as the rule. One builder's session fell on
+  a `get` written with a body, which the platform refuses to send: fixed, such a step is
+  unplayable and goes back to the builder as a finding. No stronger model was run on
+  Conduit: what this reader misses there is not measured.
+
 ## Backlog
 
 - **The two specifications.** The roles' files live beside `operations/`, facts' terms,
