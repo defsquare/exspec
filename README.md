@@ -68,5 +68,9 @@ bun src/cli/main.ts target down <dir>
 bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
 bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
 bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>]   # an agent writes the extraction, phase by phase
+bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # a reader per interface -> specimen/roles/
+bun src/cli/main.ts roles build <dir> [--only <interface>] [--jobs n]   # target up, a scenario builder per interface, evidence played
+bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judge per interface, no tool -> judgements.yaml
+bun src/cli/main.ts roles play <dir> <interface>/<slug>                  # on a target up: reset, play one written scenario
 bun run live                                # record and replay Conduit's fixture (Docker)
 ```

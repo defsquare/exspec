@@ -22,6 +22,7 @@ import { askedOf } from "./command-line.ts";
 import { extractCommand } from "./extract.ts";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
+import { rolesEvents } from "./roles.ts";
 import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
 import { pageOf } from "./view.ts";
@@ -32,7 +33,9 @@ const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
        specimen target play <dir> [<operation>/<slug>…]
        specimen replay <dir> [<operation>/<slug>…]
        specimen record <dir> [<operation>/<slug>…] [--force]
-       specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]`;
+       specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]
+       specimen roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--format json]
+       specimen roles play <dir> <interface>/<slug>`;
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -41,6 +44,8 @@ const { positionals, values } = parseArgs({
     force: { type: "boolean", default: false },
     phase: { type: "string" },
     model: { type: "string", default: "sonnet" },
+    only: { type: "string" },
+    jobs: { type: "string", default: "4" },
   },
 });
 const asked = askedOf(positionals, process.env[agentMark] !== undefined);
@@ -48,7 +53,9 @@ if (asked.type === "refused-to-agent") {
   console.error(
     asked.command === "view"
       ? "specimen view is not run from an agent's session: the page is for a person; status and verdicts say the same."
-      : `specimen ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
+      : asked.command.startsWith("roles-")
+        ? `specimen ${asked.command.replace("-", " ")} is not run from an agent's session: the roles are kept apart, and the tool drives each of them.`
+        : `specimen ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
   );
   process.exit(2);
 }
@@ -66,7 +73,7 @@ const examination = {
   readFiles: readExtractionFiles,
 };
 
-// the one command whose output is not the event stream: a page, for a browser
+// the command whose output is not the event stream: a page, for a browser
 if (command === "view") {
   if (paths.length > 0 || values.format !== undefined) {
     console.error(usage);
@@ -128,6 +135,27 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
       return extractCommand({
         dir,
         only: only.data,
+        model: values.model,
+        io: await ioOf(),
+      });
+    }
+    case "roles-read":
+    case "roles-build":
+    case "roles-judge":
+    case "roles-play": {
+      const jobs = Number(values.jobs);
+      const [scenario] = paths;
+      const misused =
+        command === "roles-play"
+          ? paths.length !== 1 || values.only !== undefined
+          : paths.length > 0;
+      if (misused || !Number.isInteger(jobs) || jobs < 1) return undefined;
+      return rolesEvents({
+        command,
+        dir: examination.dir,
+        scenario,
+        only: values.only,
+        jobs,
         model: values.model,
         io: await ioOf(),
       });

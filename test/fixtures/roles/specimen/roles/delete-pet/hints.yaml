@@ -1,0 +1,30 @@
+- rule: pet-exists
+  situation: a pet id that no pet has
+  how: call with an identifier far above the existing ones, signed in as an owner admin
+  seen-in: "src/test/java/org/springframework/samples/petclinic/rest/controller/PetRestControllerV1Tests.java:207"
+  reachable: yes
+- rule: pet-removed
+  situation: an existing pet
+  how: create an owner and a pet through the API (or take a seeded pet), delete it, then read it
+  seen-in: "src/test/java/org/springframework/samples/petclinic/rest/controller/PetRestControllerV1Tests.java:195"
+  reachable: yes
+- rule: pet-gone-from-owner
+  situation: an owner with a pet
+  how: delete the pet, then read the owner and look at its pets
+  seen-in: "src/test/java/org/springframework/samples/petclinic/service/clinicService/AbstractClinicServiceTests.java:217"
+  reachable: yes
+- rule: visits-removed
+  situation: a pet with a visit
+  how: add a visit to the pet through the API, delete the pet, then read the visit
+  seen-in: "src/test/java/org/springframework/samples/petclinic/service/clinicService/AbstractClinicServiceTests.java:217"
+  reachable: unsure — the repository tests do not check visits; the read of a visit after deletion is a caller's means
+- rule: other-pets-untouched
+  situation: an owner with two pets
+  how: delete one, read the other and its visits
+  seen-in: "src/test/java/org/springframework/samples/petclinic/service/clinicService/AbstractClinicServiceTests.java:217"
+  reachable: yes
+- rule: pet-type-kept
+  situation: two pets of the same type
+  how: create two pets with the same type, delete one, read the pet type
+  seen-in: "src/test/java/org/springframework/samples/petclinic/service/clinicService/AbstractClinicServiceTests.java:217"
+  reachable: yes

@@ -1,0 +1,34 @@
+operation: delete-pet
+takes:
+  petId: the pet to delete (path)
+common: [signed-in, owner-admin-role]
+requires:
+  - rule: pet-exists
+    fact: a pet with the given id exists
+    otherwise: {refusal: not-found, status: 404, body: "empty: the status alone, no problem detail"}
+    source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/PetRestControllerV1.java:89-93"
+effects:
+  - rule: pet-removed
+    says: The pet no longer exists; reading it afterwards finds nothing.
+    source: "src/main/java/org/springframework/samples/petclinic/service/ClinicServiceImpl.java:79-81"
+  - rule: pet-gone-from-owner
+    says: The pet no longer appears among its owner's pets.
+    source: "src/main/java/org/springframework/samples/petclinic/model/Owner.java:52"
+  - rule: visits-removed
+    says: The visits of the pet are removed with it.
+    source: "src/main/java/org/springframework/samples/petclinic/model/Pet.java:45"
+  - rule: other-pets-untouched
+    says: The owner's other pets and their visits are unchanged.
+    source: "src/main/java/org/springframework/samples/petclinic/service/ClinicServiceImpl.java:79-81"
+  - rule: pet-type-kept
+    when: "other pets share the pet's type"
+    says: The pet's type still exists.
+    source: "src/main/java/org/springframework/samples/petclinic/model/Pet.java:37"
+answers: "204 with an empty body"
+unsure:
+  - rule: pet-type-kept
+    what: "the pet's type relation cascades all operations, so deleting the pet may try to delete its type: refused by a constraint (404 problem detail, nothing deleted) when other pets use it, or the type deleted when none does"
+  - rule: pet-removed
+    what: "the contract says 200 with the pet, and declares 304 and 400; the code answers 204 with no body"
+  - rule: pet-exists
+    what: "a petId below 0 or not an integer: contract bounds it, no code check read"

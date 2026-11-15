@@ -107,7 +107,7 @@ const playedCallSchema = z
   .readonly();
 
 // clock: the time the target was started with, null when it runs on its own
-const runSchema = z
+export const runSchema = z
   .strictObject({
     target: z.string(),
     version: z.string(),

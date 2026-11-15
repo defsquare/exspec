@@ -21,12 +21,12 @@ function specimenCommandLine(): string {
 
 // From the sources the SDK starts the executable installed beside it. A compiled specimen
 // carries none (it weighs five times the binary): it starts the `claude` of the PATH.
-function claudeExecutable(): string | undefined {
+export function claudeExecutable(): string | undefined {
   if (!compiled) return undefined;
   const found = Bun.which("claude");
   if (found === null) {
     throw new ClaudeNotFound(
-      "specimen extract needs Claude Code: no `claude` on the PATH (https://claude.com/claude-code)",
+      "specimen extract and specimen roles need Claude Code: no `claude` on the PATH (https://claude.com/claude-code)",
     );
   }
   return found;

@@ -10,11 +10,12 @@ import type { Io } from "../run/io.ts";
 import { resetTarget, startTarget, stopTarget } from "../run/lifecycle.ts";
 import { playEach } from "../run/play.ts";
 import { record } from "../run/record.ts";
-import { type AgentEvent, type Event, type Phase, phaseSchema } from "../shapes/event.ts";
+import { type Event, type Phase, phaseSchema } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 import type { Target } from "../shapes/target.ts";
-import type { Drive, Ended } from "./drive.ts";
+import { type Drive, mayWrite, phaseConfinement, phaseTools } from "./drive.ts";
 import type { Instructions } from "./instructions.ts";
+import { sessionRounds } from "./rounds.ts";
 
 export type Extracting = {
   readonly dir: string;
@@ -138,47 +139,35 @@ async function* gate(
   return yield* recordReferences(examined, extracting);
 }
 
-async function* withPhase(
-  phase: Phase,
-  session: AsyncGenerator<AgentEvent, Ended>,
-): AsyncGenerator<Event, Ended> {
-  for (;;) {
-    const next = await session.next();
-    if (next.done) return next.value;
-    yield { ...next.value, phase };
-  }
-}
-
 // one session, then its gate; a failed gate's findings are the session's next prompt
-async function* agentPhase(
+function agentPhase(
   phase: AgentPhase,
   extracting: Extracting,
 ): AsyncGenerator<Event, boolean> {
   const { dir, model, instructions, drive } = extracting;
-  let prompt = instructions.phases[phase];
-  let resume: string | undefined;
-  for (let round = 0; ; round++) {
-    const ended = yield* withPhase(
+  return sessionRounds({
+    drive,
+    session: {
+      prompt: instructions.phases[phase],
+      system: instructions.system,
+      cwd: dir,
+      model,
+      tools: phaseTools,
+      mayRead: () => true,
+      mayWrite: (path) => mayWrite(dir, path),
+      confinement: phaseConfinement,
+    },
+    rounds,
+    failedGate,
+    label: (event) => ({ ...event, phase }),
+    checked: (findings) => ({
+      type: "gate-checked",
       phase,
-      drive({
-        prompt,
-        system: instructions.system,
-        cwd: dir,
-        model,
-        ...(resume === undefined ? {} : { resume }),
-      }),
-    );
-    if (!ended.ok) {
-      yield { type: "command-failed", message: "the agent's session ended in error" };
-      return false;
-    }
-    const findings = yield* gate(phase, extracting);
-    yield { type: "gate-checked", phase, ok: findings.length === 0, findings };
-    if (findings.length === 0) return true;
-    if (round === rounds) return false;
-    resume = ended.session;
-    prompt = [failedGate, "", ...findings].join("\n");
-  }
+      ok: findings.length === 0,
+      findings,
+    }),
+    gate: () => gate(phase, extracting),
+  });
 }
 
 // the scenarios are written against the running target: started before, stopped after

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { gapSchema, problemSchema } from "./extraction.ts";
+import { evidenceSchema, verdictSchema } from "./roles.ts";
 import {
   differenceSchema,
   disagreementSchema,
@@ -16,6 +17,10 @@ const commandSchema = z.enum([
   "replay",
   "extract",
   "verdicts",
+  "roles-read",
+  "roles-build",
+  "roles-judge",
+  "roles-play",
 ]);
 
 export const phaseSchema = z.enum([
@@ -27,6 +32,13 @@ export const phaseSchema = z.enum([
 ]);
 
 export type Phase = z.infer<typeof phaseSchema>;
+
+export const roleSchema = z.enum(["common-reader", "reader", "builder", "judge"]);
+
+export type Role = z.infer<typeof roleSchema>;
+
+// the session a role's event comes from: one per interface, but the common reader's
+const bySchema = { role: roleSchema, interface: z.string().optional() };
 
 const progressSchema = z.enum(["done", "to-do"]);
 
@@ -141,7 +153,9 @@ export const agentEventSchema = z.discriminatedUnion("type", [
 
 export type AgentEvent = z.infer<typeof agentEventSchema>;
 
-export const eventSchema = z.discriminatedUnion("type", [
+// Not a discriminated union: an agent's event and a gate's come from a phase or from a role,
+// two shapes under one type.
+export const eventSchema = z.union([
   z.object({
     type: z.literal("command-started"),
     command: commandSchema,
@@ -220,6 +234,39 @@ export const eventSchema = z.discriminatedUnion("type", [
     findings: z.array(z.string()).readonly(),
   }),
   z.object({ type: z.literal("phase-finished"), phase: phaseSchema, ok: z.boolean() }),
+  z.object({ type: z.literal("role-started"), ...bySchema }),
+  // why: its files pass already, or what it needs is not there
+  z.object({ type: z.literal("role-skipped"), ...bySchema, why: z.string() }),
+  agentSaid.extend(bySchema),
+  agentUsed.extend(bySchema),
+  agentEnded.extend(bySchema),
+  z.object({
+    type: z.literal("gate-checked"),
+    ...bySchema,
+    ok: z.boolean(),
+    findings: z.array(z.string()).readonly(),
+  }),
+  z.object({ type: z.literal("role-finished"), ...bySchema, ok: z.boolean() }),
+  // scenario: its slug
+  z.object({
+    type: z.literal("steps-played"),
+    interface: z.string(),
+    scenario: z.string(),
+    evidence: evidenceSchema,
+  }),
+  z.object({
+    type: z.literal("judgement-written"),
+    interface: z.string(),
+    scenario: z.string(),
+    rule: z.string(),
+    verdict: verdictSchema,
+    confidence: z.number(),
+  }),
+  // every judgement of every interface, by verdict
+  z.object({
+    type: z.literal("roles-counted"),
+    verdicts: z.record(verdictSchema, z.int()),
+  }),
   // what ended a command before its end: the target failed to start, a command failed
   z.object({ type: z.literal("command-failed"), message: z.string() }),
   z.object({

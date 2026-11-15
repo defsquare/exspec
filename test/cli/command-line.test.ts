@@ -47,3 +47,21 @@ test("the agent is refused what decides or judges a reference, and itself", () =
     rest: ["d"],
   });
 });
+
+test("the roles are two words, each refused to the agent", () => {
+  expect([
+    askedOf(["roles", "read", "d"], false),
+    askedOf(["roles", "play", "d", "f/a"], false),
+    askedOf(["roles", "build", "d"], true),
+    askedOf(["roles", "page", "d"], false),
+    askedOf(["roles", "record", "d"], false),
+    askedOf(["roles"], false),
+  ]).toEqual([
+    { type: "command", command: "roles-read", rest: ["d"] },
+    { type: "command", command: "roles-play", rest: ["d", "f/a"] },
+    { type: "refused-to-agent", command: "roles-build" },
+    { type: "unknown" },
+    { type: "unknown" },
+    { type: "unknown" },
+  ]);
+});

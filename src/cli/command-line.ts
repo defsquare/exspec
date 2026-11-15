@@ -2,7 +2,10 @@
 //   read the extraction    status, check, verdicts
 //   drive the target       target up, target down, target play
 //   the references and the agent itself    record, replay, extract, view — refused to the agent
+//   the three roles        roles read, roles build, roles judge, roles play — refused to the
+//                          agent
 const read = ["status", "check", "verdicts"];
+const roles = ["read", "build", "judge", "play"];
 export const onTarget = ["up", "down", "play"];
 // view: a page for a person, every recorded answer in it
 const refusedToAgent = ["record", "replay", "extract", "view"];
@@ -20,8 +23,16 @@ export type Asked =
 // ["check", "d"]         -> { type: "command", command: "check", rest: ["d"] }
 // ["up", "d"]            -> { type: "unknown" }
 // ["record", "d"], agent -> { type: "refused-to-agent", command: "record" }
+// ["roles", "read", "d"] -> { type: "command", command: "roles-read", rest: ["d"] }
 export function askedOf(positionals: readonly string[], agent: boolean): Asked {
   const [first, second, ...after] = positionals;
+  if (first === "roles") {
+    if (second === undefined || !roles.includes(second)) return { type: "unknown" };
+    const command = `roles-${second}`;
+    return agent
+      ? { type: "refused-to-agent", command }
+      : { type: "command", command, rest: after };
+  }
   if (first === "target") {
     return second !== undefined && onTarget.includes(second)
       ? { type: "command", command: second, rest: after }

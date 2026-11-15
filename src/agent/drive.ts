@@ -1,7 +1,13 @@
 import { isAbsolute, join, relative, resolve } from "node:path";
-import { type CanUseTool, query } from "@anthropic-ai/claude-agent-sdk";
+import {
+  type CanUseTool,
+  createSdkMcpServer,
+  query,
+  tool,
+} from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import type { AgentEvent } from "../shapes/event.ts";
+import { type Step, stepRequestSchema, stepSchema } from "../shapes/roles.ts";
 
 export class SessionWithoutResult extends Error {
   readonly type = "session-without-result";
@@ -16,6 +22,16 @@ export type Session = {
   readonly resume?: string;
   // the Claude Code executable to start; without it, the one the SDK installs beside itself
   readonly executable?: string;
+  // the built-in tools it is given
+  readonly tools: readonly string[];
+  // path: as a tool gives it, relative to cwd or absolute; pattern: the glob of a search
+  // (Glob, Grep) over path, absent for a Read
+  readonly mayRead: (path: string, pattern?: string) => boolean;
+  readonly mayWrite: (path: string) => boolean;
+  // what the agent is told when a read or a write is denied
+  readonly confinement: string;
+  // given: a tool of the session's own, `play`: steps in, what the target answered out
+  readonly play?: (steps: readonly Step[]) => Promise<string>;
 };
 
 export type Ended = { readonly session: string; readonly ok: boolean };
@@ -39,52 +55,94 @@ export function mayWrite(dir: string, path: string): boolean {
 // confinement does not cover a shell.
 export const agentMark = "SPECIMEN_AGENT";
 
-// no web, no sub-agent, no todo list, no notebook
-const tools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
+// a phase's tools: no web, no sub-agent, no todo list, no notebook
+export const phaseTools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
+
+export const phaseConfinement =
+  "Writing is allowed only under specimen/, and never under specimen/references/: the references are recorded by the tool.";
 
 const writing = new Set(["Write", "Edit"]);
 
 const toolInput = z
-  .object({ command: z.string(), file_path: z.string(), pattern: z.string() })
+  .object({
+    command: z.string(),
+    file_path: z.string(),
+    path: z.string(),
+    pattern: z.string(),
+    glob: z.string(),
+    steps: z.array(z.object({ when: z.string(), request: stepRequestSchema })),
+  })
   .partial();
 
-// the shell command's first line, or the path or pattern a tool works on; 120 characters
+const playName = "mcp__specimen__play";
+
+// the shell command's first line, the path or pattern a tool works on, or the call a play
+// sends (its first step's when there is none); 120 characters
 function aboutOf(input: unknown): string {
   const parsed = toolInput.safeParse(input);
-  const { command, file_path, pattern } = parsed.success ? parsed.data : {};
-  return (command ?? file_path ?? pattern ?? "").replace(/\n[\s\S]*/, "").slice(0, 120);
+  const { command, file_path, pattern, steps } = parsed.success ? parsed.data : {};
+  const step = steps?.find(({ when }) => when === "call") ?? steps?.[0];
+  const played =
+    step === undefined ? undefined : `${step.request.method} ${step.request.path}`;
+  return (command ?? file_path ?? pattern ?? played ?? "")
+    .replace(/\n[\s\S]*/, "")
+    .slice(0, 120);
+}
+
+// Read, Glob, Grep and the writes, against the session's confinement; anything else allowed
+function allowed(
+  name: string,
+  input: Readonly<Record<string, unknown>>,
+  { mayRead, mayWrite }: Session,
+): boolean {
+  const text = (key: string) => (typeof input[key] === "string" ? input[key] : undefined);
+  const path = text("file_path");
+  if (writing.has(name)) return path !== undefined && mayWrite(path);
+  if (name === "Read") return path !== undefined && mayRead(path);
+  if (name === "Glob") return mayRead(text("path") ?? ".", text("pattern") ?? "");
+  if (name === "Grep") return mayRead(text("path") ?? ".", text("glob") ?? "");
+  return true;
+}
+
+function playServer(play: NonNullable<Session["play"]>) {
+  return createSdkMcpServer({
+    name: "specimen",
+    tools: [
+      tool(
+        "play",
+        "Puts the system back in its starting state, sends the steps in order and returns what it answered to each.",
+        { steps: z.array(stepSchema) },
+        async ({ steps }) => {
+          try {
+            return { content: [{ type: "text", text: await play(steps) }] };
+          } catch (error) {
+            // the agent is told; the session goes on
+            const message = error instanceof Error ? error.message : String(error);
+            return { content: [{ type: "text", text: message }], isError: true };
+          }
+        },
+      ),
+    ],
+  });
 }
 
 // one session, or one more round of it when `resume` is given
-export async function* driveAgent({
-  prompt,
-  system,
-  cwd,
-  model,
-  resume,
-  executable,
-}: Session): AsyncGenerator<AgentEvent, Ended> {
-  const canUseTool: CanUseTool = async (tool, input) => {
-    const path = input.file_path;
-    if (writing.has(tool) && (typeof path !== "string" || !mayWrite(cwd, path))) {
-      return {
-        behavior: "deny",
-        message:
-          "Writing is allowed only under specimen/, and never under specimen/references/: the references are recorded by the tool.",
-      };
-    }
-    return { behavior: "allow", updatedInput: input };
-  };
+export async function* driveAgent(session: Session): AsyncGenerator<AgentEvent, Ended> {
+  const { prompt, system, cwd, model, resume, executable, tools, play } = session;
+  const canUseTool: CanUseTool = async (name, input) =>
+    allowed(name, input, session)
+      ? { behavior: "allow", updatedInput: input }
+      : { behavior: "deny", message: session.confinement };
   const messages = query({
     prompt,
     options: {
       cwd,
       model,
       systemPrompt: system,
-      tools,
+      tools: [...tools],
       settingSources: [],
       strictMcpConfig: true,
-      mcpServers: {},
+      mcpServers: play === undefined ? {} : { specimen: playServer(play) },
       plugins: [],
       skills: [],
       permissionMode: "default",
@@ -100,7 +158,8 @@ export async function* driveAgent({
       for (const block of message.message.content) {
         if (block.type === "text") yield { type: "agent-said", text: block.text };
         if (block.type === "tool_use") {
-          yield { type: "agent-used", tool: block.name, about: aboutOf(block.input) };
+          const name = block.name === playName ? "play" : block.name;
+          yield { type: "agent-used", tool: name, about: aboutOf(block.input) };
         }
       }
     }

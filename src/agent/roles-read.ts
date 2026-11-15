@@ -1,0 +1,104 @@
+import { checkCommon } from "../derive/check-reading.ts";
+import type { Event } from "../shapes/event.ts";
+import type { Interface } from "../shapes/target.ts";
+import { readsOf, under, writesOf } from "./access.ts";
+import { inParallel } from "./pool.ts";
+import {
+  folderOf,
+  type Roling,
+  readingOf,
+  roleJob,
+  roleRounds,
+  roleSkipped,
+  rolesCommand,
+  textAt,
+} from "./roles.ts";
+
+const tools = ["Read", "Glob", "Grep", "Write", "Edit"];
+
+const rounds = 3;
+
+function commonReader(roling: Roling): AsyncGenerator<Event, boolean> {
+  const { dir, readFiles } = roling;
+  const own = "roles/common.yaml";
+  return roleJob("common-reader", undefined, () =>
+    roleRounds({
+      roling,
+      role: "common-reader",
+      name: undefined,
+      rounds,
+      session: {
+        prompt:
+          "Read what holds for every operation of the system checked out in your working directory, and write specimen/roles/common.yaml.",
+        tools,
+        mayRead: readsOf(dir, {
+          checkout: true,
+          allowed: (path) =>
+            ["target.yaml", "interfaces.yaml", own].includes(path) ||
+            under("target")(path),
+        }),
+        mayWrite: writesOf(dir, (path) => path === own),
+        confinement:
+          "Of specimen/ this session reads only target.yaml, interfaces.yaml, target/ and roles/common.yaml, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/roles/common.yaml.",
+      },
+      gate: async () => {
+        return checkCommon(textAt(await readFiles(dir), own)).findings;
+      },
+    }),
+  );
+}
+
+async function* reader(
+  roling: Roling,
+  { interface: name, method, pattern }: Interface,
+): AsyncGenerator<Event, boolean> {
+  const { dir, only, readFiles } = roling;
+  if (only === undefined && readingOf(await readFiles(dir), name).findings.length === 0) {
+    return yield* roleSkipped("reader", name, "its rules and hints pass their check");
+  }
+  const folder = folderOf(name);
+  const own = [`${folder}/rules.yaml`, `${folder}/hints.yaml`];
+  return yield* roleJob("reader", name, () =>
+    roleRounds({
+      roling,
+      role: "reader",
+      name,
+      rounds,
+      session: {
+        prompt: [
+          `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
+          `Your folder: specimen/${folder}/ — write rules.yaml and hints.yaml there; in rules.yaml, \`operation\` is ${name}.`,
+        ].join("\n"),
+        tools,
+        mayRead: readsOf(dir, {
+          checkout: true,
+          allowed: (path) => ["roles/common.yaml", ...own].includes(path),
+        }),
+        mayWrite: writesOf(dir, (path) => own.includes(path)),
+        confinement: `Of specimen/ this session reads only roles/common.yaml and the two files of its folder, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/${folder}/rules.yaml and hints.yaml.`,
+      },
+      gate: async () => {
+        return readingOf(await readFiles(dir), name).findings;
+      },
+    }),
+  );
+}
+
+// The common reading first, when it is missing or does not pass its check; then one reader
+// per interface, `jobs` at a time. The target is not started.
+export function rolesRead(roling: Roling): AsyncGenerator<Event> {
+  const { dir, jobs, readFiles } = roling;
+  return rolesCommand("roles-read", roling, async function* ({ interfaces }) {
+    const common = checkCommon(textAt(await readFiles(dir), "roles/common.yaml"));
+    const ready =
+      common.findings.length === 0
+        ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
+        : yield* commonReader(roling);
+    if (!ready) return false;
+    const done = yield* inParallel(
+      interfaces.map((bound) => () => reader(roling, bound)),
+      jobs,
+    );
+    return done.every(Boolean);
+  });
+}

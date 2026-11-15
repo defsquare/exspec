@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const methodSchema = z.enum(["get", "post", "put", "patch", "delete"]);
+export const methodSchema = z.enum(["get", "post", "put", "patch", "delete"]);
 
 export const targetSchema = z
   .strictObject({

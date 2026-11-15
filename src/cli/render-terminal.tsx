@@ -39,10 +39,22 @@ function bindingBy({ provenance, by }: BindingJudged): string {
     .join(", ");
 }
 
-// "up" -> "target up"; "check" -> "check"
+// "up" -> "target up"; "roles-read" -> "roles read"; "check" -> "check"
 function typedAs(command: string): string {
-  return onTarget.includes(command) ? `target ${command}` : command;
+  if (onTarget.includes(command)) return `target ${command}`;
+  return command.startsWith("roles-") ? command.replace("-", " ") : command;
 }
+
+// the session an event comes from, when several run at once: "[i] " for a role on i;
+// "" for a phase
+function from(event: Event): string {
+  return "role" in event ? `[${event.interface ?? event.role}] ` : "";
+}
+
+const verdictLine = (verdicts: Readonly<Record<string, number>>) =>
+  Object.entries(verdicts)
+    .map(([verdict, count]) => `${count} ${verdict}`)
+    .join(", ");
 
 export function describeEvent(event: Event): string {
   switch (event.type) {
@@ -121,19 +133,37 @@ export function describeEvent(event: Event): string {
       return `phase    ${event.phase} done already`;
     case "gate-checked":
       return [
-        `gate     ${event.phase} ${event.ok ? "passed" : "failed"}`,
+        `${from(event)}gate     ${"phase" in event ? event.phase : event.role} ${event.ok ? "passed" : "failed"}`,
         ...event.findings.map((finding) => `  ${finding}`),
       ].join("\n");
     case "phase-finished":
       return `phase    ${event.phase} ${event.ok ? "done" : "failed"}`;
     case "agent-said":
-      return `agent    ${event.text.replace(/\n[\s\S]*/, "").slice(0, 160)}`;
+      return `${from(event)}agent    ${event.text.replace(/\n[\s\S]*/, "").slice(0, 160)}`;
     case "agent-used":
-      return `  ${event.tool}  ${event.about}`;
+      return `${from(event)}  ${event.tool}  ${event.about}`;
     case "agent-ended":
-      return `agent    ended: ${event.turns} turns, ${event.seconds} s${
+      return `${from(event)}agent    ended: ${event.turns} turns, ${event.seconds} s${
         event.cost === undefined ? "" : `, $${event.cost.toFixed(2)}`
       }`;
+    case "role-started":
+      return `${from(event)}role     ${event.role}`;
+    case "role-skipped":
+      return `${from(event)}role     ${event.role} skipped: ${event.why}`;
+    case "role-finished":
+      return `${from(event)}role     ${event.role} ${event.ok ? "done" : "failed"}`;
+    case "steps-played":
+      return `[${event.interface}] played   ${event.scenario}  ${event.evidence.exchanges
+        .map((exchange) =>
+          "unplayable" in exchange
+            ? `unplayable: ${exchange.unplayable}`
+            : `${exchange.when} ${exchange.response.status}`,
+        )
+        .join(", ")}`;
+    case "judgement-written":
+      return `[${event.interface}] judged   ${event.scenario}  ${event.rule} ${event.verdict} (${event.confidence})`;
+    case "roles-counted":
+      return `judged   ${verdictLine(event.verdicts)}`;
     case "command-failed":
       return `failed   ${event.message}`;
     case "command-finished":

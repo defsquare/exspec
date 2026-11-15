@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises";
+import { rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Reference } from "../shapes/scenario.ts";
@@ -48,4 +48,17 @@ export async function checkoutVersion(dir: string): Promise<string> {
     .quiet()
     .nothrow();
   return exitCode === 0 ? stdout.toString().trim() : "unversioned";
+}
+
+// path: relative to <dir>/specimen
+export async function writeSpecimenFile(
+  dir: string,
+  path: string,
+  text: string,
+): Promise<void> {
+  await Bun.write(join(dir, "specimen", path), text);
+}
+
+export async function removeSpecimenFile(dir: string, path: string): Promise<void> {
+  await rm(join(dir, "specimen", path), { force: true });
 }
