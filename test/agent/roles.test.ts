@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { Drive } from "../../src/agent/drive.ts";
-import type { Roling } from "../../src/agent/roles.ts";
+import type { RolesRun } from "../../src/agent/roles.ts";
 import { rolesBuild } from "../../src/agent/roles-build.ts";
 import type { Role } from "../../src/shapes/event.ts";
 import type { Evidence } from "../../src/shapes/roles.ts";
@@ -55,7 +55,7 @@ function fakeAgent(sessions: readonly Files[]) {
     return { session: resume ?? `s${received.length}`, ok: true };
   };
   const written: { path: string; text: string }[] = [];
-  const roling = (io: Roling["io"]): Roling => ({
+  const rolesRun = (io: RolesRun["io"]): RolesRun => ({
     dir: "/d",
     jobs: 4,
     model: "m",
@@ -70,7 +70,7 @@ function fakeAgent(sessions: readonly Files[]) {
       files.delete(path);
     },
   });
-  return { roling, received, written };
+  return { rolesRun, received, written };
 }
 
 const by: { readonly role: Role; readonly interface: string } = {
@@ -84,7 +84,7 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
     { "roles/f/scenarios/exists.yaml": scenario("u") },
   ]);
   const { io, lines } = fakeIo({ "http://h/f/x": [{ status: 404, body: null }] });
-  const events = await Array.fromAsync(rolesBuild(agent.roling(io)));
+  const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
   const evidence: Evidence = {
     rule: "exists",
     run: { target: "t", version: "v", at, clock: null },

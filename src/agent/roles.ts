@@ -1,17 +1,17 @@
 import {
   checkCommon,
-  checkReading,
+  checkRulesAndHints,
   checkStructuresFile,
-} from "../derive/check-reading.ts";
+} from "../derive/check-reader.ts";
 import type { Io } from "../run/io.ts";
-import type { Event, Role } from "../shapes/event.ts";
+import type { Command, Event, Role } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 import type { Interface, Target } from "../shapes/target.ts";
 import type { Drive, Session } from "./drive.ts";
 import { roleInstructions } from "./instructions.ts";
 import { type Rounds, sessionRounds } from "./rounds.ts";
 
-export type Roling = {
+export type RolesRun = {
   readonly dir: string;
   // the one interface to work on, done or not; none: every interface not done yet
   readonly only?: string;
@@ -27,7 +27,7 @@ export type Roling = {
   readonly removeFile: (dir: string, path: string) => Promise<void>;
 };
 
-export type RolesCommand = "roles-read" | "roles-build" | "roles-judge" | "roles-play";
+export type RolesCommand = Extract<Command, `roles-${string}`>;
 
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -53,13 +53,13 @@ export function slugsIn(
 
 // what a reader wrote for one interface, checked against what the common reader and the
 // reader of the structures wrote
-export function readingOf(files: readonly SourceFile[], name: string) {
+export function readerFilesOf(files: readonly SourceFile[], name: string) {
   const { common } = checkCommon(textAt(files, "roles/common.yaml"));
   const { structures } = checkStructuresFile(textAt(files, "structures.yaml"));
   const folder = folderOf(name);
   return {
     common,
-    ...checkReading({
+    ...checkRulesAndHints({
       operation: name,
       common,
       structures,
@@ -73,7 +73,7 @@ export function readingOf(files: readonly SourceFile[], name: string) {
 // else of the extraction; `only` names one of the interfaces.
 export async function* rolesCommand(
   command: RolesCommand,
-  { dir, only, readFiles }: Roling,
+  { dir, only, readFiles }: RolesRun,
   body: (setting: {
     readonly target: Target;
     readonly interfaces: readonly Interface[];
@@ -146,14 +146,14 @@ const failedGate =
 
 // a role's session and its gate, the findings sent back `rounds` times at most
 export function roleRounds({
-  roling: { dir, model, drive },
+  rolesRun: { dir, model, drive },
   role,
   name,
   rounds,
   session,
   gate,
 }: {
-  readonly roling: Roling;
+  readonly rolesRun: RolesRun;
   readonly role: Role;
   readonly name: string | undefined;
   readonly rounds: number;

@@ -1,5 +1,5 @@
 import { driveAgent, type Session } from "../agent/drive.ts";
-import type { Roling } from "../agent/roles.ts";
+import type { RolesCommand, RolesRun } from "../agent/roles.ts";
 import { rolesBuild, rolesPlay } from "../agent/roles-build.ts";
 import { rolesJudge } from "../agent/roles-judge.ts";
 import { rolesRead } from "../agent/roles-read.ts";
@@ -13,7 +13,7 @@ import type { Event } from "../shapes/event.ts";
 import { claudeExecutable } from "./extract.ts";
 
 export type RolesAsked = {
-  readonly command: "roles-read" | "roles-build" | "roles-judge" | "roles-play";
+  readonly command: RolesCommand;
   readonly dir: string;
   // roles play: "<interface>/<slug>"
   readonly scenario: string | undefined;
@@ -35,7 +35,7 @@ export function rolesEvents({
   io,
 }: RolesAsked): AsyncIterable<Event> {
   const executable = command === "roles-play" ? undefined : claudeExecutable();
-  const roling: Roling = {
+  const rolesRun: RolesRun = {
     dir,
     ...(only === undefined ? {} : { only }),
     jobs,
@@ -53,13 +53,13 @@ export function rolesEvents({
   };
   switch (command) {
     case "roles-read":
-      return rolesRead(roling);
+      return rolesRead(rolesRun);
     case "roles-build":
-      return rolesBuild(roling);
+      return rolesBuild(rolesRun);
     case "roles-judge":
-      return rolesJudge(roling);
+      return rolesJudge(rolesRun);
     case "roles-play":
-      return rolesPlay(roling, scenario ?? "");
+      return rolesPlay(rolesRun, scenario ?? "");
     default: {
       const unreachable: never = command;
       return unreachable;

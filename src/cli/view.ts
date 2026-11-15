@@ -1,11 +1,11 @@
 import { basename, join } from "node:path";
-import { folderOf, readingOf, slugsIn, textAt } from "../agent/roles.ts";
+import { folderOf, readerFilesOf, slugsIn, textAt } from "../agent/roles.ts";
 import { judgementsIn } from "../agent/roles-judge.ts";
 import { checkBuilt } from "../derive/check-built.ts";
-import { checkCommon, checkStructuresFile } from "../derive/check-reading.ts";
+import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
 import { placeOperations } from "../derive/placing.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
-import { type ReadInterface, viewOfReading } from "../derive/reading-view.ts";
+import { type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 import {
   evidenceSchema,
@@ -57,7 +57,9 @@ function readingsOf(files: readonly SourceFile[]) {
       bound,
       rules,
       findings:
-        text === undefined ? [] : [...readingOf(files, name).findings, ...built.findings],
+        text === undefined
+          ? []
+          : [...readerFilesOf(files, name).findings, ...built.findings],
       scenarios: built.scenarios,
       evidence: slugsIn(files, `${folder}/evidence`).flatMap(({ slug, text }) => {
         const evidence = parsedValue(readYaml(slug, text, evidenceSchema));
@@ -81,7 +83,7 @@ function readingsOf(files: readonly SourceFile[]) {
 export function dataOf(dir: string, files: readonly SourceFile[]) {
   const roles = readingsOf(files);
   if (roles.interfaces.some(({ rules }) => rules !== undefined)) {
-    return { dir, name: basename(dir), ...viewOfReading(roles) };
+    return { dir, name: basename(dir), ...viewOfRoles(roles) };
   }
   const { extraction, problems, gaps } = checkedExtraction(files);
   const judged = judgeExtraction(extraction);

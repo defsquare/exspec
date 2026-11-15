@@ -64,7 +64,7 @@ const twice = (names: readonly string[]) => [
 // What a reader wrote for one operation, checked before a builder is handed it. A finding
 // is a line the reader can fix:
 //   "rules.yaml: the rule \"a\" is declared twice", "hints.yaml: no hint for the rule \"b\""
-export function checkReading({
+export function checkRulesAndHints({
   operation,
   common,
   structures,

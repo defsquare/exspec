@@ -14,8 +14,8 @@ import type { Interface } from "../shapes/target.ts";
 import { inParallel } from "./pool.ts";
 import {
   folderOf,
-  type Roling,
-  readingOf,
+  type RolesRun,
+  readerFilesOf,
   roleJob,
   roleRounds,
   roleSkipped,
@@ -54,14 +54,17 @@ export function recordingsIn(
 // the task of one interface's judge, when its reading passes and it has evidence
 export function taskOf(files: readonly SourceFile[], bound: Interface) {
   const recordings = recordingsIn(files, bound.interface);
-  const { common, rules } = readingOf(files, bound.interface);
+  const { common, rules } = readerFilesOf(files, bound.interface);
   if (rules === undefined || recordings.length === 0) return undefined;
   const task = judgeTask({ bound, common, rules, recordings });
   return { ...task, recordings };
 }
 
-async function* judge(roling: Roling, bound: Interface): AsyncGenerator<Event, boolean> {
-  const { dir, only, model, io, readFiles, writeFile } = roling;
+async function* judge(
+  rolesRun: RolesRun,
+  bound: Interface,
+): AsyncGenerator<Event, boolean> {
+  const { dir, only, model, io, readFiles, writeFile } = rolesRun;
   const name = bound.interface;
   const files = await readFiles(dir);
   const task = taskOf(files, bound);
@@ -89,7 +92,7 @@ async function* judge(roling: Roling, bound: Interface): AsyncGenerator<Event, b
   }
   return yield* roleJob("judge", name, () =>
     roleRounds({
-      roling,
+      rolesRun,
       role: "judge",
       name,
       rounds: 1,
@@ -134,11 +137,11 @@ async function* judge(roling: Roling, bound: Interface): AsyncGenerator<Event, b
 
 // One judge per interface that has evidence, `jobs` at a time, with no tool; then every
 // judgement written, counted by verdict.
-export function rolesJudge(roling: Roling): AsyncGenerator<Event> {
-  const { dir, jobs, readFiles } = roling;
-  return rolesCommand("roles-judge", roling, async function* ({ interfaces }) {
+export function rolesJudge(rolesRun: RolesRun): AsyncGenerator<Event> {
+  const { dir, jobs, readFiles } = rolesRun;
+  return rolesCommand("roles-judge", rolesRun, async function* ({ interfaces }) {
     const done = yield* inParallel(
-      interfaces.map((bound) => () => judge(roling, bound)),
+      interfaces.map((bound) => () => judge(rolesRun, bound)),
       jobs,
     );
     const files = await readFiles(dir);

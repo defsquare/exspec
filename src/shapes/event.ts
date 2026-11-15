@@ -22,6 +22,7 @@ const commandSchema = z.enum([
   "roles-judge",
   "roles-play",
 ]);
+export type Command = z.infer<typeof commandSchema>;
 
 export const phaseSchema = z.enum([
   "target",

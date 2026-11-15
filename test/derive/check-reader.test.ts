@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import {
   checkCommon,
-  checkReading,
+  checkRulesAndHints,
   checkStructuresFile,
-} from "../../src/derive/check-reading.ts";
+} from "../../src/derive/check-reader.ts";
 import { commonText, hintsText, rulesText, structuresText } from "../roles-fixture.ts";
 
 const { common } = checkCommon(commonText);
@@ -13,7 +13,7 @@ test("a reading as readers wrote it passes the check", () => {
   expect({
     common: checkCommon(commonText).findings,
     structures: checkStructuresFile(structuresText).findings,
-    reading: checkReading({
+    reading: checkRulesAndHints({
       operation: "delete-pet",
       common,
       structures,
@@ -33,7 +33,7 @@ test("a broken reading gives a finding for each thing to fix", () => {
     .replace("structure: null}", "structure: Visit}");
   const hints = hintsText.replace("- rule: pet-exists", "- rule: visits-removed");
   expect(
-    checkReading({ operation: "delete-pet", common, structures, rules, hints }),
+    checkRulesAndHints({ operation: "delete-pet", common, structures, rules, hints }),
   ).toEqual({
     findings: [
       'rules.yaml: operation is "remove-pet", the operation is "delete-pet"',
@@ -51,14 +51,14 @@ test("a broken reading gives a finding for each thing to fix", () => {
 
 test("a file that is not YAML, breaks its schema or is missing is said so", () => {
   expect([
-    checkReading({
+    checkRulesAndHints({
       operation: "delete-pet",
       common,
       structures,
       rules: rulesText.replace("status: 404", 'status: "404"'),
       hints: "- [",
     }),
-    checkReading({
+    checkRulesAndHints({
       operation: "delete-pet",
       common,
       structures,

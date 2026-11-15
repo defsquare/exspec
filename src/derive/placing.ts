@@ -109,7 +109,7 @@ export function placeOperations(extraction: Extraction): readonly Placed[] {
 // and its inputs that name a field. The stand-in places; it is never drawn.
 //   {operation: f, takes: {a: {says: "…", field: [A, id]}, n: {says: "…"}}, answers: {structure: null}}
 //   -> {operation: f, takes: {a: {field: [A, id]}}, answers: null, requires: [], effects: []}
-export function placedOfReading(
+export function placedOfRoles(
   structures: readonly Structure[],
   readings: readonly Rules[],
 ): readonly Placed[] {

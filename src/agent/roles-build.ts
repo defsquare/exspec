@@ -14,8 +14,8 @@ import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
 import {
   folderOf,
-  type Roling,
-  readingOf,
+  type RolesRun,
+  readerFilesOf,
   roleJob,
   roleRounds,
   roleSkipped,
@@ -29,7 +29,7 @@ const tools = ["Read", "Glob", "Grep", "Write", "Edit"];
 const rounds = 3;
 
 type Building = {
-  readonly roling: Roling;
+  readonly rolesRun: RolesRun;
   readonly credentials: Credentials;
   // a reset and its steps, one play at a time on the one target
   readonly play: (steps: readonly Step[]) => Promise<PlayedSteps>;
@@ -41,7 +41,7 @@ function builtOf(
   bound: Interface,
   actors: readonly string[],
 ) {
-  const { rules } = readingOf(files, bound.interface);
+  const { rules } = readerFilesOf(files, bound.interface);
   if (rules === undefined) return undefined;
   const folder = folderOf(bound.interface);
   return checkBuilt({
@@ -55,10 +55,10 @@ function builtOf(
 // Each scenario played, its evidence written by the tool; an evidence whose scenario is
 // gone, removed. A step that could not be played is a finding.
 async function* buildGate(
-  { roling, credentials, play }: Building,
+  { rolesRun, credentials, play }: Building,
   bound: Interface,
 ): AsyncGenerator<Event, readonly string[]> {
-  const { dir, readFiles, writeFile, removeFile } = roling;
+  const { dir, readFiles, writeFile, removeFile } = rolesRun;
   const name = bound.interface;
   const folder = folderOf(name);
   const files = await readFiles(dir);
@@ -94,8 +94,8 @@ async function* builder(
   building: Building,
   bound: Interface,
 ): AsyncGenerator<Event, boolean> {
-  const { roling, credentials, play } = building;
-  const { dir, only, readFiles } = roling;
+  const { rolesRun, credentials, play } = building;
+  const { dir, only, readFiles } = rolesRun;
   const { interface: name, method, pattern } = bound;
   const files = await readFiles(dir);
   const actors = Object.keys(credentials);
@@ -132,7 +132,7 @@ async function* builder(
     path.startsWith(`${folder}/scenarios/`);
   return yield* roleJob("builder", name, () =>
     roleRounds({
-      roling,
+      rolesRun,
       role: "builder",
       name,
       rounds,
@@ -155,16 +155,16 @@ async function* builder(
 
 // The target started once; then one builder per interface whose reading passes, `jobs` at
 // a time, their plays one at a time; the target stopped at the end, also on a failure.
-export function rolesBuild(roling: Roling): AsyncGenerator<Event> {
-  const { dir, io, jobs } = roling;
-  return rolesCommand("roles-build", roling, async function* ({ target, interfaces }) {
+export function rolesBuild(rolesRun: RolesRun): AsyncGenerator<Event> {
+  const { dir, io, jobs } = rolesRun;
+  return rolesCommand("roles-build", rolesRun, async function* ({ target, interfaces }) {
     const lifecycle = { dir, target, io };
     try {
       yield* startTarget(lifecycle);
       const credentials = await io.readCredentials(dir, target);
       const lock = oneAtATime();
       const building: Building = {
-        roling,
+        rolesRun,
         credentials,
         play: (steps) => lock(() => playSteps({ dir, target, io, credentials, steps })),
       };
@@ -181,12 +181,12 @@ export function rolesBuild(roling: Roling): AsyncGenerator<Event> {
 
 // On a target already up: one written scenario played after a reset, its exchanges shown.
 // Nothing is written.
-export function rolesPlay(roling: Roling, scenario: string): AsyncGenerator<Event> {
-  const { dir, io, readFiles } = roling;
+export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<Event> {
+  const { dir, io, readFiles } = rolesRun;
   const [name = "", slug = ""] = scenario.split("/");
   return rolesCommand(
     "roles-play",
-    { ...roling, only: name },
+    { ...rolesRun, only: name },
     async function* ({ target }) {
       const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
       const text = textAt(await readFiles(dir), file);

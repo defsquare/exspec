@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { placedOfReading, placeOperations } from "../../src/derive/placing.ts";
+import { placedOfRoles, placeOperations } from "../../src/derive/placing.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
 import { rulesSchema } from "../../src/shapes/roles.ts";
 
@@ -120,7 +120,7 @@ takes: { n: { says: "a number" } }
 answers: { says: "200 with a count", structure: null }
 `,
   ].map((text) => rulesSchema.parse(Bun.YAML.parse(text)));
-  expect(placedOfReading(extraction.structures, readings)).toEqual([
+  expect(placedOfRoles(extraction.structures, readings)).toEqual([
     {
       operation: "answers",
       home: "A",

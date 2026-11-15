@@ -9,7 +9,7 @@ import type {
 import type { Structure } from "../shapes/specification.ts";
 import type { Interface, Target } from "../shapes/target.ts";
 import { judgeTask } from "./judge-task.ts";
-import { type Placed, placedOfReading } from "./placing.ts";
+import { type Placed, placedOfRoles } from "./placing.ts";
 
 // What one interface's folder holds, parsed; findings: what its reader's and its builder's
 // checks say, each "file: message" relative to the folder
@@ -99,7 +99,7 @@ export type RuleView = {
   }[];
 };
 
-export type ReadingGap = {
+export type RolesGap = {
   readonly kind:
     | "interface-not-read"
     | "reading-without-scenario"
@@ -234,7 +234,7 @@ function stepsOf(
 // parses, its lines judged by the judge's word, its scenarios with their steps, the problems
 // of the checks and what the roles have not done yet. A judgement is stale when the text
 // its judge would be given today is not the one it was given.
-export function viewOfReading({
+export function viewOfRoles({
   target,
   structures,
   common,
@@ -330,7 +330,7 @@ export function viewOfReading({
       };
     }),
   );
-  const gaps: readonly ReadingGap[] = [
+  const gaps: readonly RolesGap[] = [
     ...interfaces
       .filter(({ rules }) => rules === undefined)
       .map(({ bound }) => ({
@@ -364,7 +364,7 @@ export function viewOfReading({
         message: "its rule or its evidence changed since it was judged",
       })),
   ];
-  const placed: readonly Placed[] = placedOfReading(
+  const placed: readonly Placed[] = placedOfRoles(
     structures,
     read.map(({ rules }) => rules),
   );
