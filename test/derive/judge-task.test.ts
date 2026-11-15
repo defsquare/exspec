@@ -155,3 +155,14 @@ test("every recording's hash changes with what all of them are judged with", () 
     exists: after.get("exists") === before.get("exists"),
   }).toEqual({ removed: false, exists: false });
 });
+
+test("the judge is given nothing of the input a requirement is on", () => {
+  const on: Rules = {
+    ...rules,
+    takes: { a: { says: "s" } },
+    requires: rules.requires.map((r) => ({ ...r, on: "a" })),
+  };
+  const a = judgeTask({ bound, common, rules: on, recordings });
+  const b = judgeTask({ bound, common, rules, recordings });
+  expect(a).toEqual(b);
+});

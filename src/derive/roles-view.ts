@@ -46,6 +46,7 @@ export type Line = {
   readonly kind: "requires" | "effect" | "answers";
   readonly rule: string;
   readonly shared: boolean;
+  readonly input?: string;
   readonly fact?: string;
   readonly otherwise?: string;
   readonly status?: number;
@@ -160,10 +161,11 @@ function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
           };
     }),
     ...rules.requires.map(
-      ({ rule, when, fact, otherwise, source }): Line => ({
+      ({ rule, on, when, fact, otherwise, source }): Line => ({
         kind: "requires",
         rule,
         shared: false,
+        ...(on === undefined ? {} : { input: on }),
         ...(when === undefined ? {} : { when }),
         fact,
         otherwise: otherwise.refusal,

@@ -16,3 +16,4 @@ a concept removed from the code is marked `Deprecated`.
 | [0008](0008-verdicts-derived.md) | The verdicts are derived, and say when they cannot tell | Accepted |
 | [0009](0009-view-a-page-of-the-extraction.md) | `view` makes one page of the extraction — the structures, their operations, the verdicts — and it is the command's output | Accepted |
 | [0010](0010-three-roles-a-judged-reading.md) | A judged reading by three roles kept apart — a reader, a scenario builder, a judge — one of each per interface; the builder's only access to the target is a tool of its own | Accepted |
+| [0011](0011-a-requirement-says-the-input-it-is-about.md) | A requirement may say the input it is about (`on`); the page gathers those under the input, in one stop of the operation's column | Accepted |

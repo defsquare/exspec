@@ -23,12 +23,15 @@ const refusalSchema = z
 export const requirementSchema = z
   .strictObject({
     rule: ruleName,
+    on: z.string().optional(),
     when: z.string().optional(),
     fact: z.string(),
     otherwise: refusalSchema,
     source,
   })
   .readonly();
+
+export type Requirement = z.infer<typeof requirementSchema>;
 
 export const effectSchema = z
   .strictObject({ rule: ruleName, when: z.string().optional(), says: z.string(), source })
@@ -73,6 +76,7 @@ export type Common = z.infer<typeof commonSchema>;
 const structureFieldSchema = z.tuple([z.string(), z.string()]).readonly();
 
 // takes: {itemId: {says: "the item", field: [Item, id]}, dryRun: {says: "…"}}
+// requires: [{rule: a, on: itemId, fact: "…", otherwise: {…}, source: "…"}], on an entry of takes
 // answers: {says: "200 with the item", structure: Item}, structure null when it shows none
 // unsure.rule: a rule of the file, a name under common, or "answers"
 export const rulesSchema = z

@@ -1,7 +1,13 @@
-import type { Common, Evidence, Rules } from "../shapes/roles.ts";
+import type { Common, Evidence, Requirement, Rules } from "../shapes/roles.ts";
 import type { Interface } from "../shapes/target.ts";
 
 const yaml = (value: unknown) => Bun.YAML.stringify(value, null, 2).trimEnd();
+
+// {rule: a, on: x, fact: f, otherwise: o, source: s} -> {rule: a, fact: f, otherwise: o}
+// the input a requirement is on is for the reader of the page, not for the judge
+function requirementForJudge({ rule, when, fact, otherwise }: Requirement) {
+  return { rule, ...(when === undefined ? {} : { when }), fact, otherwise };
+}
 
 // {rule: a, fact: f, source: s} -> {rule: a, fact: f}
 function withoutSource<T extends { readonly source: string }>({
@@ -14,15 +20,23 @@ function withoutSource<T extends { readonly source: string }>({
 // the rule a recording names, as the judge reads it: a requirement, an effect, or what
 // an accepted call answers — its sentence only, never the structure the reader named
 function ruleEntry(rule: string, rules: Rules, common: Common | undefined) {
-  const requirement =
-    rules.requires.find((r) => r.rule === rule) ??
-    (rules.common.includes(rule)
-      ? common?.rules.find((r) => r.rule === rule)
-      : undefined);
-  if (requirement !== undefined) return { requirement: withoutSource(requirement) };
+  const own = rules.requires.find((r) => r.rule === rule);
+  if (own !== undefined) return { requirement: requirementForJudge(own) };
+  const shared = rules.common.includes(rule)
+    ? common?.rules.find((r) => r.rule === rule)
+    : undefined;
+  if (shared !== undefined) return { requirement: withoutSource(shared) };
   if (rule === "answers") return { answers: rules.answers.says };
   const effect = rules.effects.find((r) => r.rule === rule);
-  return effect === undefined ? { rule } : { effect: withoutSource(effect) };
+  return effect === undefined
+    ? { rule }
+    : {
+        effect: {
+          rule,
+          ...(effect.when === undefined ? {} : { when: effect.when }),
+          says: effect.says,
+        },
+      };
 }
 
 // The text a judge is given for one operation, and per recording the hash of its part:
@@ -54,9 +68,11 @@ export function judgeTask({
     };
   });
   const requirements = [
-    ...rules.requires,
-    ...(common?.rules ?? []).filter(({ rule }) => rules.common.includes(rule)),
-  ].map(withoutSource);
+    ...rules.requires.map(requirementForJudge),
+    ...(common?.rules ?? [])
+      .filter(({ rule }) => rules.common.includes(rule))
+      .map(withoutSource),
+  ];
   // what every recording is judged with: a requirement changed, and each judgement is stale
   const shared = [
     `The operation: ${bound.interface}, ${bound.method.toUpperCase()} ${bound.pattern}`,

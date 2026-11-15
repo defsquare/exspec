@@ -106,3 +106,25 @@ test("structures with a bound, an identity no field holds, or none at all give a
     { findings: ["structures.yaml: missing"] },
   ]);
 });
+
+test("a requirement on an input its operation does not take gives a finding", () => {
+  const requirement = (on: string) =>
+    `  - {rule: r-${on}, on: ${on}, fact: f, otherwise: {refusal: bad, status: 400, body: b}, source: "F.java:1"}`;
+  expect(
+    checkRulesAndHints({
+      operation: "f",
+      common: undefined,
+      structures: undefined,
+      rules: `operation: f
+takes: {a: {says: s}}
+requires:
+${requirement("a")}
+${requirement("x")}
+answers: {says: ok, structure: null}
+`,
+      hints: `- {rule: r-a, situation: s, how: h, seen-in: none, reachable: yes}
+- {rule: r-x, situation: s, how: h, seen-in: none, reachable: yes}
+`,
+    }).findings,
+  ).toEqual(['rules.yaml: the rule "r-x" is on "x", which takes does not declare']);
+});

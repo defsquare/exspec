@@ -45,6 +45,7 @@ Two files in the folder your task names.
 ```yaml
 operation: <the name your task gives>
 takes:                                  # each input, by a business name
+  name: {says: "the item's new name", field: [Item, name]}
   itemId: {says: "the item to rename", field: [Item, id]}    # `field`: the structure and the field this input is, as structures.yaml names them
   dryRun: {says: "when true, nothing is stored"}             # an input that is no field of a structure: no `field`
 common: [signed-in]                     # the rules of common.yaml that apply to this operation, by name
@@ -54,6 +55,7 @@ requires:                               # one per condition checked before actin
     otherwise: {refusal: not-found, status: 404, body: "what in the answer's body tells this refusal from the others — only what is expected, as the code builds it"}
     source: "path/to/File.ext:120-128"
   - rule: name-short-enough
+    on: name                            # an entry of `takes`: the request alone tells whether it is met
     fact: the name given is at most 30 characters long
     otherwise: {refusal: name-too-long, status: 400, body: "…"}
     source: "path/to/Item.ext:40"
@@ -71,6 +73,11 @@ unsure:                                 # what reading could not settle about a 
 Rules of writing:
 
 - Business words, not class or method names (except in `source`).
+- A requirement has `on: <an entry of takes>` when the request alone, with nothing
+  stored, is enough to tell whether it is met, and it looks at that one input: its
+  presence, its type, its length, its form, its range. A requirement that needs what
+  is stored (it exists, it is not taken yet, it matches), who the caller is, or two
+  inputs together has no `on`.
 - One rule per statement: if a sentence has an "and" joining two things that could fail
   separately, it is two rules. Two checks that give the caller the same answer are still
   two rules.

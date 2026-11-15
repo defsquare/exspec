@@ -117,6 +117,12 @@ export function checkRulesAndHints({
             `rules.yaml: takes.${input} names the field ${field.join(".")}, which structures.yaml does not declare`,
           ],
     ),
+    ...parsed.requires
+      .filter(({ on }) => on !== undefined && !Object.hasOwn(parsed.takes ?? {}, on))
+      .map(
+        ({ rule, on }) =>
+          `rules.yaml: the rule "${rule}" is on "${on}", which takes does not declare`,
+      ),
     ...(answered === null || fieldsOf(answered) !== undefined
       ? []
       : [
