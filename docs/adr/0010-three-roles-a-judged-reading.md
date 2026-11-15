@@ -35,8 +35,9 @@ judge that found 19 of 19 planted contradictions.
   `view` already has; the reading is walked in `view` from the structures to their
   operations to the evidence and the judgement, with no page of its own.
 - **The separation is built, not asked**: the reader's target is not started; the builder
-  has no shell and reads only the rules, the hints and the interface descriptions; the judge
-  has no tool. This is where the decision departs from ADR-0006, which gave the agent a
+  has no shell and reads only the rules, the shared rules, the hints and the interface
+  descriptions; the judge has no tool. A hook that sees every call of a session holds its
+  reads and writes. This is where the decision departs from ADR-0006, which gave the agent a
   shell and the CLI's commands and set aside a tool of the agent's own: the builder's one
   access to the target is a tool, `play` — steps in, the target reset, the steps sent, the
   answers out — because a shell would let it read the code. `roles play` is the same thing
@@ -53,6 +54,12 @@ judge that found 19 of 19 planted contradictions.
   never the gate's.
 - The files live under `specimen/roles/`, apart from the specification, the scenarios and
   the references, which are untouched.
+- **What the files say besides the rules.** The shared reading (`common.yaml`): what the
+  target `runs-with`, the shared `rules`, how each kind of refusal is answered (`errors`),
+  where the `contract` and the code differ, and the reader's doubts (`unsure`, which a
+  rules file has too). A hint says whether its situation is `reachable` by a caller; a
+  scenario whether the builder `reached` it; a judgement, beside its word, whether the
+  exchanges show the `situation` the rule is about (`yes`, `no`, `partly`).
 
 ## Alternatives
 

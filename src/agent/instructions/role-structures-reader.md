@@ -21,7 +21,7 @@ of, what refers to what — and how the interfaces show them.
 One file, `specimen/structures.yaml`: a list of structures.
 
 ```yaml
-- structure: Owner
+- structure: Maker
   identity: name
   fields:
     name: {type: string}
@@ -34,9 +34,9 @@ One file, `specimen/structures.yaml`: a list of structures.
     name: {type: string}
     price: {type: number}
     createdAt: {type: instant}
-    owner: {structure: Owner}
-    tags: {structure: Tag, by: identity, many: true}
-- structure: Tag
+    maker: {structure: Maker}
+    labels: {structure: Label, by: identity, many: true}
+- structure: Label
   identity: name
   fields:
     name: {type: string}
@@ -49,7 +49,7 @@ One file, `specimen/structures.yaml`: a list of structures.
 - A field has a `type`: `string`, `int`, `number`, `boolean` or `instant` (a date or a
   time); `format` when its values have a known form (`email`, `date`, …); `shown: false`
   when it is written and never shown (a password). A field may instead be another
-  structure: nested (`{structure: Owner}`), or by its identity (`by: identity`), `many:
+  structure: nested (`{structure: Maker}`), or by its identity (`by: identity`), `many:
   true` for a list.
 - Write no bound on a field — no minimum, maximum or length: a bound is a rule of the
   operation that checks it, and the readers of the operations will write it.

@@ -37,6 +37,9 @@ a command found, not the specification.
   the data for a program.
 - **The page is self-contained but for its fonts**, and uses no framework: one text file
   embedded in the tool.
+- **When `specimen/roles/` holds a reading that parses, the page draws that reading** —
+  the same walk, from a structure to its operations to the evidence and the judgement
+  (ADR-0010) — and no longer the extraction.
 
 ## Alternatives
 

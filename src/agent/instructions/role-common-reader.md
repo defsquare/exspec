@@ -43,12 +43,12 @@ rules:                           # requirements every operation, or a family of 
     applies-to: "every operation"         # or the family, in words
     fact: the caller is signed in
     otherwise: {refusal: unauthenticated, status: 401, body: "only what is expected in the body"}
-    source: "path/to/SecurityConfig.java:40-55"
+    source: "path/to/Security.ext:40-55"
 errors:                          # how a refusal is answered, by kind
   - kind: "a field of the request breaks a constraint"
     status: 400
     body: "what the body carries, as the code builds it"
-    source: "path/to/Advice.java:60-80"
+    source: "path/to/Errors.ext:60-80"
 contract:                        # the habits by which the contract and the code differ
   - "the contract says 200 for a creation; the code answers 201"
 unsure:                          # what reading could not settle; empty list if nothing

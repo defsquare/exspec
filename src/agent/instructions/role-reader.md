@@ -52,16 +52,16 @@ requires:                               # one per condition checked before actin
   - rule: exists                        # a short name saying what it demands
     fact: the item exists               # the situation, positive, in business words
     otherwise: {refusal: not-found, status: 404, body: "what in the answer's body tells this refusal from the others — only what is expected, as the code builds it"}
-    source: "path/to/File.java:120-128"
+    source: "path/to/File.ext:120-128"
   - rule: name-short-enough
     fact: the name given is at most 30 characters long
     otherwise: {refusal: name-too-long, status: 400, body: "…"}
-    source: "path/to/Item.java:40"
+    source: "path/to/Item.ext:40"
 effects:                                # one per thing an accepted call changes or guarantees, each on its own
   - rule: name-changed                  # for a read: what the answer shows, and that nothing changes
     when: "optional — the situation in which this effect applies, in words"
     says: The item's name is the name given.
-    source: "path/to/File.java:300-310"
+    source: "path/to/File.ext:300-310"
 answers: {says: "what an accepted call answers: status and what the body is", structure: Item}   # the structure the answer shows, one or a list of it; null when it shows none
 unsure:                                 # what reading could not settle about a rule of this file, or about `answers`
   - rule: exists
@@ -108,7 +108,7 @@ through the interface. If the tests reach the situation by a means a caller does
 - rule: exists
   situation: an item id that no item has
   how: call with an identifier that does not exist
-  seen-in: "path/to/SomeTest.java:88"
+  seen-in: "path/to/SomeTest.ext:88"
   reachable: yes
 ```
 
