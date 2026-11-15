@@ -1,7 +1,7 @@
 # ADR-0010 — A judged reading by three roles: a reader, a scenario builder, a judge
 
-Status: Proposed (2026-11-14) — built on `spike/three-roles` to be run on whole targets;
-what is kept is the user's decision.
+Status: Accepted (2026-11-15) — by the user, after three whole targets were run through the
+roles.
 
 ## Context
 

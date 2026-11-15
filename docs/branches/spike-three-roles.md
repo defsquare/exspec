@@ -266,6 +266,9 @@ move.
   a `get` written with a body, which the platform refuses to send: fixed, such a step is
   unplayable and goes back to the builder as a finding. No stronger model was run on
   Conduit: what this reader misses there is not measured.
+- **ADR-0010 accepted by the user** (2026-11-15), with the stored judgement and the
+  builder's own tool where ADR-0006 gave a shell; the branch is to be merged, which the
+  Frame had set aside while it was a spike.
 
 ## Backlog
 
@@ -274,8 +277,6 @@ move.
   `status` refuse a checkout whose old files no longer parse while `roles` runs on it.
   Fold the reader's sentences into the operation shape, or let the roles' form be the
   specification — and deprecate what no target uses any more. The user's, with its ADRs.
-- **ADR-0010 is Proposed.** To accept, amend or drop; with it the stored judgement and
-  the builder's own tool where ADR-0006 gave a shell.
 - **Which reader for a whole target.** On three operations the default model at high
   effort with the strict instruction writes three quarters of the stronger model's rules
   and finds the same two things, at a fifth to a third of its price. One run per cell: to
