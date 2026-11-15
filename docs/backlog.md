@@ -310,6 +310,10 @@ them in; each of the first five is a branch of its own.
   on the largest target: the count, the cost, facts duplicated under two names. For the
   user: whether an operation is named after its interface when it has one — steady names,
   but it ties the specification to the API.
+- **Since.** `specimen roles` walks the interface list — one reader, one builder, one
+  judge per interface (ADR-0010): 93 of 93 on Kadai, 36 of 36 and 19 of 19 on the two
+  others. What is above holds for `extract` only; a rule's name still moves from a run
+  to the next (see "A rule's identity from one run to the next").
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), "Why the count of operations moves" ;
   `targets/spike-snapshots/`, and `4-codegraph-trial/` there for the design and the
   slice script.
@@ -331,6 +335,10 @@ them in; each of the first five is a branch of its own.
   sends the agent only what is new. An ADR and the key. Prefer the comparison of the two
   sets to generating `interfaces.yaml` from the contract in code (a converter of schemas,
   of unknown size).
+- **Since.** With the roles: the evidence of Petclinic replayed to the same status on
+  333 of 333 scenarios (190 identical; a timestamp differs in 143). No `roles replay`
+  yet, no noise kept beside the evidence, and a reading that follows a change of the code
+  is to design (`docs/branches/spike-three-roles.md` at `d88b471`).
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), same entry .
 
 ## What an agent takes from the running target while it specifies
@@ -370,9 +378,135 @@ them in; each of the first five is a branch of its own.
   play twice (`cb52059`); a starting state identical on every fresh start, in the target
   phase's brief (`814c947`, without the gate of the same commit); a projection that shows
   one instance locates every path parameter of its interface — 13 rules of one target
-  were unreadable and `check` said nothing (`d73043e`, `908a7de`). `cb52059` also bounds
-  `bun test` to `test/` (`bunfig.toml`): `bun run live` was not checked after it.
+  were unreadable and `check` said nothing (`d73043e`, `908a7de`). `bun test` is bound
+  to `test/` since (`bunfig.toml`): `bun run live` was not checked after it.
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
+
+## Two specifications side by side: the extraction's terms and the roles' reading
+
+- **Seen.** `specimen roles` writes its own files under `specimen/roles/` — rules as
+  sentences, scenarios as raw calls, evidence, judgements — beside `operations/`, the
+  facts' terms, the projections and the triggers, which serve nothing in the roles' path.
+  Only `structures.yaml` is shared. `target up` and `status` refuse a checkout whose old
+  files no longer parse while `roles` runs on it. Three whole targets through the roles:
+  Petclinic 36 of 36 interfaces, Conduit 19 of 19, Kadai 93 of 93.
+- **Settled.** The three roles are kept (ADR-0010). By the user: the specification keeps
+  bounded concepts for a human reader — operations, rules, facts, structures — and a rule
+  may be a sentence.
+- **Next.** For the user, with its ADRs: fold the reader's sentences into the operation
+  shape, or let the roles' form be the specification; then deprecate what no target uses
+  any more (the ADR of each concept removed), and decide what becomes of `extract`,
+  `record`, `replay` and `verdicts`.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "Three whole targets through
+  the tool" and "Read against the Frame"; `docs/adr/0010-three-roles-a-judged-reading.md`.
+
+## Which model reads a whole target
+
+- **Seen.** Petclinic read by the stronger model: 504 rules, 11 contradictions, all the
+  target's, 31 USD of which 23 for the readers; by the default model before that, 263
+  rules for 9 USD. On three operations, one run per cell, rules written: default 9, 8, 4;
+  default at high effort 18, 10, 5; default with the reader told the contract is not the
+  code 11, 10, 5; both 18, 11, 8; stronger model 24, 16, 5 at about six times the price.
+  What the stronger model has alone: effects on what an answer shows (paging, totals) and
+  edge cases of a value. Conduit whole with both: 215 rules, 6.8 USD.
+- **Settled.** `--model` and `--effort` are options of `roles`; the default model with no
+  effort is the default. The strict paragraph is in the reader's instructions. Every count
+  here was made before a reader's reads were held (see "The runs were made before the
+  reads were held").
+- **Next.** Read Conduit once with the stronger model and compare rule by rule with the
+  run at high effort before changing a default; one run per cell says little — repeat
+  the three operations.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "Why the default model read
+  less" and "Conduit read again"; the runs under `targets/spike-snapshots/8-tool-petclinic/`
+  and `9-tool-conduit/` (not in the repository).
+
+## A contradiction that is the reader's, and a family with one cause
+
+- **Seen.** One line of the common reading made 29 contradictions on Petclinic; corrected
+  by hand, the count went from 44 to 12. On Conduit 21 of 22 contradictions are one fact
+  (401 answered where the common reading says 404 or 403) that the common reader had
+  written as a doubt under `unsure` and kept as a rule all the same. `view` lists them one
+  by one and does not tell a misreading from a bug of the target.
+- **Settled.** A gate checks a form; a wrong rule shows only at the judge. The judge is
+  given a rule's doubt and told it is no evidence.
+- **Next.** Decide who corrects: the reader sent back with the evidence that contradicts
+  it (it then sees what the target answers — say what that does to the separation), or a
+  person. A shared rule carries its own doubt, so that its contradictions read as the
+  doubt settled. `view` groups the contradictions of one shared rule into one line.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "Three whole targets through
+  the tool" and "Conduit read again".
+
+## A rule's identity from one run to the next
+
+- **Seen.** Two runs of a reader on one operation write the same rules in substance under
+  different names; the lines of code a rule cites nearly do not move. Nothing in the tool
+  matches a rule of one run, or of one version of the target, with a rule of another.
+- **Settled.** Nothing.
+- **Next.** Try `source` as the key on two runs of one target already kept: how many rules
+  pair, how many split or merge. Needed before a reading can follow a change of the code.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "A second run of each role".
+
+## A judge that says the same twice
+
+- **Seen.** The judge run twice on the same evidence of Petclinic: 321 of 333 judgements
+  have the same word. The 12 that move are near-matches of a text and `contradicted`
+  against `refused-unexpectedly`; a confidence moves by a tenth. The judge costs 1.3 to
+  2.7 USD on the two small targets and 17.9 on Kadai, a third of that run.
+- **Settled.** A judgement is stored with a hash of what the judge was given (ADR-0010);
+  no threshold on a confidence. A decision model as the judge was tried by hand — 18 of
+  19 planted contradictions, no evidence named — and the user did not take up measuring
+  it as a filter.
+- **Next.** Two judges and their disagreement shown; or the text of a body judged apart
+  from its status.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "Three whole targets through
+  the tool"; `targets/spike-snapshots/8-tool-petclinic/run2-judge/` (not in the
+  repository).
+
+## Loose ends of the roles
+
+- **Seen.**
+  - *The evidence* records no header of an answer and no body other than JSON.
+  - *"Not shown" on Kadai: 135 of 1 255.* 99 scenarios say their situation was not
+    reached; the rest is not read: a setting no interface shows, or a rule no caller can
+    reach.
+  - *A structure nothing is filed under.* A structure no operation takes or answers has
+    no operation in `view`; nothing says a structure is shown, where the terms had a
+    projection. Derivable: shown when an operation that answers it has `answers` judged
+    to hold.
+  - *Three findings of the review left open:* an unreadable evidence file fails the whole
+    command; `roles play` drops the events of the reset; evidence older than its scenario
+    counts as done.
+  - *Names the challenger left:* the stored key `of` holds a hash (`given-hash` would
+    say so; renaming it rewrites every judgements file); the parameter `bound` of the
+    judge's task is an interface. `src/derive/roles-view.ts` is past 400 lines: ask which
+    step it is doing.
+  - *`view`:* a builder's finding about an unknown actor is not seen (the page reads no
+    credentials). Kadai's reading is in the first form — no structure, `takes` and
+    `answers` as sentences — and does not draw until read again (about 56 USD the first
+    time).
+- **Settled.** Nothing: each is to take on its own.
+- **Next.** The three findings first, each with its test.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, its Backlog.
+
+## The runs were made before the reads were held
+
+- **Seen.** Until the last fixes of the branch a session's reads were held by a callback
+  the SDK calls only for what it would ask a person: nothing inside the checkout. Read in
+  the transcripts of the three targets: none of the 205 builder sessions read or searched
+  outside its own files; nearly every reader searched from the checkout's root at least
+  once, and 2 such searches on Conduit, 14 on Petclinic, 21 on Kadai came back naming
+  files of the earlier extraction or of the evidence. A hook holds every call now; a
+  reader refused its searches from the root narrows them and ends (one operation tried).
+  The judgements stored under the checkouts read as stale: their hash now covers the
+  requirements and what the target runs with.
+- **Settled.** The separation is built (ADR-0010): a hook on every call, not a brief.
+- **Next.** Read one whole target again with the hook — Conduit, 7 USD — and compare the
+  rules with the run kept: whether a reader that cannot search from the root reads less,
+  and whether any rule of the kept run came from a file it should not have seen. Judge
+  again what is kept, or drop it.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "The challenger before
+  the merge"; the transcripts are under `~/.claude/projects/` of the machine that ran
+  them, not in the repository.
 
 ## Open questions, no item yet
 
