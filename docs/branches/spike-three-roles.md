@@ -212,6 +212,26 @@ move.
   name that holds from one run of the reader to the next, and a reader that reads
   everything at the default model.
 
+- **The reading walked in `view`, from the structures** (`c736d3d`; the user asked why the
+  roles had a page of their own). Cause: `view` files an operation under the structure it
+  answers or its inputs name, and the readers wrote no structure. The challenger's verdict
+  on the design: keep, three changes, all taken — a reader of the structures in a session
+  of its own, before the others; structures without bounds, a bound stays a rule; the
+  judgements projected in `derive` onto the data the page already draws, the extraction's
+  gaps hidden in that mode. A reader now says the field each input is and the structure
+  the answer shows; `roles page` is deleted. ADR-0010 amended.
+- **Petclinic again, the readers on the stronger model** (the earlier run kept under
+  `targets/spike-snapshots/8-tool-petclinic/run3-corrected`, the closed spike's files under
+  `old-extraction`; the page at `targets/pages/petclinic.html`). 8 structures; 36 of 36
+  interfaces; 504 rules where the default model gave 263; 598 scenarios; 557 hold, 11
+  contradicted, none refused unexpectedly, 30 not shown; about 31 USD, 23 of them the
+  readers. 34 operations are filed under a structure, 2 are transverse. No contradiction is
+  a misreading this time: the role refusals are read as the target answers them. The 11:
+  an `id` the contract requires in a body and the target does not (8), a null list
+  accepted, an unknown pet answered 500 where a constraint was read, and a search by
+  prefix where `%` matches every owner. The reader's hints failed their gate once on 17
+  operations (`reachable` not in its three forms) and were repaired in the session.
+
 ## Backlog
 
 - **The two specifications.** The roles' files live beside `operations/`, facts' terms,
@@ -222,7 +242,11 @@ move.
 - **ADR-0010 is Proposed.** To accept, amend or drop; with it the stored judgement and
   the builder's own tool where ADR-0006 gave a shell.
 - **Which model reads.** The default one misses rules a stronger one finds, at a tenth of
-  the price. A stronger reader only; or the reader again where the judge contradicts.
+  the price: on Petclinic 263 rules for 3 USD, 504 for 23. A stronger reader only; or the
+  reader again where the judge contradicts.
+- **A structure with nothing under it, and one nothing shows.** `Role` has no operation;
+  nothing says a structure is shown, where the terms had a projection. Derivable: a
+  structure is shown when an operation that answers it has its `answers` judged to hold.
 - **A contradiction that is the reader's.** One line of the common reading made 29
   contradictions; corrected by hand here. Who corrects — the reader, sent back with the
   evidence? — and how the page tells a misreading from a bug of the target. A family of
@@ -242,5 +266,7 @@ move.
 - **The reviewer's open findings** on `3f0358a`: an unreadable evidence file fails the
   whole command; a play drops the reset's events; evidence older than its scenario counts
   as done.
-- **The page.** It lists every operation and every exchange; it does not yet group the
-  contradictions by cause, nor sit in `view`.
+- **The page.** `view` does not group the contradictions by cause; a builder's finding
+  about an unknown actor is not seen there (the page reads no credentials). Conduit and
+  Kadai are still in the first form (no structure, `takes` and `answers` as sentences) and
+  do not draw until read again.
