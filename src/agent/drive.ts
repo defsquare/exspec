@@ -92,11 +92,13 @@ function aboutOf(input: unknown): string {
 }
 
 // Read, Glob, Grep and the writes, against the session's confinement; anything else allowed
-function allowed(
+export function allowed(
   name: string,
-  input: Readonly<Record<string, unknown>>,
-  { mayRead, mayWrite }: Session,
+  given: unknown,
+  { mayRead, mayWrite }: Pick<Session, "mayRead" | "mayWrite">,
 ): boolean {
+  const parsed = z.record(z.string(), z.unknown()).safeParse(given);
+  const input = parsed.success ? parsed.data : {};
   const text = (key: string) => (typeof input[key] === "string" ? input[key] : undefined);
   const path = text("file_path");
   if (writing.has(name)) return path !== undefined && mayWrite(path);
@@ -150,6 +152,27 @@ export async function* driveAgent(session: Session): AsyncGenerator<AgentEvent, 
       skills: [],
       permissionMode: "default",
       canUseTool,
+      // a read inside cwd is never put to canUseTool: the hook sees every call
+      hooks: {
+        PreToolUse: [
+          {
+            onFailure: "block",
+            hooks: [
+              async (input) =>
+                input.hook_event_name !== "PreToolUse" ||
+                allowed(input.tool_name, input.tool_input, session)
+                  ? {}
+                  : {
+                      hookSpecificOutput: {
+                        hookEventName: "PreToolUse",
+                        permissionDecision: "deny",
+                        permissionDecisionReason: session.confinement,
+                      },
+                    },
+            ],
+          },
+        ],
+      },
       // the SDK replaces the environment, it does not merge
       env: { ...process.env, [agentMark]: "1" },
       ...(resume === undefined ? {} : { resume }),
