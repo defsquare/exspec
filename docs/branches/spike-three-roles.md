@@ -269,6 +269,26 @@ move.
 - **ADR-0010 accepted by the user** (2026-11-15), with the stored judgement and the
   builder's own tool where ADR-0006 gave a shell; the branch is to be merged, which the
   Frame had set aside while it was a spike.
+- **The challenger before the merge: merge after fixes.** Two Important findings fixed,
+  one renamed, the Minor ones taken or sent to the backlog.
+  - *The separation was asked, not built, inside the checkout.* A session's reads were
+    held by `canUseTool`, which the SDK puts only what it would ask a person: a read or a
+    search inside the working directory never reached it (tried: a session whose every
+    read is refused read, searched and listed freely). Now a `PreToolUse` hook, which sees
+    every call; the same trial is refused three times, and a reader on a copy of Conduit,
+    refused its searches from the root, narrows them and ends in 14 turns.
+    What the runs kept here were worth, read in the 205 builder and 223 reader
+    transcripts of the three targets: no builder read or searched anything but its own
+    files (its calls to a shell answered "no such tool"); nearly every reader searched
+    from the checkout's root at least once, and 2 such searches on Conduit, 14 on
+    Petclinic, 21 on Kadai came back naming files of the earlier extraction or of the
+    evidence — names, and for a text search the lines matched. The counts of rules and
+    judgements above were made with that leak open for the readers.
+  - *A judgement's hash left out what every recording is judged with* — the operation,
+    what the target runs with, every requirement: a requirement changed and no judgement
+    was stale. The hash now covers both, and is SHA-256 rather than a hash the runtime
+    does not promise to keep. The judgements kept under the checkouts read as stale until
+    judged again.
 
 ## Backlog
 

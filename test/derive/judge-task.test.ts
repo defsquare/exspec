@@ -138,3 +138,20 @@ test("a recording's hash changes with its own part only", () => {
     exists: after.get("exists") === before.get("exists"),
   }).toEqual({ removed: true, exists: false });
 });
+
+test("every recording's hash changes with what all of them are judged with", () => {
+  const before = judgeTask({ bound, common, rules, recordings }).of;
+  const after = judgeTask({
+    bound,
+    common: {
+      ...common,
+      "runs-with": [{ setting: "security is off", source: "c.yaml:1" }],
+    },
+    rules,
+    recordings,
+  }).of;
+  expect({
+    removed: after.get("removed") === before.get("removed"),
+    exists: after.get("exists") === before.get("exists"),
+  }).toEqual({ removed: false, exists: false });
+});

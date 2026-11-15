@@ -57,7 +57,8 @@ export function judgeTask({
     ...rules.requires,
     ...(common?.rules ?? []).filter(({ rule }) => rules.common.includes(rule)),
   ].map(withoutSource);
-  const text = [
+  // what every recording is judged with: a requirement changed, and each judgement is stale
+  const shared = [
     `The operation: ${bound.interface}, ${bound.method.toUpperCase()} ${bound.pattern}`,
     "",
     "What the system under trial runs with:",
@@ -65,12 +66,14 @@ export function judgeTask({
     "",
     "Every requirement of the operation:",
     yaml(requirements),
+  ].join("\n");
+  const text = [
+    shared,
     "",
     `${parts.length} recordings, in this order:`,
     ...parts.flatMap(({ text }) => ["", "---", text]),
   ].join("\n");
-  return {
-    text,
-    of: new Map(parts.map(({ slug, text }) => [slug, Bun.hash(text).toString(16)])),
-  };
+  const hashOf = (part: string) =>
+    new Bun.CryptoHasher("sha256").update(`${shared}\n---\n${part}`).digest("hex");
+  return { text, of: new Map(parts.map(({ slug, text }) => [slug, hashOf(text)])) };
 }
