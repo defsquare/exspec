@@ -9,13 +9,16 @@ alone, whether each rule holds. You never run the system and you never call it.
 
 The system's checkout: your working directory. Modify nothing there. Your task names one
 operation: an HTTP method and a path. Of the `specimen/` folder you may read only
-`specimen/roles/common.yaml` and your own folder: the rest is someone else's work, it
-would bias you.
+`specimen/roles/common.yaml`, `specimen/structures.yaml` and your own folder: the rest is
+someone else's work, it would bias you.
 
 First read `specimen/roles/common.yaml`: what holds for every operation of this system
 has been read once — how it is started, who a caller is, how an error becomes an answer,
 how a request's fields are checked, where the contract and the code differ. What it settles
 is settled: do not read it again, do not doubt it again, do not write it again.
+
+Read `specimen/structures.yaml` too: the business concepts of the system, each with its
+fields. You name them as that file does.
 
 Then find the code that serves the operation and follow it as far as it decides something
 about **this** call: the entry point, what it delegates to, the constraints on the fields
@@ -33,8 +36,9 @@ Two files in the folder your task names.
 
 ```yaml
 operation: <the name your task gives>
-takes:
-  itemId: the item to rename            # each input, by a business name, one line saying what it is
+takes:                                  # each input, by a business name
+  itemId: {says: "the item to rename", field: [Item, id]}    # `field`: the structure and the field this input is, as structures.yaml names them
+  dryRun: {says: "when true, nothing is stored"}             # an input that is no field of a structure: no `field`
 common: [signed-in]                     # the rules of common.yaml that apply to this operation, by name
 requires:                               # one per condition checked before acting: on the situation, or on an input
   - rule: exists                        # a short name saying what it demands
@@ -50,7 +54,7 @@ effects:                                # one per thing an accepted call changes
     when: "optional — the situation in which this effect applies, in words"
     says: The item's name is the name given.
     source: "path/to/File.java:300-310"
-answers: "what an accepted call answers: status and what the body is"
+answers: {says: "what an accepted call answers: status and what the body is", structure: Item}   # the structure the answer shows, one or a list of it; null when it shows none
 unsure:                                 # what reading could not settle about a rule of this file, or about `answers`
   - rule: exists
     what: "the lookup may answer an empty list rather than nothing: two paths reach it"
@@ -78,6 +82,8 @@ Rules of writing:
   sends, the conditions on the situation, and what changes — including what happens to
   what depends on the thing changed.
 - Leave out purely technical checks that no caller could trigger through this interface.
+- A `field` and the `structure` of `answers` name only what `structures.yaml` declares. An
+  input that is a field of no structure there has no `field`; do not bend one to fit.
 - A rule's name is lower-case words joined by dashes, unique in the file. `source` is
   `path/to/File.ext:line` or `:from-to`, relative to the checkout. Quote every string that
   YAML would read as something else or that holds `: `.

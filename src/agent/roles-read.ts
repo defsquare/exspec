@@ -1,4 +1,4 @@
-import { checkCommon } from "../derive/check-reading.ts";
+import { checkCommon, checkStructuresFile } from "../derive/check-reading.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Interface } from "../shapes/target.ts";
 import { readsOf, under, writesOf } from "./access.ts";
@@ -17,6 +17,34 @@ import {
 const tools = ["Read", "Glob", "Grep", "Write", "Edit"];
 
 const rounds = 3;
+
+function structuresReader(roling: Roling): AsyncGenerator<Event, boolean> {
+  const { dir, readFiles } = roling;
+  const own = "structures.yaml";
+  return roleJob("structures-reader", undefined, () =>
+    roleRounds({
+      roling,
+      role: "structures-reader",
+      name: undefined,
+      rounds,
+      session: {
+        prompt:
+          "Read the business concepts of the system checked out in your working directory, and write specimen/structures.yaml.",
+        tools,
+        mayRead: readsOf(dir, {
+          checkout: true,
+          allowed: (path) => ["interfaces.yaml", own].includes(path),
+        }),
+        mayWrite: writesOf(dir, (path) => path === own),
+        confinement:
+          "Of specimen/ this session reads only interfaces.yaml and structures.yaml, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/structures.yaml.",
+      },
+      gate: async () => {
+        return checkStructuresFile(textAt(await readFiles(dir), own)).findings;
+      },
+    }),
+  );
+}
 
 function commonReader(roling: Roling): AsyncGenerator<Event, boolean> {
   const { dir, readFiles } = roling;
@@ -72,10 +100,11 @@ async function* reader(
         tools,
         mayRead: readsOf(dir, {
           checkout: true,
-          allowed: (path) => ["roles/common.yaml", ...own].includes(path),
+          allowed: (path) =>
+            ["roles/common.yaml", "structures.yaml", ...own].includes(path),
         }),
         mayWrite: writesOf(dir, (path) => own.includes(path)),
-        confinement: `Of specimen/ this session reads only roles/common.yaml and the two files of its folder, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/${folder}/rules.yaml and hints.yaml.`,
+        confinement: `Of specimen/ this session reads only roles/common.yaml, structures.yaml and the two files of its folder, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/${folder}/rules.yaml and hints.yaml.`,
       },
       gate: async () => {
         return readingOf(await readFiles(dir), name).findings;
@@ -84,11 +113,23 @@ async function* reader(
   );
 }
 
-// The common reading first, when it is missing or does not pass its check; then one reader
-// per interface, `jobs` at a time. The target is not started.
+// The structures first, then the common reading, each when it is missing or does not pass
+// its check; then one reader per interface, `jobs` at a time. The target is not started.
 export function rolesRead(roling: Roling): AsyncGenerator<Event> {
   const { dir, jobs, readFiles } = roling;
   return rolesCommand("roles-read", roling, async function* ({ interfaces }) {
+    const structures = checkStructuresFile(
+      textAt(await readFiles(dir), "structures.yaml"),
+    );
+    const read =
+      structures.findings.length === 0
+        ? yield* roleSkipped(
+            "structures-reader",
+            undefined,
+            "structures.yaml passes its check",
+          )
+        : yield* structuresReader(roling);
+    if (!read) return false;
     const common = checkCommon(textAt(await readFiles(dir), "roles/common.yaml"));
     const ready =
       common.findings.length === 0

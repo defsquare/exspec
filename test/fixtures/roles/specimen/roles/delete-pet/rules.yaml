@@ -1,6 +1,6 @@
 operation: delete-pet
 takes:
-  petId: the pet to delete (path)
+  petId: {says: "the pet to delete (path)", field: [Pet, id]}
 common: [signed-in, owner-admin-role]
 requires:
   - rule: pet-exists
@@ -24,7 +24,7 @@ effects:
     when: "other pets share the pet's type"
     says: The pet's type still exists.
     source: "src/main/java/org/springframework/samples/petclinic/model/Pet.java:37"
-answers: "204 with an empty body"
+answers: {says: "204 with an empty body", structure: null}
 unsure:
   - rule: pet-type-kept
     what: "the pet's type relation cascades all operations, so deleting the pet may try to delete its type: refused by a constraint (404 problem detail, nothing deleted) when other pets use it, or the type deleted when none does"

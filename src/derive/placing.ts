@@ -1,5 +1,6 @@
 import type { Extraction } from "../shapes/extraction.ts";
-import type { Operation } from "../shapes/specification.ts";
+import type { Rules } from "../shapes/roles.ts";
+import type { Operation, Structure } from "../shapes/specification.ts";
 
 type Verb = "answers" | "changes" | "takes" | "requires";
 
@@ -102,4 +103,39 @@ export function placeOperations(extraction: Extraction): readonly Placed[] {
     home: homeOf(operation, known),
     touches: touchesOf(operation, known, readBy),
   }));
+}
+
+// A reading filed by the same rule: per operation a stand-in holding only what it answers
+// and its inputs that name a field. The stand-in places; it is never drawn.
+//   {operation: f, takes: {a: {says: "…", field: [A, id]}, n: {says: "…"}}, answers: {structure: null}}
+//   -> {operation: f, takes: {a: {field: [A, id]}}, answers: null, requires: [], effects: []}
+export function placedOfReading(
+  structures: readonly Structure[],
+  readings: readonly Rules[],
+): readonly Placed[] {
+  const operations = readings.map(({ operation, takes, answers }) => ({
+    path: operation,
+    operation: {
+      operation,
+      takes: Object.fromEntries(
+        Object.entries(takes ?? {}).flatMap(([input, { field }]) =>
+          field === undefined ? [] : [[input, { field }]],
+        ),
+      ),
+      requires: [],
+      answers: answers.structure,
+      effects: [],
+    },
+  }));
+  return placeOperations({
+    schemas: [],
+    interfaces: [],
+    structures,
+    facts: [],
+    operations,
+    projections: [],
+    triggers: [],
+    scenarios: [],
+    references: [],
+  });
 }

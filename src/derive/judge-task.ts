@@ -12,7 +12,7 @@ function withoutSource<T extends { readonly source: string }>({
 }
 
 // the rule a recording names, as the judge reads it: a requirement, an effect, or what
-// an accepted call answers
+// an accepted call answers — its sentence only, never the structure the reader named
 function ruleEntry(rule: string, rules: Rules, common: Common | undefined) {
   const requirement =
     rules.requires.find((r) => r.rule === rule) ??
@@ -20,7 +20,7 @@ function ruleEntry(rule: string, rules: Rules, common: Common | undefined) {
       ? common?.rules.find((r) => r.rule === rule)
       : undefined);
   if (requirement !== undefined) return { requirement: withoutSource(requirement) };
-  if (rule === "answers") return { answers: rules.answers };
+  if (rule === "answers") return { answers: rules.answers.says };
   const effect = rules.effects.find((r) => r.rule === rule);
   return effect === undefined ? { rule } : { effect: withoutSource(effect) };
 }

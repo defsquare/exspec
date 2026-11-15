@@ -28,6 +28,12 @@ judge that found 19 of 19 planted contradictions.
 - **The tool walks the interfaces**: one reader, one builder, one judge per interface, the
   operation named as its interface. What is covered is the interface list, not a session's
   choice. What holds for every operation is read once, before, by a reader of its own.
+- **The structures are read first, by a reader of their own**, into `structures.yaml` in
+  its existing shape, without bounds — a bound is a rule of the operation that checks it.
+  A reader names them: each input says the structure's field it is, the answer the
+  structure it shows. That is what files an operation under a structure, by the rule
+  `view` already has; the reading is walked in `view` from the structures to their
+  operations to the evidence and the judgement, with no page of its own.
 - **The separation is built, not asked**: the reader's target is not started; the builder
   has no shell and reads only the rules, the hints and the interface descriptions; the judge
   has no tool. This is where the decision departs from ADR-0006, which gave the agent a
@@ -63,6 +69,9 @@ judge that found 19 of 19 planted contradictions.
 
 ## Consequences
 
+- A first run had the readers write no structure: nothing to walk the reading from, and
+  a page apart to read it. The structures came back as the one concept of the
+  specification the roles keep in its own shape.
 - Two forms of specification live side by side until one is folded into the other; the
   facts' conditions, the projections and the triggers serve nothing in the roles' path.
 - The evidence is played once: no second execution, no noise; it is not yet a reference,

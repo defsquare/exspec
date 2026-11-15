@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import { placeOperations } from "../../src/derive/placing.ts";
+import { placedOfReading, placeOperations } from "../../src/derive/placing.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
+import { rulesSchema } from "../../src/shapes/roles.ts";
 
 const structure = (name: string) => `
 - structure: ${name}
@@ -95,5 +96,49 @@ answers: null
       home: null,
       touches: [{ structure: "A", as: [{ verb: "requires", what: ["r"] }] }],
     },
+  ]);
+});
+
+test("a reading is filed under the structure it answers, else under the one its inputs name", () => {
+  const { extraction } = parseExtraction([
+    { path: "structures.yaml", text: structure("A") + structure("B") },
+  ]);
+  const readings = [
+    `
+operation: answers
+takes: { a: { says: "the a", field: [A, id] }, n: { says: "a name" } }
+answers: { says: "200 with the a", structure: A }
+`,
+    `
+operation: takes
+takes: { b: { says: "the b", field: [B, id] } }
+answers: { says: "204", structure: null }
+`,
+    `
+operation: names-nothing
+takes: { n: { says: "a number" } }
+answers: { says: "200 with a count", structure: null }
+`,
+  ].map((text) => rulesSchema.parse(Bun.YAML.parse(text)));
+  expect(placedOfReading(extraction.structures, readings)).toEqual([
+    {
+      operation: "answers",
+      home: "A",
+      touches: [
+        {
+          structure: "A",
+          as: [
+            { verb: "answers", what: [] },
+            { verb: "takes", what: ["id"] },
+          ],
+        },
+      ],
+    },
+    {
+      operation: "takes",
+      home: "B",
+      touches: [{ structure: "B", as: [{ verb: "takes", what: ["id"] }] }],
+    },
+    { operation: "names-nothing", home: null, touches: [] },
   ]);
 });

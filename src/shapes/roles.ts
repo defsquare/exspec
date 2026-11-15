@@ -70,15 +70,30 @@ export const commonSchema = z
 
 export type Common = z.infer<typeof commonSchema>;
 
+const structureFieldSchema = z.tuple([z.string(), z.string()]).readonly();
+
+// takes: {itemId: {says: "the item", field: [Item, id]}, dryRun: {says: "…"}}
+// answers: {says: "200 with the item", structure: Item}, structure null when it shows none
 // unsure.rule: a rule of the file, a name under common, or "answers"
 export const rulesSchema = z
   .strictObject({
     operation: z.string(),
-    takes: z.record(z.string(), z.string()).readonly().nullable().default({}),
+    takes: z
+      .record(
+        z.string(),
+        z
+          .strictObject({ says: z.string(), field: structureFieldSchema.optional() })
+          .readonly(),
+      )
+      .readonly()
+      .nullable()
+      .default({}),
     common: z.array(ruleName).readonly().default([]),
     requires: z.array(requirementSchema).readonly().default([]),
     effects: z.array(effectSchema).readonly().default([]),
-    answers: z.string(),
+    answers: z
+      .strictObject({ says: z.string(), structure: z.string().nullable() })
+      .readonly(),
     unsure: z
       .array(z.strictObject({ rule: z.string(), what: z.string() }).readonly())
       .readonly()

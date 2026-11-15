@@ -1,0 +1,12 @@
+- structure: Owner
+  identity: id
+  fields:
+    id: {type: int}
+    lastName: {type: string}
+    pets: {structure: Pet, many: true}
+- structure: Pet
+  identity: id
+  fields:
+    id: {type: int}
+    name: {type: string}
+    birthDate: {type: instant, format: date}

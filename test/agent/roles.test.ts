@@ -20,7 +20,7 @@ interfaces:
 operation: f
 requires:
   - {rule: exists, fact: the item exists, otherwise: {refusal: not-found, status: 404, body: empty}, source: "F.java:1"}
-answers: "200"
+answers: {says: "200", structure: null}
 `,
   "roles/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",

@@ -140,20 +140,28 @@ const placed = (name) => data.placed.find((p) => p.operation === name);
 const groupOf = (name) => placed(name)?.home ?? transverse;
 const others = (name) => (placed(name)?.touches ?? []).filter((t) => t.structure !== placed(name).home);
 const operationsOf = (group) => x.operations.map((o) => o.operation).filter((o) => groupOf(o.operation) === group);
-const scenariosOf = (name) => x.scenarios.filter((e) => e.scenario.act.call.operation === name);
+// a scenario of the extraction, {path, scenario}, or of the roles' reading, {path, operation, rule, steps, …}
+const roles = data.mode === "roles";
+const scenarioAt = (path) => x.scenarios.find((e) => e.path === path);
+const operationOfScenario = (e) => e.operation ?? e.scenario.act.call.operation;
+const scenariosOf = (name) => x.scenarios.filter((e) => operationOfScenario(e) === name);
 const referenceOf = (path) => x.references.find((r) => r.path === path)?.reference;
 const triggerOf = (name) => x.triggers.find((t) => t.operation === name);
 const interfaceOf = (name) => x.interfaces.find((i) => i.interface === triggerOf(name)?.interface);
 const judged = (name, rule) => data.rules.find((r) => r.operation === name && r.rule === rule);
-const provenanceOf = (name, rule) => judged(name, rule)?.provenance ?? "declared-only";
-const colors = { verified: "#3dbf9e", refuted: "#f65e5e", some: "#d97706", none: "#d1d5db" };
+const unproven = roles ? "unjudged" : "declared-only";
+const provenanceOf = (name, rule) => judged(name, rule)?.provenance ?? unproven;
+const colors = { verified: "#3dbf9e", holds: "#3dbf9e", refuted: "#f65e5e", contradicted: "#f65e5e", "refused-unexpectedly": "#f65e5e", "not-shown": "#9ca3af", some: "#d97706", none: "#d1d5db" };
+const good = (w) => w === "verified" || w === "holds", bad = (w) => w === "refuted" || w === "contradicted" || w === "refused-unexpectedly";
 const dot = (color, title) => h("span", { class: "dot", style: `background:${color}`, title });
 const provenanceDot = (word) => dot(colors[word] ?? colors.none, word);
 // one colour for several verdicts: red if one is refuted, green if all are verified, amber if some
-const blend = (words) => words.includes("refuted") ? colors.refuted : words.length > 0 && words.every((w) => w === "verified") ? colors.verified : words.includes("verified") ? colors.some : colors.none;
+const blend = (words) => words.some(bad) ? colors.refuted : words.length > 0 && words.every(good) ? colors.verified : words.some(good) ? colors.some : colors.none;
 
 // the lines of an operation's specification, in the order it applies them
 function lines(o) {
+  if (o.lines) return o.lines.map((l) => ({ ...l, say: l.kind === "requires" ? ["Refuses ", code(l.otherwise ?? "?"), l.status === undefined ? "" : ` (${l.status})`, l.when ? [" when ", h("b", null, l.when), ","] : "", " unless ", h("b", null, l.fact ?? "?")]
+    : l.kind === "answers" ? ["Answers: ", l.says] : [l.when ? ["When ", h("b", null, l.when), ": "] : "Always: ", l.says] }));
   const status = (refusal) => triggerOf(o.operation)?.refuses[refusal]?.status;
   const thenSay = (then) => typeof then === "string" ? "nothing changes." : "says" in then ? then.says : commas([
     ...Object.entries(then.fact ?? {}).map(([f, v]) => [h("b", null, f), ` becomes ${v}`]),
@@ -171,7 +179,7 @@ function lines(o) {
 }
 const operationColor = (o) => blend(lines(o).map((l) => provenanceOf(o.operation, l.rule)));
 // what the references say of one scenario: its rules' verdicts, then its trigger's
-const verdictsOf = (path) => { const name = x.scenarios.find((e) => e.path === path)?.scenario.act.call.operation; return [
+const verdictsOf = (path) => { const e = scenarioAt(path), name = e && operationOfScenario(e); return [
   ...data.rules.filter((r) => r.operation === name).flatMap((r) => r.by.filter((b) => b.scenario === path).map((b) => ({ claim: r.rule, ...b }))),
   ...data.bindings.flatMap((b) => b.by.filter((v) => v.scenario === path).map((v) => ({ claim: `trigger ${b.trigger}`, binding: true, ...v }))),
 ]; };
@@ -213,14 +221,37 @@ function sequence(path) {
     actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"), els);
 }
 
+// The steps of a scenario of the roles as one sequence: arrange, before, the call (red), after.
+function steps(e) {
+  const who = (st) => st.as ?? "nobody";
+  const actors = [...new Set(e.steps.map(who))];
+  const col = 150, left = 60, targetX = left + actors.length * col, width = targetX + 260, els = [];
+  let y = 64, was;
+  for (const st of e.steps) {
+    if (st.when !== was) { els.push(s("text", { x: 8, y: y - 16, class: "small", "font-weight": 600 }, st.when)); was = st.when; }
+    const ax = left + actors.indexOf(who(st)) * col, call = st.when === "call", color = call ? "#f65e5e" : "#1e416e";
+    const said = st.unplayable ? `unplayable: ${st.unplayable}` : `${st.method.toUpperCase()} ${st.path}`;
+    els.push(s("line", { x1: ax, y1: y, x2: targetX - 6, y2: y, stroke: color, "stroke-width": call ? 2.5 : 1.5, "marker-end": `url(#r-${call ? "act" : "call"})` }),
+      s("text", { x: ax + 8, y: y - 7, class: "m", "font-weight": call ? 700 : 400 }, said.length > 46 ? `${said.slice(0, 45)}…` : said),
+      st.status === undefined ? null : [s("line", { x1: targetX, y1: y + 22, x2: ax + 6, y2: y + 22, stroke: "#4b5563", "stroke-dasharray": "5 4", "marker-end": "url(#r-back)" }),
+        s("text", { x: targetX + 10, y: y + 26, class: "m", "font-weight": 600 }, String(st.status))]);
+    y += 58;
+  }
+  const lifeline = (at, label) => [s("text", { x: at, y: 24, "text-anchor": "middle", "font-weight": 600 }, label), s("line", { x1: at, y1: 34, x2: at, y2: y, stroke: "#d1d5db" })];
+  const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
+  return s("svg", { viewBox: `0 0 ${width} ${y}`, width, role: "img", "aria-label": `Steps of ${e.path}` },
+    s("defs", null, marker("r-call", "#1e416e"), marker("r-act", "#f65e5e"), marker("r-back", "#4b5563")),
+    actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"), els);
+}
+
 // An operation as a column of gates: each rule that can refuse is an exit to the right, the effects are
 // below. With a scenario, the path it was written to take is red, and a status the target answered
 // otherwise is written beside the exit.
 function gates(o, path, picked) {
-  const all = lines(o), gate = all.filter((l) => l.kind !== "effect"), effects = all.filter((l) => l.kind === "effect");
-  const sc = path ? x.scenarios.find((e) => e.path === path)?.scenario : null;
+  const all = lines(o), gate = all.filter((l) => l.kind === "input" || l.kind === "requires"), effects = all.filter((l) => !gate.includes(l));
+  const e = path ? scenarioAt(path) : null, sc = e ? (e.scenario ?? { proves: [e.rule] }) : null;
   const exitAt = sc ? gate.findIndex((g) => sc.proves.includes(g.rule)) : -2; // -1: through to the end
-  const answered = path ? referenceOf(path)?.act.response.status : undefined;
+  const answered = !path ? undefined : e?.steps ? e.steps.find((st) => st.when === "call")?.status : referenceOf(path)?.act.response.status;
   const cx = 150, bw = 260, els = [];
   let y = 20;
   const stroke = (rule) => colors[provenanceOf(o.operation, rule)] ?? colors.none;
@@ -228,7 +259,7 @@ function gates(o, path, picked) {
   const spine = (y1, y2, on) => s("line", { x1: cx, y1, x2: cx, y2, stroke: on ? "#f65e5e" : "#d1d5db", "stroke-width": on ? 3 : 1.5 });
   const open = (rule) => () => { location.hash = ruleRoute(o.operation, rule); };
   const clip = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
-  const inputs = `${o.operation}(${Object.keys(o.takes).join(", ")})`;
+  const inputs = `${o.operation}(${Object.keys(o.takes ?? {}).join(", ")})`;
   els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#172741" }), s("text", { x: cx, y: y + 25, "text-anchor": "middle", style: "fill:#fff", "font-weight": 600 }, inputs.length > 34 ? `${clip(o.operation, 30)}(…)` : inputs));
   y += 40;
   gate.forEach((g, n) => {
@@ -256,10 +287,10 @@ function gates(o, path, picked) {
   });
   els.push(spine(y, y + 20, through));
   y += 20;
-  const t = triggerOf(o.operation), accepted = t?.answers.status;
+  const t = triggerOf(o.operation), accepted = t?.answers.status, answers = typeof o.answers === "string" ? o.answers : o.answers?.structure;
   els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#fff", stroke: through ? "#f65e5e" : "#172741", "stroke-width": through ? 3 : 1.5 }),
-    s("text", { x: cx, y: y + 25, "text-anchor": "middle" }, `accepted${t ? ` · ${accepted}` : ""}${o.answers ? ` · answers ${o.answers}` : ""}`),
-    through && answered !== undefined && answered !== accepted ? s("text", { x: cx + bw / 2 + 12, y: y + 25, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
+    s("text", { x: cx, y: y + 25, "text-anchor": "middle" }, `accepted${t ? ` · ${accepted}` : ""}${answers ? ` · answers ${answers}` : ""}`),
+    through && answered !== undefined && accepted !== undefined && answered !== accepted ? s("text", { x: cx + bw / 2 + 12, y: y + 25, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
   const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
   return s("svg", { viewBox: `0 0 640 ${y + 60}`, width: 640, role: "img", "aria-label": `Gates of ${o.operation}` }, s("defs", null, marker("g-on", "#f65e5e"), marker("g-off", "#d1d5db")), els);
 }
@@ -288,6 +319,7 @@ function structureSheet(name) {
 
 // the panel of one rule: what it says, the fact it rests on, and each scenario that judges it
 function rulePanel(o, line) {
+  if (roles) return roleRulePanel(o, line);
   const j = judged(o.operation, line.rule), f = line.fact ? x.facts.find((e) => e.fact === line.fact) : null;
   return [
     h("a", { class: "close", href: route("operation", o.operation) }, "Close"),
@@ -303,6 +335,7 @@ function rulePanel(o, line) {
   ];
 }
 function operationHead(o) {
+  if (roles) return roleOperationHead(o);
   const i = interfaceOf(o.operation), touches = placed(o.operation)?.touches ?? [];
   return [
     h("p", null, "Takes ", Object.keys(o.takes).length === 0 ? "nothing" : commas(Object.entries(o.takes).map(([n, t]) => [code(n), t.field ? [" (", toStructure(t.field[0]), `.${t.field[1]})`] : ` (${t.type})`, t.optional ? ", optional" : ""])),
@@ -315,7 +348,7 @@ function operationSheet(o, path, picked) {
   return [
     h("p", { class: "eyebrow" }, "Operation"), h("h1", null, o.operation), operationHead(o),
     h("div", { class: "card" }, gates(o, path, picked), h("div", { class: "legend" },
-      [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]].map(([key, word]) => h("span", null, h("i", { style: `border-color:${colors[key]}` }), word)),
+      (roles ? [["holds", "holds"], ["contradicted", "contradicted or refused unexpectedly"], ["not-shown", "not shown"], ["none", "unjudged"]] : [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]]).map(([key, word]) => h("span", null, h("i", { style: `border-color:${colors[key]}` }), word)),
       path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof; a scenario draws its path."))),
     h("p", { class: "eyebrow" }, "Scenarios"),
     scenariosOf(o.operation).length === 0 ? h("p", { class: "muted" }, "None.") : h("div", { class: "chips" }, scenariosOf(o.operation).map((e) =>
@@ -340,23 +373,81 @@ function scenarioPanel({ path, scenario: sc }) {
     h("h3", null, "The calls"), sc.arrange.map((a, n) => call(a, ref?.arrange[n], "ARRANGE")), call(sc.act, ref?.act, "ACT"),
   ];
 }
+// ---- the roles' reading
+const judgementOf = (b) => [provenanceDot(b.verdict), h("b", null, b.verdict), b.confidence === undefined ? "" : ` ${b.confidence}`, b.stale ? h("span", { class: "otherwise" }, " stale: its rule or its evidence changed since") : ""];
+function roleOperationHead(o) {
+  const i = o.interface, touches = placed(o.operation)?.touches ?? [];
+  return [
+    h("p", null, "Takes ", Object.keys(o.takes).length === 0 ? "nothing" : commas(Object.entries(o.takes).map(([n, t]) => [code(n), t.field ? [" (", toStructure(t.field[0]), `.${t.field[1]})`] : "", ` — ${t.says}`])), "."),
+    h("p", null, "Answers ", o.answers.structure ? toStructure(o.answers.structure) : "no structure", ` — ${o.answers.says}.`),
+    touches.length === 0 ? null : h("p", null, "Touches ", commas(touches.map((t) => [toStructure(t.structure), ` (${t.as.map((a) => [a.verb, a.what.join(", ")].filter(Boolean).join(" ")).join(" · ")})`])), "."),
+    h("p", { class: "muted" }, "On the wire: ", code(`${i.method.toUpperCase()} ${i.pattern}`), "."),
+  ];
+}
+function roleRulePanel(o, line) {
+  const j = judged(o.operation, line.rule);
+  return [
+    h("a", { class: "close", href: route("operation", o.operation) }, "Close"),
+    h("p", { class: "eyebrow" }, `${line.shared ? "Shared rule" : "Rule"} of ${o.operation}`), h("h2", null, code(line.rule)), h("p", null, line.say),
+    line.body ? h("p", { class: "muted" }, "The answer's body: ", line.body) : null,
+    h("p", null, provenanceDot(j?.provenance ?? unproven), h("b", null, j?.provenance ?? unproven), j?.reason ? ` — ${j.reason}` : ""),
+    line.source ? h("p", { class: "muted" }, "Read in ", code(line.source)) : null,
+    line.doubts.map((d) => h("p", { class: "otherwise" }, `The reader's doubt: ${d}`)),
+    h("h3", null, "The scenarios"),
+    (j?.by ?? []).length === 0 ? h("p", { class: "muted" }, "None exercises it.") : j.by.map((b) => [
+      h("p", null, h("a", { href: route("scenario", b.scenario) }, h("b", null, b.scenario.split("/")[1])), " — ", judgementOf(b)),
+      b.says ? h("p", { class: "muted" }, b.says) : null,
+      steps(scenarioAt(b.scenario))]),
+  ];
+}
+function roleScenarioPanel(e) {
+  const j = e.judgement, line = (st) => st.unplayable ? `${st.when} as ${st.as ?? "nobody"}: unplayable, ${st.unplayable}`
+    : `${st.when}  ${st.method.toUpperCase()} ${st.path}${st.query ? `?${new URLSearchParams(Object.entries(st.query).map(([k, v]) => [k, typeof v === "string" ? v : JSON.stringify(v)]))}` : ""}  as ${st.as ?? "nobody"}${st.status === undefined ? "" : `  → ${st.status}`}`;
+  return [
+    h("a", { class: "close", href: route("operation", e.operation) }, "Close"),
+    h("p", { class: "eyebrow" }, `Scenario of ${e.operation}`), h("h2", null, e.path.split("/")[1]),
+    h("p", null, "Exercises ", h("a", { href: ruleRoute(e.operation, e.rule) }, code(e.rule)), "."),
+    e.situation ? h("p", null, e.situation, h("span", { class: "muted" }, ` — reached: ${e.reached}`)) : null,
+    h("h3", null, "The judgement"),
+    j ? [h("p", null, judgementOf(j)), h("p", null, j.says)] : h("p", { class: "muted" }, e.steps.some((st) => st.status !== undefined) ? "Not judged yet." : "Not played yet: nothing is judged."),
+    h("h3", null, "What happens"), steps(e),
+    h("h3", null, "The exchanges"), e.steps.map((st) => h("div", { class: "card" }, h("p", null, code(line(st))),
+      st.body === undefined ? null : h("details", { class: "body" }, h("summary", null, "What was sent"), json(st.body)),
+      st.answer === undefined || st.answer === null ? null : h("details", { class: "body" }, h("summary", null, "What the target answered"), json(st.answer)))),
+  ];
+}
+// what the common reader wrote: what holds for every operation
+function commonSheet() {
+  const c = data.common;
+  if (!c) return [h("h1", null, "The common reading"), h("p", { class: "muted" }, "None parses yet.")];
+  return [
+    h("p", { class: "eyebrow" }, "What holds for every operation"), h("h1", null, "The common reading"),
+    h("h2", null, "Runs with"), table(["Setting", "Read in"], c["runs-with"].map((r) => [r.setting, code(r.source)])),
+    h("h2", null, "Shared rules"), table(["Rule", "Applies to", "Fact", "Otherwise"], c.rules.map((r) => [code(r.rule), r["applies-to"], r.fact, [code(r.otherwise.refusal), ` ${r.otherwise.status}: ${r.otherwise.body}`]])),
+    h("h2", null, "Errors"), table(["Kind", "Status", "Body"], c.errors.map((e) => [e.kind, code(e.status), e.body])),
+    h("h2", null, "Contract and code"), c.contract.length === 0 ? h("p", { class: "muted" }, "None.") : c.contract.map((t) => h("p", null, t)),
+    h("h2", null, "Doubts"), table(["About", "What"], c.unsure.map((u) => [u.about, u.what])),
+  ];
+}
+
 function overview() {
   const bar = (title, counts) => { const total = Object.values(counts).reduce((a, b) => a + b, 0);
     return [h("p", { class: "eyebrow" }, title), h("div", { class: "bar" }, Object.entries(counts).map(([word, n]) => h("i", { style: `background:${colors[word] ?? colors.none};width:${total ? (100 * n) / total : 0}%` }))),
       h("p", null, Object.entries(counts).map(([word, n]) => [provenanceDot(word), `${n} ${word}   `]))]; };
   return [
     h("h1", null, "The specification of ", h("b", null, x.target?.target ?? data.name), "."),
-    h("p", { class: "muted" }, "Walk it from a structure to its operations, then to the scenarios that prove them. Every verdict is computed from the references, each time this page is made."),
-    h("h2", null, "What holds"), bar("Rules", data.counts.rules), bar("Bindings", data.counts.bindings),
-    h("h2", null, "Rules not verified"),
-    table(["Operation", "Rule", "Provenance", "Why"], data.rules.filter((r) => r.provenance !== "verified").map((r) => [toOperation(r.operation), code(r.rule), [provenanceDot(r.provenance), r.provenance], r.reason ?? r.by.map((b) => b.reason).filter(Boolean)[0] ?? ""])),
+    h("p", { class: "muted" }, roles ? ["Walk it from a structure to its operations, then to the scenarios that exercise them. Each rule carries the judge's word on its evidence. ", h("a", { href: "#/common" }, "What holds for every operation"), "."]
+      : "Walk it from a structure to its operations, then to the scenarios that prove them. Every verdict is computed from the references, each time this page is made."),
+    h("h2", null, "What holds"), bar("Rules", data.counts.rules), data.counts.bindings ? bar("Bindings", data.counts.bindings) : null,
+    h("h2", null, roles ? "Rules that do not hold" : "Rules not verified"),
+    table(["Operation", "Rule", "Provenance", "Why"], data.rules.filter((r) => !good(r.provenance)).map((r) => [toOperation(r.operation), code(r.rule), [provenanceDot(r.provenance), r.provenance], r.reason ?? [...r.by.filter((b) => b.verdict === r.provenance), ...r.by].map((b) => b.reason ?? b.says).filter(Boolean)[0] ?? ""])),
   ];
 }
 function findings() {
   return [
     h("h1", null, "Problems and gaps"),
-    h("h2", null, "Problems"), h("p", { class: "muted" }, "The extraction is wrong."), table(["File", "At", "Message"], data.problems.map((p) => [code(p.file), p.at ? code(p.at) : "", p.message])),
-    h("h2", null, "Gaps"), h("p", { class: "muted" }, "The extraction is incomplete."), table(["Kind", "Name", "Message"], data.gaps.map((g) => [g.kind, code(g.name), g.message])),
+    h("h2", null, "Problems"), h("p", { class: "muted" }, roles ? "What the roles wrote does not pass its check." : "The extraction is wrong."), table(["File", "At", "Message"], data.problems.map((p) => [code(p.file), p.at ? code(p.at) : "", p.message])),
+    h("h2", null, "Gaps"), h("p", { class: "muted" }, roles ? "What the roles have not done yet." : "The extraction is incomplete."), table(["Kind", "Name", "Message"], data.gaps.map((g) => [g.kind, code(g.name), g.message])),
   ];
 }
 
@@ -364,9 +455,9 @@ function findings() {
 function render() {
   const [, concept, ...rest] = location.hash.split("/");
   const name = rest.length === 0 ? undefined : rest.map(decoded).join("/");
-  const sc = concept === "scenario" ? x.scenarios.find((e) => e.path === name) : undefined;
+  const sc = concept === "scenario" ? scenarioAt(name) : undefined;
   const ruleOf = concept === "rule" ? { operation: decoded(rest[0] ?? ""), rule: decoded(rest[1] ?? "") } : undefined;
-  const o = concept === "operation" ? operation(name) : sc ? operation(sc.scenario.act.call.operation) : ruleOf ? operation(ruleOf.operation) : undefined;
+  const o = concept === "operation" ? operation(name) : sc ? operation(operationOfScenario(sc)) : ruleOf ? operation(ruleOf.operation) : undefined;
   const line = o && ruleOf ? lines(o).find((l) => l.rule === ruleOf.rule) : undefined;
   const groups = [...x.structures.map((st) => st.structure), transverse].filter((g) => g !== transverse || operationsOf(g).length > 0);
   const group = o ? groupOf(o.operation) : concept === "structure" && groups.includes(name) ? name : undefined;
@@ -378,8 +469,8 @@ function render() {
       group === undefined ? h("p", { class: "eyebrow muted" }, "Pick a structure") : operationsOf(group).length === 0 ? h("p", { class: "eyebrow muted" }, "None") : operationsOf(group).map((e) => row(route("operation", e.operation), e.operation === o?.operation,
         dot(operationColor(e)), h("span", { class: "n" }, e.operation, others(e.operation).length ? h("span", { class: "also" }, `→ ${others(e.operation).map((t) => t.structure).join(", ")}`) : null)))),
   ];
-  const panel = sc ? scenarioPanel(sc) : line ? rulePanel(o, line) : null;
-  const sheet = o ? operationSheet(o, sc?.path, line?.rule) : concept === "findings" ? findings()
+  const panel = sc ? (roles ? roleScenarioPanel(sc) : scenarioPanel(sc)) : line ? rulePanel(o, line) : null;
+  const sheet = o ? operationSheet(o, sc?.path, line?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet()
     : group === transverse ? [h("p", { class: "eyebrow" }, "Operations"), h("h1", null, "Transverse"), h("p", null, "They answer no structure, and name several in what they take, or none.")]
     : group ? structureSheet(group) : overview();
   const cols = document.getElementById("cols"), was = { sheet: cols.querySelector(".sheet")?.scrollTop ?? 0, of: cols.dataset.operation };
@@ -391,6 +482,7 @@ function render() {
   if (o && was.of === o.operation) cols.querySelector(".sheet").scrollTop = was.sheet;
   document.getElementById("header").replaceChildren(
     h("a", { class: "mark", href: "#/" }, "specimen"), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
+    ...(roles ? [h("a", { href: "#/common", "aria-current": concept === "common" ? "page" : null }, "The common reading")] : []),
     h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Problems and gaps ${data.problems.length + data.gaps.length}`),
     h("span", { class: "warn" }, "This page holds what the target answered, tokens included: mind who it is sent to."));
   for (const on of cols.querySelectorAll(".row.on")) on.scrollIntoView({ block: "nearest" });

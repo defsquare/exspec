@@ -10,6 +10,7 @@ import {
   roleScenarioSchema,
   rulesSchema,
 } from "../../src/shapes/roles.ts";
+import { structureSchema } from "../../src/shapes/specification.ts";
 
 const { system, phases } = instructionsFor("specimen");
 
@@ -55,6 +56,9 @@ test("every example of a file in a role's instructions parses as that file", () 
     return "value" in parsed ? [] : parsed.findings;
   };
   expect([
+    ...blocks(roleInstructions["structures-reader"], "yaml").map((text) =>
+      read("structures.yaml", text, z.array(structureSchema)),
+    ),
     ...blocks(roleInstructions["common-reader"], "yaml").map((text) =>
       read("common.yaml", text, commonSchema),
     ),
@@ -66,5 +70,5 @@ test("every example of a file in a role's instructions parses as that file", () 
     ...blocks(roleInstructions.judge, "json").map((text) =>
       read("answer.json", text, z.array(judgedSchema)),
     ),
-  ]).toEqual([[], [], [], [], []]);
+  ]).toEqual([[], [], [], [], [], []]);
 });

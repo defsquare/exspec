@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   type Common,
   commonSchema,
@@ -6,6 +7,8 @@ import {
   readYaml,
   rulesSchema,
 } from "../shapes/roles.ts";
+import { type Structure, structureSchema } from "../shapes/specification.ts";
+import { checkStructures } from "./check-structures.ts";
 
 const findingsOf = (read: { readonly findings: readonly string[] } | object) =>
   "findings" in read ? read.findings : [];
@@ -20,6 +23,40 @@ export function checkCommon(text: string | undefined): {
   return "value" in read ? { common: read.value, findings: [] } : read;
 }
 
+const bounds = ["min-length", "max-length", "min", "max"] as const;
+
+// What the reader of the structures wrote. structures: the list as it parses, findings or
+// not; a finding:
+//   "structures.yaml: Item.name: a bound (max-length) is a rule of an operation, not of a field"
+export function checkStructuresFile(text: string | undefined): {
+  readonly structures?: readonly Structure[];
+  readonly findings: readonly string[];
+} {
+  if (text === undefined) return { findings: ["structures.yaml: missing"] };
+  const read = readYaml("structures.yaml", text, z.array(structureSchema).readonly());
+  if (!("value" in read)) return read;
+  const structures = read.value;
+  return {
+    structures,
+    findings: [
+      ...(structures.length === 0 ? ["structures.yaml: no structure is declared"] : []),
+      ...checkStructures({ structures }).map(
+        ({ at, message }) => `structures.yaml: ${at}: ${message}`,
+      ),
+      ...structures.flatMap(({ structure, fields }) =>
+        Object.entries(fields).flatMap(([name, field]) => {
+          const bound = bounds.filter((key) => key in field);
+          return bound.length === 0
+            ? []
+            : [
+                `structures.yaml: ${structure}.${name}: a bound (${bound.join(", ")}) is a rule of an operation, not of a field`,
+              ];
+        }),
+      ),
+    ],
+  };
+}
+
 const twice = (names: readonly string[]) => [
   ...new Set(names.filter((name, i) => names.indexOf(name) !== i)),
 ];
@@ -30,11 +67,14 @@ const twice = (names: readonly string[]) => [
 export function checkReading({
   operation,
   common,
+  structures,
   rules,
   hints,
 }: {
   readonly operation: string;
   readonly common: Common | undefined;
+  // undefined: structures.yaml is missing or does not parse, and names nothing
+  readonly structures: readonly Structure[] | undefined;
   readonly rules: string | undefined;
   readonly hints: string | undefined;
 }): { readonly rules?: Rules; readonly findings: readonly string[] } {
@@ -52,6 +92,9 @@ export function checkReading({
   const declared = [...parsed.requires, ...parsed.effects].map(({ rule }) => rule);
   const shared = new Set(common?.rules.map(({ rule }) => rule));
   const known = new Set([...declared, ...parsed.common, "answers"]);
+  const fieldsOf = (name: string) =>
+    structures?.find(({ structure }) => structure === name)?.fields;
+  const answered = parsed.answers.structure;
   const hinted = "value" in readHints ? readHints.value.map(({ rule }) => rule) : [];
   const findings = [
     ...read,
@@ -67,6 +110,18 @@ export function checkReading({
         (rule) =>
           `rules.yaml: common names "${rule}", which is not a rule of common.yaml`,
       ),
+    ...Object.entries(parsed.takes ?? {}).flatMap(([input, { field }]) =>
+      field === undefined || Object.hasOwn(fieldsOf(field[0]) ?? {}, field[1])
+        ? []
+        : [
+            `rules.yaml: takes.${input} names the field ${field.join(".")}, which structures.yaml does not declare`,
+          ],
+    ),
+    ...(answered === null || fieldsOf(answered) !== undefined
+      ? []
+      : [
+          `rules.yaml: answers names the structure ${answered}, which structures.yaml does not declare`,
+        ]),
     ...parsed.unsure
       .filter(({ rule }) => !known.has(rule))
       .map(

@@ -1,12 +1,17 @@
 import { expect, test } from "bun:test";
 import { checkBuilt } from "../../src/derive/check-built.ts";
-import { checkCommon, checkReading } from "../../src/derive/check-reading.ts";
+import {
+  checkCommon,
+  checkReading,
+  checkStructuresFile,
+} from "../../src/derive/check-reading.ts";
 import type { Interface } from "../../src/shapes/target.ts";
-import { commonText, hintsText, rulesText } from "../roles-fixture.ts";
+import { commonText, hintsText, rulesText, structuresText } from "../roles-fixture.ts";
 
 const { rules } = checkReading({
   operation: "delete-pet",
   common: checkCommon(commonText).common,
+  structures: checkStructuresFile(structuresText).structures,
   rules: rulesText,
   hints: hintsText,
 });

@@ -33,7 +33,13 @@ export const phaseSchema = z.enum([
 
 export type Phase = z.infer<typeof phaseSchema>;
 
-export const roleSchema = z.enum(["common-reader", "reader", "builder", "judge"]);
+export const roleSchema = z.enum([
+  "structures-reader",
+  "common-reader",
+  "reader",
+  "builder",
+  "judge",
+]);
 
 export type Role = z.infer<typeof roleSchema>;
 

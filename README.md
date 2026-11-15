@@ -61,14 +61,14 @@ bun run build                               # dist/specimen, one executable; ext
 bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
 bun src/cli/main.ts check <dir>
 bun src/cli/main.ts verdicts <dir>          # every rule and trigger, judged by the references
-bun src/cli/main.ts view <dir> > page.html  # the extraction as one page, from a structure to its operations and their proof
+bun src/cli/main.ts view <dir> > page.html  # one page, from a structure to its operations and their proof: the roles' reading when there is one, else the extraction
 bun src/cli/main.ts target up <dir>         # start the target, wait until alive, seed
 bun src/cli/main.ts target play <dir> [<operation>/<slug>…]   # on a target up: reset, play once, judge
 bun src/cli/main.ts target down <dir>
 bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
 bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
 bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>]   # an agent writes the extraction, phase by phase
-bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # a reader per interface -> specimen/roles/
+bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # the structures, then a reader per interface -> specimen/roles/
 bun src/cli/main.ts roles build <dir> [--only <interface>] [--jobs n]   # target up, a scenario builder per interface, evidence played
 bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judge per interface, no tool -> judgements.yaml
 bun src/cli/main.ts roles play <dir> <interface>/<slug>                  # on a target up: reset, play one written scenario

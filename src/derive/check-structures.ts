@@ -1,6 +1,8 @@
 import type { Extraction, Problem } from "../shapes/extraction.ts";
 
-export function checkStructures({ structures }: Extraction): readonly Problem[] {
+export function checkStructures({
+  structures,
+}: Pick<Extraction, "structures">): readonly Problem[] {
   return structures.flatMap(({ structure, identity, fields }, i) =>
     Object.hasOwn(fields, identity)
       ? []

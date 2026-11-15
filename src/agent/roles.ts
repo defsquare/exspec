@@ -1,4 +1,8 @@
-import { checkCommon, checkReading } from "../derive/check-reading.ts";
+import {
+  checkCommon,
+  checkReading,
+  checkStructuresFile,
+} from "../derive/check-reading.ts";
 import type { Io } from "../run/io.ts";
 import type { Event, Role } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
@@ -47,15 +51,18 @@ export function slugsIn(
   });
 }
 
-// what a reader wrote for one interface, checked against what the common reader wrote
+// what a reader wrote for one interface, checked against what the common reader and the
+// reader of the structures wrote
 export function readingOf(files: readonly SourceFile[], name: string) {
   const { common } = checkCommon(textAt(files, "roles/common.yaml"));
+  const { structures } = checkStructuresFile(textAt(files, "structures.yaml"));
   const folder = folderOf(name);
   return {
     common,
     ...checkReading({
       operation: name,
       common,
+      structures,
       rules: textAt(files, `${folder}/rules.yaml`),
       hints: textAt(files, `${folder}/hints.yaml`),
     }),

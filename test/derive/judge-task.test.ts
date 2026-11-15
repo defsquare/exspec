@@ -41,7 +41,7 @@ const rules: Rules = {
     },
   ],
   effects: [{ rule: "removed", says: "The item is gone.", source: "F.java:3" }],
-  answers: "204",
+  answers: { says: "204", structure: null },
   unsure: [{ rule: "removed", what: "maybe 200" }],
 };
 
