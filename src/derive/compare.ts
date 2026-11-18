@@ -1,6 +1,6 @@
-import type { Difference, PlayedScenario, Reference } from "../shapes/scenario.ts";
+import type { Difference, Noise, PlayedScenario, Reference } from "../shapes/scenario.ts";
 import { deepEqual, differingPlaces, valueAt } from "./json.ts";
-import { answersOf } from "./noise.ts";
+import { type Answer, answersOf } from "./noise.ts";
 
 // Outside the noise, a played copy answers what its reference answered. At a noisy place
 // any value goes, but the places of one class answer one value among themselves, and two
@@ -25,11 +25,30 @@ export function compareWithReference(
   if (read !== undefined && read !== (played.readings?.length ?? 0)) {
     return [{ at: ["readings"], expected: read, actual: played.readings?.length ?? 0 }];
   }
-  const noisy = new Set(reference.noise.map(({ at }) => JSON.stringify(at)));
+  return compareAnswers({
+    reference: answersOf(reference),
+    noise: reference.noise,
+    played: answersOf(played),
+    root: played,
+  });
+}
+
+// The same, on the answers of the two copies; root is the value the played places read in.
+export function compareAnswers({
+  reference,
+  noise,
+  played,
+  root,
+}: {
+  readonly reference: readonly Answer[];
+  readonly noise: readonly Noise[];
+  readonly played: readonly Answer[];
+  readonly root: unknown;
+}): readonly Difference[] {
+  const noisy = new Set(noise.map(({ at }) => JSON.stringify(at)));
   const isNoisy = (at: readonly unknown[]) => noisy.has(JSON.stringify(at));
-  const answered = answersOf(played);
-  const outside = answersOf(reference).flatMap(({ at, response }, i) => {
-    const actual = answered[i]?.response;
+  const outside = reference.flatMap(({ at, response }, i) => {
+    const actual = played[i]?.response;
     if (actual === undefined) return [];
     return [
       ...(response.status === actual.status
@@ -40,25 +59,23 @@ export function compareWithReference(
       ),
     ];
   });
-  const firstOfClass = new Map(
-    reference.noise.toReversed().map(({ at, class: c }) => [c, at]),
-  );
-  const withinClasses = reference.noise.flatMap(({ at, class: c }) => {
+  const firstOfClass = new Map(noise.toReversed().map(({ at, class: c }) => [c, at]));
+  const withinClasses = noise.flatMap(({ at, class: c }) => {
     const first = firstOfClass.get(c);
     if (first === undefined || first === at) return [];
-    const expected = valueAt(played, first);
-    const actual = valueAt(played, at);
+    const expected = valueAt(root, first);
+    const actual = valueAt(root, at);
     return expected === undefined || actual === undefined || deepEqual(expected, actual)
       ? []
       : [{ at, expected, actual }];
   });
   const firsts = [...firstOfClass.values()].toReversed();
   const betweenClasses = firsts.flatMap((at, i) => {
-    const actual = valueAt(played, at);
+    const actual = valueAt(root, at);
     const same = firsts
       .slice(0, i)
       .find(
-        (earlier) => actual !== undefined && deepEqual(valueAt(played, earlier), actual),
+        (earlier) => actual !== undefined && deepEqual(valueAt(root, earlier), actual),
       );
     return same === undefined ? [] : [{ at, expected: { "apart from": same }, actual }];
   });
