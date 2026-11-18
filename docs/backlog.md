@@ -319,9 +319,11 @@ them in; each of the first five is a branch of its own.
   sets to generating `interfaces.yaml` from the contract in code (a converter of schemas,
   of unknown size).
 - **Since.** With the roles: the evidence of Petclinic replayed to the same status on
-  333 of 333 scenarios (190 identical; a timestamp differs in 143). A reading that
-  follows a change of the code is to design (`docs/branches/spike-three-roles.md` at
-  `d88b471`).
+  333 of 333 scenarios (190 identical; a timestamp differs in 143). `roles replay`
+  compares a play with a reference outside its noise (ADR-0013); a reference is kept
+  whatever version it was taken on. Not exercised between two versions of a target. A
+  reading that follows a change of the code is to design
+  (`docs/branches/spike-three-roles.md` at `d88b471`).
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), same entry .
 
 ## What an agent takes from the running target while it specifies
@@ -386,7 +388,11 @@ them in; each of the first five is a branch of its own.
   fact of its operation is readable and its trigger translates the status, so keeping
   them keeps the facts' conditions, the projections and the triggers; and switching the
   default before the evidence replays — `replay` exists on the computed path only.
-- **Next.** In this order. (2) first, on its own branch. Then Petclinic read again with
+- **Done.** (2): `roles record` makes a reference of an evidence, `roles replay` plays it
+  again with no agent (ADR-0013). On Conduit, 224 evidences made references by one more
+  play each, no judgement stale; 222 equal at a replay, the two others a token told to
+  the second.
+- **Next.** In this order. Petclinic read again with
   the reads held, once, before the default moves (see "The runs were made before the
   reads were held"). Then (1) and (4), with their ADRs: ADR-0010's first alternative is
   taken up, ADR-0006 superseded. Then (3) and the deprecations, concept by concept —
@@ -478,6 +484,19 @@ them in; each of the first five is a branch of its own.
     to hold.
   - *Two findings of the review left open:* an unreadable evidence file fails the whole
     command; `roles play` drops the events of the reset.
+  - *Commands of the roles that drive no agent live in `src/agent/`*: `roles-record.ts`,
+    `roles-replay.ts`, `roles-scenarios.ts`, beside `rolesPlay`, the builder's check
+    (`builtOf`), `evidenceAt` and `rolesCommand` they use. Their layer is `run`: move the
+    check and the plumbing that needs no agent there first, then the three.
+  - *`gate-checked` says role `builder` where no builder runs*: `roles record` and
+    `roles replay` tell an interface whose check fails with the builder's event. Another
+    event, or a role less, changes an event's shape: an ADR.
+  - *`roles replay` says nothing of a scenario with no reference* unless its interface is
+    asked for: it is passed over and the command is ok; the page shows it
+    (`evidence-played-once`). And it reads the credentials before it starts the target, for
+    the actors' names: in a checkout no stack has run in, the file is not there.
+  - *`isAsWritten` has no test* for an unnamed step a hole cites, nor for a hole in a body
+    or a query; wrong, it has a scenario played again.
   - *One stale judgement, and the whole interface is judged again*: the judge is skipped
     only when every evidence of the interface is fresh, and otherwise reads them all and
     writes the whole file — verdicts that had not to move may. With the shared part of the
