@@ -1,6 +1,6 @@
 # ADR-0006 — `extract` is phases with gates, and the agent's tools are the CLI's commands
 
-Status: Accepted (2026-11-13) — ADR-0010 departs from it for one role: the scenario builder
+Status: Superseded by [ADR-0014](0014-extract-runs-the-roles.md) (2026-11-18) — was: Accepted (2026-11-13) — ADR-0010 departs from it for one role: the scenario builder
 has no shell, and reaches the target through a tool of its own.
 
 ## Context
