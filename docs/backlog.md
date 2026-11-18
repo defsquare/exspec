@@ -161,26 +161,6 @@ them in; each of the first five is a branch of its own.
   make the examples one extraction the checks pass.
 - **Source.** `docs/branches/feat-extract.md` at `c1c9ef0`.
 
-## A form the tool can compute: a pattern, not a name
-
-- **Seen.** On Petclinic the agent wrote `format: person-name`, `digits-only`,
-  `not-in-the-future-and-at-most-50-years-ago`: names of its own, where the code holds a
-  regular expression or a date rule. Only `email` is computed; any other format is not,
-  and makes ambiguous the sibling rules that answer the same status — 22 rules there, and
-  13 more unjudged on their own format.
-- **Settled.** The form of a value is said once, on the field; a form that is not computed
-  is never taken as respected (ADR-0008).
-- **Next.** A `pattern` (the regular expression the code holds) beside `format`, computed;
-  say in the agent's instructions that a format is a pattern when the code has one. A date
-  rule relative to today waits for the clock.
-- **Source.** `targets/petclinic/specimen/structures.yaml`;
-  `docs/branches/feat-verdicts.md` at `591b23f`.
-- **Tried.** On a closed spike: `pattern` on a field, a regular expression on the whole
-  value, and a gap for a format the tool does not compute. One target used it (5 fields,
-  10 rules); 24 rules unjudged and 20 ambiguous there went away. An expression of another
-  dialect that compiles here with another meaning must not be computed. Source:
-  `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
-
 ## Loose ends of the verdicts
 
 - **Seen.** `play` judges a copy without knowing its noise: a date in a reading refutes
@@ -334,9 +314,9 @@ them in; each of the first five is a branch of its own.
   sets to generating `interfaces.yaml` from the contract in code (a converter of schemas,
   of unknown size).
 - **Since.** With the roles: the evidence of Petclinic replayed to the same status on
-  333 of 333 scenarios (190 identical; a timestamp differs in 143). No `roles replay`
-  yet, no noise kept beside the evidence, and a reading that follows a change of the code
-  is to design (`docs/branches/spike-three-roles.md` at `d88b471`).
+  333 of 333 scenarios (190 identical; a timestamp differs in 143). A reading that
+  follows a change of the code is to design (`docs/branches/spike-three-roles.md` at
+  `d88b471`).
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), same entry .
 
 ## What an agent takes from the running target while it specifies
@@ -390,13 +370,33 @@ them in; each of the first five is a branch of its own.
   Petclinic 36 of 36 interfaces, Conduit 19 of 19, Kadai 93 of 93.
 - **Settled.** The three roles are kept (ADR-0010). By the user: the specification keeps
   bounded concepts for a human reader — operations, rules, facts, structures — and a rule
-  may be a sentence.
-- **Next.** For the user, with its ADRs: fold the reader's sentences into the operation
-  shape, or let the roles' form be the specification; then deprecate what no target uses
-  any more (the ADR of each concept removed), and decide what becomes of `extract`,
-  `record`, `replay` and `verdicts`.
+  may be a sentence. By the user, the challenger agreeing on the direction: the
+  specification takes the roles' form —
+  (1) the reader's rules become `operations/*.yaml`;
+  (2) the roles' evidence becomes a reference, two executions and the noise beside, and a
+  judgement is attached to it;
+  (3) the judgement replaces the derived verdicts as the conclusion;
+  (4) `extract` runs the roles, and the phases and gates of the computed path go.
+  Set aside: computed rules kept beside the judge — a rule is `verified` only once every
+  fact of its operation is readable and its trigger translates the status, so keeping
+  them keeps the facts' conditions, the projections and the triggers; and switching the
+  default before the evidence replays — `replay` exists on the computed path only.
+- **Next.** In this order. (2) first, on its own branch. Then Petclinic read again with
+  the reads held, once, before the default moves (see "The runs were made before the
+  reads were held"). Then (1) and (4), with their ADRs: ADR-0010's first alternative is
+  taken up, ADR-0006 superseded. Then (3) and the deprecations, concept by concept —
+  ADR-0007 and ADR-0008, the facts' conditions, the projections, the triggers, an input
+  rule's `violates`; and the items of this backlog that grow the computed terms are
+  dropped with them, each with its reason. `on` (ADR-0011) is kept: the roles' shape has
+  it.
+- **Tried, not merged.** A field's `pattern`, the code's regular expression computed
+  against the whole value (`feat/field-pattern`, closed without a merge): on Petclinic,
+  the same scenarios, 40 then 95 of 140 rules verified, no false verdict seen; the agent
+  writes the expression when told to. A term of the computed path: not added.
 - **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "Three whole targets through
-  the tool" and "Read against the Frame"; `docs/adr/0010-three-roles-a-judged-reading.md`.
+  the tool" and "Read against the Frame"; `docs/adr/0010-three-roles-a-judged-reading.md`;
+  `docs/branches/feat-field-pattern.md` at `1dbc595` (branch `feat/field-pattern`, closed
+  without a merge), its Journal.
 
 ## Which model reads a whole target
 
