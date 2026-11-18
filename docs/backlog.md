@@ -394,8 +394,9 @@ them in; each of the first five is a branch of its own.
   the second.
 - **Next.** In this order. Petclinic read again with
   the reads held, once, before the default moves (see "The runs were made before the
-  reads were held"). Then (1) and (4), with their ADRs: ADR-0010's first alternative is
-  taken up, ADR-0006 superseded. Then (3) and the deprecations, concept by concept —
+  reads were held"). (4) is on its own branch, ADR-0006 superseded there. Then (1), with
+  its ADR: ADR-0010's first alternative is taken up. Then (3) and the deprecations, concept
+  by concept —
   ADR-0007 and ADR-0008, the facts' conditions, the projections, the triggers, an input
   rule's `violates`; and the items of this backlog that grow the computed terms are
   dropped with them, each with its reason. `on` (ADR-0011) is kept: the roles' shape has
