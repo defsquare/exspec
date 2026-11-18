@@ -1,6 +1,8 @@
 # This phase: make the target startable, seedable and resettable
 
-Write `specimen/target.yaml` and, under `specimen/target/`, whatever it runs. When you are
+Write `specimen/target.yaml` and, under `specimen/target/`, whatever it runs. Do not
+write `specimen/interfaces.yaml`: listing the interfaces is the next session's task, and
+a list found there would be taken as done. When you are
 done, `{{specimen}} target up .` must succeed, your reset must run, and `{{specimen}} target down .` must
 leave nothing running.
 

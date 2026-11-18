@@ -1,4 +1,3 @@
-import { isAbsolute, join, relative, resolve } from "node:path";
 import {
   type CanUseTool,
   createSdkMcpServer,
@@ -40,18 +39,6 @@ export type Ended = { readonly session: string; readonly ok: boolean };
 
 export type Drive = (session: Session) => AsyncGenerator<AgentEvent, Ended>;
 
-// ("/d", "specimen/a.yaml") -> true; "src/a.ts", "/elsewhere/a", "specimen/references/f/a.yaml" -> false
-export function mayWrite(dir: string, path: string): boolean {
-  const within = relative(join(dir, "specimen"), resolve(dir, path));
-  const parts = within.split("/");
-  return (
-    within !== "" &&
-    !isAbsolute(within) &&
-    parts[0] !== ".." &&
-    parts[0]?.toLowerCase() !== "references"
-  );
-}
-
 // set in the agent's shell: the commands that record or judge a reference, and `extract`
 // itself, refuse to run where it is present, whatever its value. The file tools'
 // confinement does not cover a shell.
@@ -59,9 +46,6 @@ export const agentMark = "SPECIMEN_AGENT";
 
 // a phase's tools: no web, no sub-agent, no todo list, no notebook
 export const phaseTools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
-
-export const phaseConfinement =
-  "Writing is allowed only under specimen/, and never under specimen/references/: the references are recorded by the tool.";
 
 const writing = new Set(["Write", "Edit"]);
 

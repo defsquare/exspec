@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { Drive } from "../../src/agent/drive.ts";
-import { type Extracting, extract } from "../../src/agent/extract.ts";
+import { type Extracting, extract, phaseWrites } from "../../src/agent/extract.ts";
 import type { Event, Phase } from "../../src/shapes/event.ts";
 import type { Evidence } from "../../src/shapes/roles.ts";
 import { interfaces, target } from "../files.ts";
@@ -337,5 +337,24 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
     ],
     sessions: 4,
     lines: [],
+  });
+});
+
+test("each of the two agent phases writes its own files, never the other's", () => {
+  const paths = [
+    "specimen/target.yaml",
+    "specimen/.gitignore",
+    "specimen/target/seed.sh",
+    "specimen/interfaces.yaml",
+    "specimen/structures.yaml",
+    "specimen/roles/f/rules.yaml",
+    "src/a.ts",
+  ];
+  expect({
+    target: paths.filter(phaseWrites("/d", "target")),
+    interfaces: paths.filter(phaseWrites("/d", "interfaces")),
+  }).toEqual({
+    target: ["specimen/target.yaml", "specimen/.gitignore", "specimen/target/seed.sh"],
+    interfaces: ["specimen/interfaces.yaml"],
   });
 });

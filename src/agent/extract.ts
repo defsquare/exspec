@@ -12,13 +12,8 @@ import { resetTarget, startTarget, stopTarget } from "../run/lifecycle.ts";
 import { type Event, type Phase, phaseSchema } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Target } from "../shapes/target.ts";
-import {
-  type Drive,
-  mayWrite,
-  phaseConfinement,
-  phaseTools,
-  type Session,
-} from "./drive.ts";
+import { under, writesOf } from "./access.ts";
+import { type Drive, phaseTools, type Session } from "./drive.ts";
 import type { Instructions } from "./instructions.ts";
 import { type RolesRun, type RolesSetting, rolesRunOf } from "./roles.ts";
 import { runBuilders } from "./roles-build.ts";
@@ -101,6 +96,27 @@ async function* gate(
   return yield* lifecycleGate(target, extracting);
 }
 
+// What each of the two agent phases may write under specimen/: its own files, never the
+// other's — a list of interfaces written by the session of the target would have its own
+// phase found done and never run.
+//   target      target.yaml, .gitignore, target/…
+//   interfaces  interfaces.yaml
+const owned: Readonly<Record<AgentPhase, (path: string) => boolean>> = {
+  target: (path) =>
+    path === "target.yaml" || path === ".gitignore" || under("target")(path),
+  interfaces: (path) => path === "interfaces.yaml",
+};
+
+const confinement: Readonly<Record<AgentPhase, string>> = {
+  target:
+    "This phase writes only specimen/target.yaml, specimen/.gitignore and under specimen/target/: the list of interfaces is written by the session after this one.",
+  interfaces:
+    "This phase writes only specimen/interfaces.yaml: how the target starts is settled, and the rest is written after this session.",
+};
+
+export const phaseWrites = (dir: string, phase: AgentPhase) =>
+  writesOf(dir, owned[phase]);
+
 // one session, then its gate; a failed gate's findings are the session's next prompt
 function agentPhase(
   phase: AgentPhase,
@@ -116,8 +132,8 @@ function agentPhase(
       model,
       tools: phaseTools,
       mayRead: () => true,
-      mayWrite: (path) => mayWrite(dir, path),
-      confinement: phaseConfinement,
+      mayWrite: phaseWrites(dir, phase),
+      confinement: confinement[phase],
     },
     rounds,
     failedGate,

@@ -25,8 +25,10 @@ specimen/
   interfaces.yaml      the interfaces and the named wire shapes
 ```
 
-Besides these and a `specimen/.gitignore`, write nothing under `specimen/`: what else is
-there is written by the tool, or by other sessions, after you.
+Two sessions write them, one after the other, and each writes only its own: the first
+`target.yaml`, what is under `target/` and a `specimen/.gitignore`; the second
+`interfaces.yaml`. Your task says which you are. Write nothing else under `specimen/`:
+what else is there is written by the tool, or by other sessions, after you.
 
 Every key is listed below. **An unknown key is an error.** YAML reads `12345678`, `1.5`
 and `true` as a number, a number and a boolean: quote every value that is a string
