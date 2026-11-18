@@ -13,15 +13,18 @@ the lines stay as they are.
 
 ## Journal
 
+- The counts in the stream of `extract`, the flow, past lines printed once: implementer
+  (sonnet), reviewer approved both verdicts, no Critical or Important. Fixed in the thread
+  after a look at the screen (tmux, 120 and 90 columns): a negative time at the first
+  frame, the stacked boxes collapsing, unequal widths, the panel's labels unaligned.
+- Not seen yet: a real extraction through the flow.
+- For the challenger (reviewer's Minor): a failed gate adds a round even when it is the
+  last, so a failed phase would say one round too many — not shown today, a failed box
+  shows no round; the fold has no test for `phase-finished` not ok nor for an
+  `agent-ended` without a cost.
+
 ## Backlog
 
-- **The counts in the stream of `extract`.** `extraction-counted` is emitted by `status`
-  only; a box needs it at the start, at each gate and at each phase's end.
-- **The flow.** A pure fold of the events into the state of the five boxes and the panel;
-  an Ink component that draws it; `extract` on a terminal uses it.
-- **Past lines printed once.** The terminal renderer prints the whole history again at
-  every event once the output is taller than the window (seen on Kadai, 2026-11-13):
-  render past events once (Ink's `Static`).
 - **The same drawing for `roles-*`.** The roles as columns (reader, builder, judge), one
   row per interface, the sessions running side by side. After the flow of `extract` has
   been watched on a real run.
