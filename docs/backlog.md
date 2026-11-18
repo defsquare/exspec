@@ -324,6 +324,16 @@ them in; each of the first five is a branch of its own.
   whatever version it was taken on. Not exercised between two versions of a target. A
   reading that follows a change of the code is to design
   (`docs/branches/spike-three-roles.md` at `d88b471`).
+- **Since, by the user.** A reading is not launched again while the code has not changed;
+  telling that it changed belongs here. Of the three things the roles store, two know
+  what they were made from — an evidence its scenario as written (ADR-0013), a judgement
+  the hash of what the judge was given — and a reading does not: each rule cites its
+  place in the code, nothing says at which version. A way, not challenged: the tool notes
+  the checkout's version when a reading passes its gate, as it does for an evidence; the
+  code changed for an interface when a file its rules cite differs between that version
+  and the current one. It misses a rule that would come from a file the reading did not
+  cite; an interface added is the interfaces' list's to tell. A key added to a stored
+  shape: an ADR.
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), same entry .
 
 ## What an agent takes from the running target while it specifies

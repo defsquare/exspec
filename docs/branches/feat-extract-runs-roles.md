@@ -49,6 +49,18 @@ with the challenger's verdict; it is not merged without being asked.
   - Agreed: the phases' names; the order 4, 3, 1 — `parseExtraction` ignores `roles/`, and
     folding into `operations/` before `operationSchema` is deprecated makes two schemas for
     one path.
+- **The user, on the design.** The three roles may change how `extract` works today: its
+  phases are to be thought again for them, not the four commands of `roles` put in a row.
+  A reading is not launched again while the code has not changed. And the roles become
+  the default *if their results are convincing*.
+  - Taken: the phases by what they produce — `target`, `interfaces`, `reading`,
+    `evidence` (the scenarios built and recorded), `judgement` — each doing only what is
+    missing, interface by interface; nothing is forced, `--phase` chooses a phase and
+    plays what is left of it. To read an interface again on purpose: `roles read --only`.
+  - Not in this branch, by the user: telling that the code changed since a reading. It
+    belongs with comparing two versions of a target; written there in the backlog.
+  - So the order: the results first — one whole reading by the roles as they are, the
+    reads held, looked at with the user — then the phases of `extract`.
 
 ## Backlog
 
