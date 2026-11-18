@@ -21,6 +21,7 @@ import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
 import { askedOf } from "./command-line.ts";
 import { extractCommand } from "./extract.ts";
+import { renderFlow } from "./render-flow.tsx";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
 import { rolesEvents } from "./roles.ts";
@@ -177,7 +178,9 @@ try {
   const last =
     values.format === "json"
       ? await renderJson(events, (line) => console.log(line))
-      : await renderTerminal(events);
+      : command === "extract" && process.stdout.isTTY
+        ? await renderFlow(events)
+        : await renderTerminal(events);
   process.exit(last?.type === "command-finished" && last.ok ? 0 : 1);
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
