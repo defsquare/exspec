@@ -166,3 +166,21 @@ test("the judge is given nothing of the input a requirement is on", () => {
   const b = judgeTask({ bound, common, rules, recordings });
   expect(a).toEqual(b);
 });
+
+test("a recording's hash does not move with the noise beside its evidence", () => {
+  const withNoise = {
+    ...evidence("removed", 204),
+    noise: [{ at: ["exchanges", 0, "response", "body"], class: 1 }],
+  };
+  const before = judgeTask({ bound, common, rules, recordings }).of;
+  const after = judgeTask({
+    bound,
+    common,
+    rules,
+    recordings: [
+      { slug: "removed", evidence: withNoise },
+      { slug: "exists", evidence: evidence("exists", 404) },
+    ],
+  }).of;
+  expect(after).toEqual(before);
+});

@@ -105,7 +105,8 @@ export type RolesGap = {
     | "interface-not-read"
     | "reading-without-scenario"
     | "evidence-not-judged"
-    | "judgement-stale";
+    | "judgement-stale"
+    | "evidence-played-once";
   readonly name: string;
   readonly message: string;
 };
@@ -356,6 +357,15 @@ export function viewOfRoles({
           kind: "evidence-not-judged" as const,
           name: `${bound.interface}/${slug}`,
           message: "it has been played, not judged",
+        })),
+    ),
+    ...read.flatMap(({ bound, evidence }) =>
+      evidence
+        .filter(({ evidence: { noise } }) => noise === undefined)
+        .map(({ slug }) => ({
+          kind: "evidence-played-once" as const,
+          name: `${bound.interface}/${slug}`,
+          message: "played once: not a reference yet",
         })),
     ),
     ...scenarios

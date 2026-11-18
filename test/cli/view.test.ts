@@ -183,7 +183,14 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
     problems: [
       { file: "roles/f", at: "", message: 'no scenario for the rule "signed-in"' },
     ],
-    gaps: [{ kind: "interface-not-read", name: "g", message: "no reading of it parses" }],
+    gaps: [
+      { kind: "interface-not-read", name: "g", message: "no reading of it parses" },
+      {
+        kind: "evidence-played-once",
+        name: "f/exists",
+        message: "played once: not a reference yet",
+      },
+    ],
     rules: [
       {
         operation: "f",

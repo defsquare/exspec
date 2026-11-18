@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { responseSchema, runSchema } from "./scenario.ts";
+import { noiseSchema, responseSchema, runSchema } from "./scenario.ts";
 import { methodSchema } from "./target.ts";
 
 // The files of a reading by three roles kept apart, under specimen/roles/:
@@ -209,6 +209,8 @@ export const evidenceSchema = z
     rule: z.string(),
     run: runSchema,
     exchanges: z.array(exchangeSchema).readonly(),
+    // absent: played once; present, even []: a reference, the places starting at the exchange
+    noise: z.array(noiseSchema).readonly().optional(),
   })
   .readonly();
 
