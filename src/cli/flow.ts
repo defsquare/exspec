@@ -161,12 +161,12 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
 const written: Readonly<Record<Phase, readonly (keyof Counts)[]>> = {
   target: [],
   interfaces: ["interfaces"],
-  specification: ["structures", "facts", "operations", "rules"],
-  scenarios: ["scenarios"],
-  record: ["references"],
+  reading: [],
+  evidence: [],
+  judgement: [],
 };
 
-// ("specification", {structures: 4, facts: 0, operations: 17, …}) -> ["4 structures", "17 operations", …]
+// ("interfaces", {interfaces: 17, …}) -> ["17 interfaces"]
 export function countsOf(phase: Phase, counts: Counts | undefined): readonly string[] {
   if (counts === undefined) return [];
   return written[phase].flatMap((name) =>

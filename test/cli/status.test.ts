@@ -3,6 +3,7 @@ import { status } from "../../src/cli/status.ts";
 import { verdicts } from "../../src/cli/verdicts.ts";
 import type { Event } from "../../src/shapes/event.ts";
 import { bindings, facts, interfaces, operation, reference, target } from "../files.ts";
+import { filesOf, points } from "../roles-left-fixture.ts";
 
 const files = [
   {
@@ -51,9 +52,9 @@ test("status of a directory with an extraction", async () => {
       phases: {
         target: "to-do",
         interfaces: "to-do",
-        specification: "to-do",
-        scenarios: "to-do",
-        record: "to-do",
+        reading: "to-do",
+        evidence: "to-do",
+        judgement: "to-do",
       },
     },
     {
@@ -145,5 +146,42 @@ test("verdicts shows every claim, verified ones included", async () => {
       by: [{ scenario: "f/a", verdict: "verified" }],
     },
     { type: "command-finished", command: "verdicts", ok: true },
+  ]);
+});
+
+const phasesShown = async (shown: readonly { path: string; text: string }[]) =>
+  (
+    await Array.fromAsync(
+      status({ dir: "/abs/dir", exists: async () => true, readFiles: async () => shown }),
+    )
+  ).filter(({ type }) => type === "extraction-phases");
+
+test("status shows the five phases of a checkout whose reading is judged", async () => {
+  expect(await phasesShown(filesOf(points.judged))).toEqual([
+    {
+      type: "extraction-phases",
+      phases: {
+        target: "done",
+        interfaces: "done",
+        reading: "done",
+        evidence: "done",
+        judgement: "done",
+      },
+    },
+  ]);
+});
+
+test("status shows a computed specification with no reading as three phases to do", async () => {
+  expect(await phasesShown(judged)).toEqual([
+    {
+      type: "extraction-phases",
+      phases: {
+        target: "done",
+        interfaces: "done",
+        reading: "to-do",
+        evidence: "to-do",
+        judgement: "to-do",
+      },
+    },
   ]);
 });

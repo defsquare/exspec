@@ -35,7 +35,7 @@ const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
        specimen target play <dir> [<operation>/<slug>…]
        specimen replay <dir> [<operation>/<slug>…]
        specimen record <dir> [<operation>/<slug>…] [--force]
-       specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]
+       specimen extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>] [--format json]
        specimen roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
        specimen roles play <dir> <interface>/<slug>
        specimen roles record <dir> [--only <interface>] [--force]
@@ -108,6 +108,14 @@ async function ioOf(): Promise<Io> {
   };
 }
 
+// --jobs: a whole number of sessions, one at least; undefined otherwise
+const jobs =
+  Number.isInteger(Number(values.jobs)) && Number(values.jobs) >= 1
+    ? Number(values.jobs)
+    : undefined;
+// parsed by the commands that take it alone
+const effortOf = () => z.enum(["low", "medium", "high"]).optional().parse(values.effort);
+
 async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
   const asked = { dir: examination.dir, paths };
   switch (command) {
@@ -135,12 +143,14 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
     }
     case "extract": {
       const only = phaseSchema.optional().safeParse(values.phase);
-      if (!only.success) return undefined;
+      if (!only.success || jobs === undefined) return undefined;
       const { dir } = examination;
       return extractCommand({
         dir,
         only: only.data,
         model: values.model,
+        jobs,
+        effort: effortOf(),
         io: await ioOf(),
       });
     }
@@ -150,13 +160,12 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
     case "roles-play":
     case "roles-record":
     case "roles-replay": {
-      const jobs = Number(values.jobs);
       const [scenario] = paths;
       const misused =
         command === "roles-play"
           ? paths.length !== 1 || values.only !== undefined
           : paths.length > 0;
-      if (misused || !Number.isInteger(jobs) || jobs < 1) return undefined;
+      if (misused || jobs === undefined) return undefined;
       return rolesEvents({
         command,
         dir: examination.dir,
@@ -165,7 +174,7 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
         force: values.force,
         jobs,
         model: values.model,
-        effort: z.enum(["low", "medium", "high"]).optional().parse(values.effort),
+        effort: effortOf(),
         io: await ioOf(),
       });
     }

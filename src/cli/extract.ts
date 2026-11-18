@@ -1,8 +1,13 @@
 import { join } from "node:path";
-import { driveAgent } from "../agent/drive.ts";
+import { driveAgent, type Session } from "../agent/drive.ts";
 import { extract } from "../agent/extract.ts";
 import { instructionsFor } from "../agent/instructions.ts";
-import { directoryExists, readExtractionFiles } from "../io/files.ts";
+import {
+  directoryExists,
+  readExtractionFiles,
+  removeSpecimenFile,
+  writeSpecimenFile,
+} from "../io/files.ts";
 import type { Io } from "../run/io.ts";
 import type { Event, Phase } from "../shapes/event.ts";
 
@@ -41,23 +46,31 @@ export async function* extractCommand({
   dir,
   only,
   model,
+  jobs,
+  effort,
   io,
 }: {
   readonly dir: string;
   readonly only: Phase | undefined;
   readonly model: string;
+  readonly jobs: number;
+  readonly effort: Session["effort"];
   readonly io: Io;
 }): AsyncGenerator<Event> {
-  // found before any phase starts a target; recording alone needs no agent
-  const executable = only === "record" ? undefined : claudeExecutable();
+  // found before any phase starts a target
+  const executable = claudeExecutable();
   yield* extract({
     dir,
     ...(only === undefined ? {} : { only }),
     model,
+    jobs,
+    effort,
     instructions: instructionsFor(specimenCommandLine()),
     drive: (session) =>
       driveAgent(executable === undefined ? session : { ...session, executable }),
     io,
     readFiles,
+    writeFile: writeSpecimenFile,
+    removeFile: removeSpecimenFile,
   });
 }

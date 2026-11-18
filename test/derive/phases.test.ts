@@ -1,115 +1,137 @@
 import { expect, test } from "bun:test";
-import { checkExtraction } from "../../src/derive/check.ts";
-import { phasesOf, staticFindings } from "../../src/derive/phases.ts";
-import { parseExtraction } from "../../src/shapes/extraction.ts";
-import { bindings, facts, interfaces, operation, reference, target } from "../files.ts";
-import { scenarioFile } from "../run/fake.ts";
+import { declaredIn, phasesOf, staticFindings } from "../../src/derive/phases.ts";
+import { type Left, leftOf } from "../../src/derive/roles-left.ts";
+import { interfaces, target } from "../files.ts";
+import { declared, type Files, filesOf, points } from "../roles-left-fixture.ts";
 
-function examine(files: Readonly<Record<string, string>>) {
-  const parsed = parseExtraction(
-    Object.entries(files).map(([path, text]) => ({ path, text })),
+const sourceOf = (files: Files) =>
+  Object.entries(files).map(([path, text]) => ({ path, text }));
+
+const nothingLeft: Left = { structures: false, common: false, interfaces: [] };
+
+function phasesAt(files: ReturnType<typeof filesOf>) {
+  const examined = declaredIn(files);
+  return phasesOf(
+    examined,
+    leftOf({ files, interfaces: examined.extraction.interfaces }),
   );
-  const checked = checkExtraction(parsed.extraction);
-  return {
-    extraction: parsed.extraction,
-    problems: [...parsed.problems, ...checked.problems],
-    gaps: checked.gaps,
-  };
 }
 
 test("an empty extraction has every phase to do", () => {
-  expect(phasesOf(examine({}))).toEqual({
+  expect(phasesOf(declaredIn([]), nothingLeft)).toEqual({
     target: "to-do",
     interfaces: "to-do",
-    specification: "to-do",
-    scenarios: "to-do",
-    record: "to-do",
+    reading: "to-do",
+    evidence: "to-do",
+    judgement: "to-do",
   });
 });
 
 test("a target with a problem is to do, the interfaces too", () => {
   expect(
     phasesOf(
-      examine({ "target.yaml": `${target}\nport: 1`, "interfaces.yaml": interfaces }),
+      declaredIn(
+        sourceOf({ "target.yaml": `${target}\nport: 1`, "interfaces.yaml": interfaces }),
+      ),
+      nothingLeft,
     ),
   ).toEqual({
     target: "to-do",
     interfaces: "to-do",
-    specification: "to-do",
-    scenarios: "to-do",
-    record: "to-do",
+    reading: "to-do",
+    evidence: "to-do",
+    judgement: "to-do",
   });
 });
 
-test("an operation with no trigger leaves the specification to do", () => {
-  const examined = examine({
-    "target.yaml": target,
-    "interfaces.yaml": interfaces,
-    "facts.yaml": facts,
-    "operations/f.yaml": operation,
-  });
-  expect({
-    phases: phasesOf(examined),
-    findings: staticFindings("specification", examined),
-  }).toEqual({
-    phases: {
-      target: "done",
-      interfaces: "done",
-      specification: "to-do",
-      scenarios: "to-do",
-      record: "to-do",
-    },
-    findings: ["operation-without-trigger f: no trigger calls it"],
+test("with no interface declared, nothing is read, built or judged", () => {
+  expect(phasesOf(declaredIn(sourceOf({ "target.yaml": target })), nothingLeft)).toEqual({
+    target: "done",
+    interfaces: "to-do",
+    reading: "to-do",
+    evidence: "to-do",
+    judgement: "to-do",
   });
 });
 
-test("an operation with no scenario leaves the scenarios to do", () => {
-  const examined = examine({
-    "target.yaml": target,
-    "interfaces.yaml": interfaces,
-    "facts.yaml": facts,
-    "operations/f.yaml": operation,
-    "bindings.yaml": bindings,
-  });
-  expect({
-    phases: phasesOf(examined),
-    findings: staticFindings("scenarios", examined),
-  }).toEqual({
-    phases: {
-      target: "done",
-      interfaces: "done",
-      specification: "done",
-      scenarios: "to-do",
-      record: "to-do",
-    },
-    findings: ["f has no scenario"],
-  });
-});
-
-test("every scenario referenced has every phase done", () => {
-  expect(
-    phasesOf(
-      examine({
-        "target.yaml": target,
-        "interfaces.yaml": interfaces,
-        "facts.yaml": facts,
-        "operations/f.yaml": operation,
-        "bindings.yaml": bindings,
-        "scenarios/f/a.yaml": scenarioFile("x"),
-        "references/f/a.yaml": reference,
-      }),
-    ),
-  ).toEqual({
+test("an interface not read leaves the reading to do", () => {
+  expect(phasesAt(sourceOf(declared))).toEqual({
     target: "done",
     interfaces: "done",
-    specification: "done",
-    scenarios: "done",
-    record: "done",
+    reading: "to-do",
+    evidence: "to-do",
+    judgement: "to-do",
+  });
+});
+
+test("every interface read, a rule without its scenario leaves the evidence to do", () => {
+  expect(phasesAt(filesOf(points["no scenario"]))).toEqual({
+    target: "done",
+    interfaces: "done",
+    reading: "done",
+    evidence: "to-do",
+    judgement: "to-do",
+  });
+});
+
+test("an evidence played once leaves the evidence to do", () => {
+  expect(phasesAt(filesOf(points["played once"]))).toEqual({
+    target: "done",
+    interfaces: "done",
+    reading: "done",
+    evidence: "to-do",
+    judgement: "to-do",
+  });
+});
+
+test("every scenario a reference, one not judged leaves the judgement to do", () => {
+  expect(phasesAt(filesOf(points["a reference"]))).toEqual({
+    target: "done",
+    interfaces: "done",
+    reading: "done",
+    evidence: "done",
+    judgement: "to-do",
+  });
+});
+
+test("every reference judged has every phase done", () => {
+  expect(phasesAt(filesOf(points.judged))).toEqual({
+    target: "done",
+    interfaces: "done",
+    reading: "done",
+    evidence: "done",
+    judgement: "done",
+  });
+});
+
+test("a phase is done only when the one before it is", () => {
+  const left: Left = {
+    structures: true,
+    common: false,
+    interfaces: [
+      {
+        interface: "f",
+        reading: "done",
+        build: { findings: [], scenarios: [] },
+        record: [],
+        judge: [],
+      },
+    ],
+  };
+  expect(phasesOf(declaredIn(sourceOf(declared)), left)).toEqual({
+    target: "done",
+    interfaces: "done",
+    reading: "to-do",
+    evidence: "to-do",
+    judgement: "to-do",
   });
 });
 
 test("the target's findings are its problems and a missing declaration", () => {
   expect(
-    staticFindings("target", examine({ "interfaces.yaml": "interfaces: []\nx: 1" })),
+    staticFindings(
+      "target",
+      declaredIn(sourceOf({ "interfaces.yaml": "interfaces: []\nx: 1" })),
+    ),
   ).toEqual(['interfaces.yaml: Unrecognized key: "x"', "no target is declared"]);
 });

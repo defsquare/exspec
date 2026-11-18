@@ -73,9 +73,9 @@ test("a run is folded into its boxes, its panel and its totals", () => {
         startedAt: 2,
         endedAt: 12,
       },
-      { phase: "specification", state: "to-do", round: 0, turns: 0 },
-      { phase: "scenarios", state: "to-do", round: 0, turns: 0 },
-      { phase: "record", state: "to-do", round: 0, turns: 0 },
+      { phase: "reading", state: "to-do", round: 0, turns: 0 },
+      { phase: "evidence", state: "to-do", round: 0, turns: 0 },
+      { phase: "judgement", state: "to-do", round: 0, turns: 0 },
     ],
   };
   expect(flow).toEqual(expected);
@@ -95,24 +95,22 @@ test("a phase starting empties the panel", () => {
     boxes: [
       { phase: "target", state: "to-do", round: 1, turns: 0 },
       { phase: "interfaces", state: "running", round: 1, turns: 0, startedAt: 1 },
-      { phase: "specification", state: "to-do", round: 0, turns: 0 },
-      { phase: "scenarios", state: "to-do", round: 0, turns: 0 },
-      { phase: "record", state: "to-do", round: 0, turns: 0 },
+      { phase: "reading", state: "to-do", round: 0, turns: 0 },
+      { phase: "evidence", state: "to-do", round: 0, turns: 0 },
+      { phase: "judgement", state: "to-do", round: 0, turns: 0 },
     ],
   });
 });
 
 test("countsOf says the counts a phase writes, a zero left out", () => {
   expect({
-    specification: countsOf("specification", counts),
     interfaces: countsOf("interfaces", counts),
-    scenarios: countsOf("scenarios", counts),
+    reading: countsOf("reading", counts),
     target: countsOf("target", counts),
-    unknown: countsOf("record", undefined),
+    unknown: countsOf("interfaces", undefined),
   }).toEqual({
-    specification: ["4 structures", "17 operations", "31 rules"],
     interfaces: ["2 interfaces"],
-    scenarios: [],
+    reading: [],
     target: [],
     unknown: [],
   });

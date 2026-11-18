@@ -1,8 +1,6 @@
 import type { AgentPhase } from "../derive/phases.ts";
 import type { Role } from "../shapes/event.ts";
 import interfaces from "./instructions/phase-interfaces.md" with { type: "text" };
-import scenarios from "./instructions/phase-scenarios.md" with { type: "text" };
-import specification from "./instructions/phase-specification.md" with { type: "text" };
 import target from "./instructions/phase-target.md" with { type: "text" };
 import builder from "./instructions/role-builder.md" with { type: "text" };
 import commonReader from "./instructions/role-common-reader.md" with { type: "text" };
@@ -26,8 +24,6 @@ export function instructionsFor(specimen: string): Instructions {
     phases: {
       target: fill(target),
       interfaces: fill(interfaces),
-      specification: fill(specification),
-      scenarios: fill(scenarios),
     },
   };
 }

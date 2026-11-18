@@ -29,9 +29,9 @@ export type Command = z.infer<typeof commandSchema>;
 export const phaseSchema = z.enum([
   "target",
   "interfaces",
-  "specification",
-  "scenarios",
-  "record",
+  "reading",
+  "evidence",
+  "judgement",
 ]);
 
 export type Phase = z.infer<typeof phaseSchema>;
@@ -55,9 +55,9 @@ export const phasesSchema = z
   .object({
     target: progressSchema,
     interfaces: progressSchema,
-    specification: progressSchema,
-    scenarios: progressSchema,
-    record: progressSchema,
+    reading: progressSchema,
+    evidence: progressSchema,
+    judgement: progressSchema,
   })
   .readonly();
 

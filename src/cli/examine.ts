@@ -2,8 +2,9 @@ import { join } from "node:path";
 import { factBlocks } from "../derive/blocks.ts";
 import { checkExtraction } from "../derive/check.ts";
 import { countExtraction } from "../derive/count.ts";
-import { phasesOf } from "../derive/phases.ts";
+import { declaredIn, phasesOf } from "../derive/phases.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
+import { leftOf } from "../derive/roles-left.ts";
 import type { Event } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 
@@ -33,13 +34,18 @@ export async function* examine(
     yield { type: "command-finished", command, ok: false };
     return;
   }
-  const { extraction, problems, gaps } = checkedExtraction(await readFiles(dir));
+  const files = await readFiles(dir);
+  const { extraction, problems, gaps } = checkedExtraction(files);
   const judged = command === "check" ? undefined : judgeExtraction(extraction);
   if (command === "status" && judged !== undefined) {
+    const declared = declaredIn(files);
     yield { type: "extraction-counted", counts: countExtraction(extraction) };
     yield {
       type: "extraction-phases",
-      phases: phasesOf({ extraction, problems, gaps }),
+      phases: phasesOf(
+        declared,
+        leftOf({ files, interfaces: declared.extraction.interfaces }),
+      ),
     };
     yield { type: "extraction-judged", ...countJudged(judged) };
     yield* judged.rules.filter(({ provenance }) => provenance !== "verified");

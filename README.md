@@ -18,10 +18,13 @@ rules, facts, structures — and says, for every claim of that specification, wh
 
 ## Status
 
-`specimen extract <dir>` drives an agent through four phases — how the target starts, its
-interfaces, the specification and the bindings, the scenarios — each closed by a check the
-tool runs itself, then records every scenario on two fresh stacks. `specimen status <dir>`
-says where an extraction stands: its counts, its phases, how many rules and bindings are
+`specimen extract <dir>` runs five phases, each named for what it leaves in the files:
+`target` (how the target starts, its starting state, its reset) and `interfaces`, one agent
+session each, closed by a check the tool runs itself; then what the roles run — `reading`
+(the structures, what holds for every operation, the rules), `evidence` (the scenarios,
+played and recorded as references) and `judgement` (the judge's word on each rule). A phase
+does only what the files say is left of it, and is skipped when nothing is. `specimen
+status <dir>` says where an extraction stands: its counts, its phases, how many rules and bindings are
 verified, refuted or only declared, each claim that is not verified with its reason, and
 the facts that block the most rules. The extraction is a directory of YAML files,
 `<dir>/specimen/`, and nothing else is stored.
@@ -67,7 +70,7 @@ bun src/cli/main.ts target play <dir> [<operation>/<slug>…]   # on a target up
 bun src/cli/main.ts target down <dir>
 bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
 bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
-bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>]   # an agent writes the extraction, phase by phase
+bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>]   # target, interfaces, reading, evidence, judgement: what is left of each
 bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # the structures, then a reader per interface -> specimen/roles/
 bun src/cli/main.ts roles build <dir> [--only <interface>] [--jobs n]   # target up, a scenario builder per interface, evidence played
 bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judge per interface, no tool -> judgements.yaml
