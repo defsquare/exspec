@@ -1,5 +1,6 @@
 import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
 import { folderOf, readerFilesOf, textAt } from "../derive/roles-files.ts";
+import { interfaceLeft, leftOf } from "../derive/roles-left.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Interface } from "../shapes/target.ts";
 import { readsOf, under, writesOf } from "./access.ts";
@@ -76,13 +77,12 @@ function commonReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
 
 async function* reader(
   rolesRun: RolesRun,
-  { interface: name, method, pattern }: Interface,
+  bound: Interface,
 ): AsyncGenerator<Event, boolean> {
   const { dir, only, readFiles } = rolesRun;
-  if (
-    only === undefined &&
-    readerFilesOf(await readFiles(dir), name).findings.length === 0
-  ) {
+  const { interface: name, method, pattern } = bound;
+  const left = interfaceLeft(await readFiles(dir), bound);
+  if (only === undefined && left.reading === "done") {
     return yield* roleSkipped("reader", name, "its rules and hints pass their check");
   }
   const folder = folderOf(name);
@@ -119,23 +119,17 @@ async function* reader(
 export function rolesRead(rolesRun: RolesRun): AsyncGenerator<Event> {
   const { dir, jobs, readFiles } = rolesRun;
   return rolesCommand("roles-read", rolesRun, async function* ({ interfaces }) {
-    const structures = checkStructuresFile(
-      textAt(await readFiles(dir), "structures.yaml"),
-    );
-    const read =
-      structures.findings.length === 0
-        ? yield* roleSkipped(
-            "structures-reader",
-            undefined,
-            "structures.yaml passes its check",
-          )
-        : yield* structuresReader(rolesRun);
+    const read = !leftOf({ files: await readFiles(dir), interfaces: [] }).structures
+      ? yield* roleSkipped(
+          "structures-reader",
+          undefined,
+          "structures.yaml passes its check",
+        )
+      : yield* structuresReader(rolesRun);
     if (!read) return false;
-    const common = checkCommon(textAt(await readFiles(dir), "roles/common.yaml"));
-    const ready =
-      common.findings.length === 0
-        ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
-        : yield* commonReader(rolesRun);
+    const ready = !leftOf({ files: await readFiles(dir), interfaces: [] }).common
+      ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
+      : yield* commonReader(rolesRun);
     if (!ready) return false;
     const done = yield* inParallel(
       interfaces.map((bound) => () => reader(rolesRun, bound)),

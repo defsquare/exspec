@@ -5,6 +5,7 @@ import {
   judgeTaskOf,
   recordingsRead,
 } from "../derive/roles-files.ts";
+import { interfaceLeft } from "../derive/roles-left.ts";
 import type { Event } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import { type Evidence, verdictSchema } from "../shapes/roles.ts";
@@ -54,17 +55,18 @@ async function* judge(
   }
   const { text, of, recordings } = task;
   const slugs = [...of.keys()];
-  const written = judgementsIn(files, name);
-  if (
-    only === undefined &&
-    slugs.every((slug) =>
-      written.some(({ scenario, of: was }) => scenario === slug && was === of.get(slug)),
-    )
-  ) {
+  const left = interfaceLeft(files, bound);
+  const waiting = left.reading === "done" ? left.judge : [];
+  if (only === undefined && waiting.length === 0) {
+    // what is not a reference yet is not judged: say that it waits, and for what
+    const before =
+      left.reading === "done" ? left.build.scenarios.length + left.record.length : 0;
     return yield* roleSkipped(
       "judge",
       name,
-      "every judgement is of the present evidence",
+      before === 0
+        ? "every reference as written has its judgement"
+        : `no reference waits for its judgement; ${before} scenarios wait for roles build or roles record`,
     );
   }
   return yield* roleJob("judge", name, () =>

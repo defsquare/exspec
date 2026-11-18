@@ -5,6 +5,7 @@ import {
   type Judgement,
   judgementsSchema,
   readYaml,
+  roleScenarioSchema,
 } from "../shapes/roles.ts";
 import type { Interface } from "../shapes/target.ts";
 import { checkBuilt } from "./check-built.ts";
@@ -60,20 +61,37 @@ export function readerFilesOf(files: readonly SourceFile[], name: string) {
   };
 }
 
-// what the builder wrote for one interface, checked; undefined when its reading does not pass
+// The actors its scenarios name, for a check told without the target: the credentials are
+// written by the seed, and a fresh checkout has none. The finding "is not an actor" never
+// fires then, and nothing is lost: a step as an actor the target lacks is played unplayable,
+//   step {as: c, …}  ->  exchange {as: c, unplayable: 'no credentials for "c"'}
+// and an evidence with an unplayable exchange is never of its scenario as written.
+// An actor the credentials held when the evidence was taken, and no longer hold: the
+// evidence stands, it is what the target answered then; a replay tells the step unplayable.
+function actorsNamed(
+  written: readonly { readonly slug: string; readonly text: string }[],
+): readonly string[] {
+  return written.flatMap(({ slug, text }) => {
+    const read = readYaml(slug, text, roleScenarioSchema);
+    return "value" in read ? read.value.steps.flatMap(({ as }) => as ?? []) : [];
+  });
+}
+
+// what the builder wrote for one interface, checked against the actors given, or those its
+// scenarios name; undefined when its reading does not pass
 export function builtOf(
   files: readonly SourceFile[],
   bound: Interface,
-  actors: readonly string[],
+  actors?: readonly string[],
 ) {
   const { rules } = readerFilesOf(files, bound.interface);
   if (rules === undefined) return undefined;
-  const folder = folderOf(bound.interface);
+  const written = slugsIn(files, `${folderOf(bound.interface)}/scenarios`);
   return checkBuilt({
     bound,
     rules,
-    actors,
-    files: slugsIn(files, `${folder}/scenarios`),
+    actors: actors ?? actorsNamed(written),
+    files: written,
   });
 }
 

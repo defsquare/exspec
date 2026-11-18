@@ -1,5 +1,6 @@
 import { isAsWritten } from "../derive/evidence.ts";
 import { builtOf, evidenceAt, folderOf, slugsIn, textAt } from "../derive/roles-files.ts";
+import { type InterfaceLeft, interfaceLeft, leftOf } from "../derive/roles-left.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
@@ -81,6 +82,25 @@ async function* buildGate(
   return findings;
 }
 
+// why a builder has nothing to do, undefined when it has: an interface asked for is built,
+// done or not, once its reading passes
+function builderSkip(left: InterfaceLeft, only: string | undefined): string | undefined {
+  switch (left.reading) {
+    case "to-do":
+      return "its rules and hints do not pass their check";
+    case "done":
+      return only === undefined &&
+        left.build.findings.length === 0 &&
+        left.build.scenarios.length === 0
+        ? "every scenario passes and has its evidence as written"
+        : undefined;
+    default: {
+      const unreachable: never = left;
+      return unreachable;
+    }
+  }
+}
+
 async function* builder(
   building: Building,
   bound: Interface,
@@ -88,28 +108,10 @@ async function* builder(
   const { rolesRun, credentials, play } = building;
   const { dir, only, readFiles } = rolesRun;
   const { interface: name, method, pattern } = bound;
-  const files = await readFiles(dir);
+  const skip = builderSkip(interfaceLeft(await readFiles(dir), bound), only);
+  if (skip !== undefined) return yield* roleSkipped("builder", name, skip);
   const actors = Object.keys(credentials);
-  const built = builtOf(files, bound, actors);
   const folder = folderOf(name);
-  if (built === undefined) {
-    return yield* roleSkipped(
-      "builder",
-      name,
-      "its rules and hints do not pass their check",
-    );
-  }
-  if (
-    only === undefined &&
-    built.findings.length === 0 &&
-    built.scenarios.every((one) => hasEvidenceAsWritten(files, name, one))
-  ) {
-    return yield* roleSkipped(
-      "builder",
-      name,
-      "every scenario passes and has its evidence as written",
-    );
-  }
   const own = (path: string) =>
     [
       "interfaces.yaml",
@@ -143,11 +145,23 @@ async function* builder(
   );
 }
 
-// The target started once; then one builder per interface whose reading passes, `jobs` at
-// a time, their plays one at a time; the target stopped at the end, also on a failure.
+// The target started once, when a builder has something to do; then one builder per
+// interface whose reading passes, `jobs` at a time, their plays one at a time; the target
+// stopped at the end, also on a failure.
 export function rolesBuild(rolesRun: RolesRun): AsyncGenerator<Event> {
-  const { dir, io, jobs } = rolesRun;
+  const { dir, io, jobs, only, readFiles } = rolesRun;
   return rolesCommand("roles-build", rolesRun, async function* ({ target, interfaces }) {
+    const skipped = leftOf({
+      files: await readFiles(dir),
+      interfaces,
+    }).interfaces.flatMap((left) => {
+      const why = builderSkip(left, only);
+      return why === undefined ? [] : [{ name: left.interface, why }];
+    });
+    if (skipped.length === interfaces.length) {
+      for (const { name, why } of skipped) yield* roleSkipped("builder", name, why);
+      return true;
+    }
     const lifecycle = { dir, target, io };
     try {
       yield* startTarget(lifecycle);

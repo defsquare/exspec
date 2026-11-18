@@ -1,0 +1,93 @@
+import type { SourceFile } from "../shapes/extraction.ts";
+import type { Interface } from "../shapes/target.ts";
+import { checkCommon, checkStructuresFile } from "./check-reader.ts";
+import { isAsWritten } from "./evidence.ts";
+import { builtOf, evidenceAt, judgementsIn, judgeTaskOf, textAt } from "./roles-files.ts";
+
+// What is left of one interface. Its reading to do: nothing can be built, recorded or
+// judged of it yet. Its reading done:
+//   build   the builder's check of its scenarios, and the slugs of those that pass it with
+//           no evidence of them as written
+//   record  the slugs whose evidence is of them as written and has no noise; none while the
+//           builder's check finds something
+//   judge   the slugs whose evidence is a reference of them as written, with no judgement of
+//           the same hash
+export type InterfaceLeft =
+  | { readonly interface: string; readonly reading: "to-do" }
+  | {
+      readonly interface: string;
+      readonly reading: "done";
+      readonly build: {
+        readonly findings: readonly string[];
+        readonly scenarios: readonly string[];
+      };
+      readonly record: readonly string[];
+      readonly judge: readonly string[];
+    };
+
+export type Left = {
+  // structures.yaml, roles/common.yaml: missing or failing their check
+  readonly structures: boolean;
+  readonly common: boolean;
+  readonly interfaces: readonly InterfaceLeft[];
+};
+
+// what is left of one interface: leftOf for it alone
+export function interfaceLeft(
+  files: readonly SourceFile[],
+  bound: Interface,
+): InterfaceLeft {
+  const name = bound.interface;
+  const built = builtOf(files, bound);
+  if (built === undefined) return { interface: name, reading: "to-do" };
+  const withEvidence = built.scenarios.map(({ slug, scenario }) => {
+    const evidence = evidenceAt(files, name, slug);
+    return {
+      slug,
+      evidence:
+        evidence !== undefined && isAsWritten(scenario, evidence) ? evidence : undefined,
+    };
+  });
+  const references = withEvidence.flatMap(({ slug, evidence }) =>
+    evidence?.noise === undefined ? [] : [{ slug, evidence }],
+  );
+  const hashes = judgeTaskOf(files, bound, references)?.of;
+  const judged = judgementsIn(files, name);
+  return {
+    interface: name,
+    reading: "done",
+    build: {
+      findings: built.findings,
+      scenarios: withEvidence.flatMap(({ slug, evidence }) =>
+        evidence === undefined ? [slug] : [],
+      ),
+    },
+    record:
+      built.findings.length > 0
+        ? []
+        : withEvidence.flatMap(({ slug, evidence }) =>
+            evidence !== undefined && evidence.noise === undefined ? [slug] : [],
+          ),
+    judge: references.flatMap(({ slug }) =>
+      judged.some(({ scenario, of }) => scenario === slug && of === hashes?.get(slug))
+        ? []
+        : [slug],
+    ),
+  };
+}
+
+// What is left for each role, told from the files alone, the target neither started nor
+// asked: one interface entry per interface, in the order given.
+export function leftOf({
+  files,
+  interfaces,
+}: {
+  readonly files: readonly SourceFile[];
+  readonly interfaces: readonly Interface[];
+}): Left {
+  return {
+    structures: checkStructuresFile(textAt(files, "structures.yaml")).findings.length > 0,
+    common: checkCommon(textAt(files, "roles/common.yaml")).findings.length > 0,
+    interfaces: interfaces.map((bound) => interfaceLeft(files, bound)),
+  };
+}

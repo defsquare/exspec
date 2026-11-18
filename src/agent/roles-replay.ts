@@ -39,7 +39,11 @@ export function rolesReplay(rolesRun: RolesRun): AsyncGenerator<Event> {
   return rolesCommand("roles-replay", rolesRun, async function* ({ target, interfaces }) {
     // the actors' names, from the credentials of the last stack
     const known = await io.readCredentials(dir, target);
-    const { scenarios, passed } = yield* checkedScenariosOf(rolesRun, interfaces, known);
+    const { scenarios, passed } = yield* checkedScenariosOf(
+      rolesRun,
+      interfaces,
+      Object.keys(known),
+    );
     const chosen = scenarios.map((one) => selected(one, only !== undefined));
     const references = chosen.flatMap((s) =>
       s !== undefined && "reference" in s ? [s] : [],

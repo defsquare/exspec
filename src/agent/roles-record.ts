@@ -1,5 +1,6 @@
-import { isAsWritten, noiseBetween } from "../derive/evidence.ts";
+import { noiseBetween } from "../derive/evidence.ts";
 import { folderOf } from "../derive/roles-files.ts";
+import { type InterfaceLeft, leftOf } from "../derive/roles-left.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence } from "../shapes/roles.ts";
@@ -27,14 +28,41 @@ async function* markAndWriteReference(
   return true;
 }
 
+// The scenarios left to record, by "<interface>/<slug>": once, an evidence as written with no
+// noise; built, a scenario with no evidence of it as written. Any other is a reference.
+function waitingOf(left: readonly InterfaceLeft[]) {
+  const paths = (
+    of: (one: Extract<InterfaceLeft, { reading: "done" }>) => readonly string[],
+  ) =>
+    new Set(
+      left.flatMap((one) =>
+        one.reading === "done" && one.build.findings.length === 0
+          ? of(one).map((slug) => `${one.interface}/${slug}`)
+          : [],
+      ),
+    );
+  return {
+    once: paths(({ record }) => record),
+    built: paths(({ build }) => build.scenarios),
+  };
+}
+
 // Stack 1: a reference as written is kept, whatever version it was taken on; an evidence as
 // written, of this version, is the first copy and played once more; any other scenario is
-// played, to be played again on stack 2.
+// played, to be played again on stack 2. Nothing waiting and not forced: no stack at all.
 //   {rule: r, run: {version: v}, exchanges: e}            on v, a second play
 //   -> {rule: r, run: {version: v}, exchanges: e, noise: n}
 export function rolesRecord(rolesRun: RolesRun, force: boolean): AsyncGenerator<Event> {
-  const { dir, io } = rolesRun;
+  const { dir, io, readFiles } = rolesRun;
   return rolesCommand("roles-record", rolesRun, async function* ({ target, interfaces }) {
+    const { once, built } = waitingOf(
+      leftOf({ files: await readFiles(dir), interfaces }).interfaces,
+    );
+    if (!force && once.size === 0 && built.size === 0) {
+      const { scenarios, passed } = yield* checkedScenariosOf(rolesRun, interfaces);
+      for (const { path } of scenarios) yield { type: "reference-kept", path };
+      return passed;
+    }
     const lifecycle = { dir, target, io };
     let ok = true;
     const remembered: { readonly one: CheckedScenario; readonly first: Evidence }[] = [];
@@ -46,16 +74,14 @@ export function rolesRecord(rolesRun: RolesRun, force: boolean): AsyncGenerator<
       const { scenarios, passed } = yield* checkedScenariosOf(
         rolesRun,
         interfaces,
-        credentials,
+        Object.keys(credentials),
       );
       ok = passed;
       for (const one of scenarios) {
-        const { evidence, scenario, path } = one;
+        const { evidence, path } = one;
         const first =
-          force || evidence === undefined || !isAsWritten(scenario, evidence)
-            ? undefined
-            : evidence;
-        if (first?.noise !== undefined) {
+          force || !once.has(path) || evidence === undefined ? undefined : evidence;
+        if (!force && !once.has(path) && !built.has(path)) {
           yield { type: "reference-kept", path };
         } else if (first === undefined || first.run.version !== io.version) {
           remembered.push({ one, first: yield* playOnce(stack, one) });

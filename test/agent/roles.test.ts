@@ -212,7 +212,7 @@ test("a builder's gate plays a scenario whose evidence is of it as it was, and l
   });
 });
 
-test("a builder is skipped when every scenario has its evidence as written", async () => {
+test("roles build starts no target when every scenario has its evidence as written, and skips each builder", async () => {
   const agent = fakeAgent([], {
     "roles/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
     "roles/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
@@ -222,18 +222,14 @@ test("a builder is skipped when every scenario has its evidence as written", asy
   expect({ events, lines, written: agent.written }).toEqual({
     events: [
       { type: "command-started", command: "roles-build", dir: "/d" },
-      ...step("start"),
-      ...step("alive"),
-      ...step("seed"),
       {
         type: "role-skipped",
         ...by,
         why: "every scenario passes and has its evidence as written",
       },
-      ...step("stop"),
       { type: "command-finished", command: "roles-build", ok: true },
     ],
-    lines: ["start", "seed", "stop"],
+    lines: [],
     written: [],
   });
 });

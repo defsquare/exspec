@@ -15,11 +15,12 @@ export type CheckedScenario = {
 };
 
 // The scenarios of the interfaces whose rules and scenarios pass the builder's check, by
-// interface then slug; an interface that does not pass is told by its failed check.
+// interface then slug; an interface that does not pass is told by its failed check. The
+// check is against the actors given, or those the scenarios name.
 export async function* checkedScenariosOf(
   rolesRun: RolesRun,
   interfaces: readonly Interface[],
-  credentials: Credentials,
+  actors?: readonly string[],
 ): AsyncGenerator<
   Event,
   { readonly scenarios: readonly CheckedScenario[]; readonly passed: boolean }
@@ -29,7 +30,7 @@ export async function* checkedScenariosOf(
   let passed = true;
   for (const bound of interfaces) {
     const name = bound.interface;
-    const built = builtOf(files, bound, Object.keys(credentials));
+    const built = builtOf(files, bound, actors);
     const findings =
       built === undefined
         ? ["rules.yaml or hints.yaml no longer pass their check"]

@@ -175,25 +175,20 @@ test("roles record treats an evidence played once on another version as none", a
   ).toEqual(twoStacks);
 });
 
-test("roles record keeps a reference as written taken on another version", async () => {
+test("roles record keeps a reference as written taken on another version, with no target started", async () => {
   const evidence = evidenceOf({ version: "w", stamp: "t0" }, { noise });
   expect(await recordWith(evidenceFile(evidence), [])).toEqual({
     events: [
       { type: "command-started", command: "roles-record", dir: "/d" },
-      ...step("stop"),
-      ...step("start"),
-      ...step("alive"),
-      ...step("seed"),
       { type: "reference-kept", path: "f/exists-a" },
-      ...step("stop"),
       { type: "command-finished", command: "roles-record", ok: true },
     ],
-    lines: ["stop", "start", "seed", "stop"],
+    lines: [],
     written: [],
   });
 });
 
-test("roles record keeps a reference as written, unless forced", async () => {
+test("roles record keeps a reference as written with no target started, unless forced", async () => {
   const evidence = evidenceOf({ version: "v", stamp: "t0" }, { noise });
   expect({
     kept: await recordWith(evidenceFile(evidence), []),
@@ -206,15 +201,10 @@ test("roles record keeps a reference as written, unless forced", async () => {
     kept: {
       events: [
         { type: "command-started", command: "roles-record", dir: "/d" },
-        ...step("stop"),
-        ...step("start"),
-        ...step("alive"),
-        ...step("seed"),
         { type: "reference-kept", path: "f/exists-a" },
-        ...step("stop"),
         { type: "command-finished", command: "roles-record", ok: true },
       ],
-      lines: ["stop", "start", "seed", "stop"],
+      lines: [],
       written: [],
     },
     forced: twoStacks,
