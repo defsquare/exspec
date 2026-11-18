@@ -1,4 +1,4 @@
-import { Box, render, Text, useApp } from "ink";
+import { render, Static, Text, useApp } from "ink";
 import { useEffect, useState } from "react";
 import type {
   BindingJudged,
@@ -208,11 +208,7 @@ function Events({
     if (end) exit(end.error);
   }, [end, exit]);
   return (
-    <Box flexDirection="column">
-      {lines.map(({ id, text }) => (
-        <Text key={id}>{text}</Text>
-      ))}
-    </Box>
+    <Static items={[...lines]}>{({ id, text }) => <Text key={id}>{text}</Text>}</Static>
   );
 }
 
