@@ -13,6 +13,7 @@ import type { Interface } from "../shapes/target.ts";
 import { inParallel } from "./pool.ts";
 import {
   type RolesRun,
+  type RolesSetting,
   roleJob,
   roleRounds,
   roleSkipped,
@@ -116,29 +117,34 @@ async function* judge(
 
 // One judge per interface that has evidence, `jobs` at a time, with no tool; then every
 // judgement written, counted by verdict.
-export function rolesJudge(rolesRun: RolesRun): AsyncGenerator<Event> {
+export async function* runJudges(
+  rolesRun: RolesRun,
+  { interfaces }: RolesSetting,
+): AsyncGenerator<Event, boolean> {
   const { dir, jobs, readFiles } = rolesRun;
-  return rolesCommand("roles-judge", rolesRun, async function* ({ interfaces }) {
-    const done = yield* inParallel(
-      interfaces.map((bound) => () => judge(rolesRun, bound)),
-      jobs,
-    );
-    const files = await readFiles(dir);
-    const verdicts = interfaces
-      .flatMap(({ interface: name }) => judgementsIn(files, name))
-      .map(({ verdict }) => verdict);
-    yield {
-      type: "roles-counted",
-      verdicts: {
-        holds: 0,
-        contradicted: 0,
-        "refused-unexpectedly": 0,
-        "not-shown": 0,
-        ...Object.fromEntries(
-          verdictSchema.options.map((v) => [v, verdicts.filter((x) => x === v).length]),
-        ),
-      },
-    };
-    return done.every(Boolean);
-  });
+  const done = yield* inParallel(
+    interfaces.map((bound) => () => judge(rolesRun, bound)),
+    jobs,
+  );
+  const files = await readFiles(dir);
+  const verdicts = interfaces
+    .flatMap(({ interface: name }) => judgementsIn(files, name))
+    .map(({ verdict }) => verdict);
+  yield {
+    type: "roles-counted",
+    verdicts: {
+      holds: 0,
+      contradicted: 0,
+      "refused-unexpectedly": 0,
+      "not-shown": 0,
+      ...Object.fromEntries(
+        verdictSchema.options.map((v) => [v, verdicts.filter((x) => x === v).length]),
+      ),
+    },
+  };
+  return done.every(Boolean);
+}
+
+export function rolesJudge(rolesRun: RolesRun): AsyncGenerator<Event> {
+  return rolesCommand("roles-judge", rolesRun, (setting) => runJudges(rolesRun, setting));
 }

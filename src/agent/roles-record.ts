@@ -4,7 +4,7 @@ import { type InterfaceLeft, leftOf } from "../derive/roles-left.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence } from "../shapes/roles.ts";
-import { type RolesRun, rolesCommand } from "./roles.ts";
+import { type RolesRun, type RolesSetting, rolesCommand } from "./roles.ts";
 import { type CheckedScenario, checkedScenariosOf, playOnce } from "./roles-scenarios.ts";
 
 // The noise between a first copy and a second; stable, the first written with its noise.
@@ -52,59 +52,67 @@ function waitingOf(left: readonly InterfaceLeft[]) {
 // played, to be played again on stack 2. Nothing waiting and not forced: no stack at all.
 //   {rule: r, run: {version: v}, exchanges: e}            on v, a second play
 //   -> {rule: r, run: {version: v}, exchanges: e, noise: n}
-export function rolesRecord(rolesRun: RolesRun, force: boolean): AsyncGenerator<Event> {
+export async function* recordReferences(
+  rolesRun: RolesRun,
+  { target, interfaces }: RolesSetting,
+  force: boolean,
+): AsyncGenerator<Event, boolean> {
   const { dir, io, readFiles } = rolesRun;
-  return rolesCommand("roles-record", rolesRun, async function* ({ target, interfaces }) {
-    const { once, built } = waitingOf(
-      leftOf({ files: await readFiles(dir), interfaces }).interfaces,
+  const { once, built } = waitingOf(
+    leftOf({ files: await readFiles(dir), interfaces }).interfaces,
+  );
+  if (!force && once.size === 0 && built.size === 0) {
+    const { scenarios, passed } = yield* checkedScenariosOf(rolesRun, interfaces);
+    for (const { path } of scenarios) yield { type: "reference-kept", path };
+    return passed;
+  }
+  const lifecycle = { dir, target, io };
+  let ok = true;
+  const remembered: { readonly one: CheckedScenario; readonly first: Evidence }[] = [];
+  yield* stopTarget(lifecycle);
+  try {
+    yield* startTarget(lifecycle);
+    const credentials = await io.readCredentials(dir, target);
+    const stack = { rolesRun, target, credentials };
+    const { scenarios, passed } = yield* checkedScenariosOf(
+      rolesRun,
+      interfaces,
+      Object.keys(credentials),
     );
-    if (!force && once.size === 0 && built.size === 0) {
-      const { scenarios, passed } = yield* checkedScenariosOf(rolesRun, interfaces);
-      for (const { path } of scenarios) yield { type: "reference-kept", path };
-      return passed;
-    }
-    const lifecycle = { dir, target, io };
-    let ok = true;
-    const remembered: { readonly one: CheckedScenario; readonly first: Evidence }[] = [];
-    yield* stopTarget(lifecycle);
-    try {
-      yield* startTarget(lifecycle);
-      const credentials = await io.readCredentials(dir, target);
-      const stack = { rolesRun, target, credentials };
-      const { scenarios, passed } = yield* checkedScenariosOf(
-        rolesRun,
-        interfaces,
-        Object.keys(credentials),
-      );
-      ok = passed;
-      for (const one of scenarios) {
-        const { evidence, path } = one;
-        const first =
-          force || !once.has(path) || evidence === undefined ? undefined : evidence;
-        if (!force && !once.has(path) && !built.has(path)) {
-          yield { type: "reference-kept", path };
-        } else if (first === undefined || first.run.version !== io.version) {
-          remembered.push({ one, first: yield* playOnce(stack, one) });
-        } else {
-          const second = yield* playOnce(stack, one);
-          ok = (yield* markAndWriteReference(rolesRun, one, { first, second })) && ok;
-        }
-      }
-    } finally {
-      yield* stopTarget(lifecycle);
-    }
-    if (remembered.length === 0) return ok;
-    try {
-      yield* startTarget(lifecycle);
-      const credentials = await io.readCredentials(dir, target);
-      const stack = { rolesRun, target, credentials };
-      for (const { one, first } of remembered) {
+    ok = passed;
+    for (const one of scenarios) {
+      const { evidence, path } = one;
+      const first =
+        force || !once.has(path) || evidence === undefined ? undefined : evidence;
+      if (!force && !once.has(path) && !built.has(path)) {
+        yield { type: "reference-kept", path };
+      } else if (first === undefined || first.run.version !== io.version) {
+        remembered.push({ one, first: yield* playOnce(stack, one) });
+      } else {
         const second = yield* playOnce(stack, one);
         ok = (yield* markAndWriteReference(rolesRun, one, { first, second })) && ok;
       }
-    } finally {
-      yield* stopTarget(lifecycle);
     }
-    return ok;
-  });
+  } finally {
+    yield* stopTarget(lifecycle);
+  }
+  if (remembered.length === 0) return ok;
+  try {
+    yield* startTarget(lifecycle);
+    const credentials = await io.readCredentials(dir, target);
+    const stack = { rolesRun, target, credentials };
+    for (const { one, first } of remembered) {
+      const second = yield* playOnce(stack, one);
+      ok = (yield* markAndWriteReference(rolesRun, one, { first, second })) && ok;
+    }
+  } finally {
+    yield* stopTarget(lifecycle);
+  }
+  return ok;
+}
+
+export function rolesRecord(rolesRun: RolesRun, force: boolean): AsyncGenerator<Event> {
+  return rolesCommand("roles-record", rolesRun, (setting) =>
+    recordReferences(rolesRun, setting, force),
+  );
 }

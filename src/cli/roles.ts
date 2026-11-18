@@ -1,5 +1,5 @@
 import { driveAgent, type Session } from "../agent/drive.ts";
-import type { RolesCommand, RolesRun } from "../agent/roles.ts";
+import { type RolesCommand, rolesRunOf } from "../agent/roles.ts";
 import { rolesBuild, rolesPlay } from "../agent/roles-build.ts";
 import { rolesJudge } from "../agent/roles-judge.ts";
 import { rolesRead } from "../agent/roles-read.ts";
@@ -42,22 +42,19 @@ export function rolesEvents({
   const executable = ["roles-play", "roles-record", "roles-replay"].includes(command)
     ? undefined
     : claudeExecutable();
-  const rolesRun: RolesRun = {
+  const rolesRun = rolesRunOf({
     dir,
     ...(only === undefined ? {} : { only }),
     jobs,
     model,
+    effort,
     drive: (session) =>
-      driveAgent({
-        ...session,
-        ...(effort === undefined ? {} : { effort }),
-        ...(executable === undefined ? {} : { executable }),
-      }),
+      driveAgent(executable === undefined ? session : { ...session, executable }),
     io,
     readFiles: readExtractionFiles,
     writeFile: writeSpecimenFile,
     removeFile: removeSpecimenFile,
-  };
+  });
   switch (command) {
     case "roles-read":
       return rolesRead(rolesRun);

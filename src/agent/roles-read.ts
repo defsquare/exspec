@@ -7,6 +7,7 @@ import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
 import {
   type RolesRun,
+  type RolesSetting,
   roleJob,
   roleRounds,
   roleSkipped,
@@ -116,25 +117,30 @@ async function* reader(
 
 // The structures first, then the common reading, each when it is missing or does not pass
 // its check; then one reader per interface, `jobs` at a time. The target is not started.
-export function rolesRead(rolesRun: RolesRun): AsyncGenerator<Event> {
+export async function* runReaders(
+  rolesRun: RolesRun,
+  { interfaces }: RolesSetting,
+): AsyncGenerator<Event, boolean> {
   const { dir, jobs, readFiles } = rolesRun;
-  return rolesCommand("roles-read", rolesRun, async function* ({ interfaces }) {
-    const read = !leftOf({ files: await readFiles(dir), interfaces: [] }).structures
-      ? yield* roleSkipped(
-          "structures-reader",
-          undefined,
-          "structures.yaml passes its check",
-        )
-      : yield* structuresReader(rolesRun);
-    if (!read) return false;
-    const ready = !leftOf({ files: await readFiles(dir), interfaces: [] }).common
-      ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
-      : yield* commonReader(rolesRun);
-    if (!ready) return false;
-    const done = yield* inParallel(
-      interfaces.map((bound) => () => reader(rolesRun, bound)),
-      jobs,
-    );
-    return done.every(Boolean);
-  });
+  const read = !leftOf({ files: await readFiles(dir), interfaces: [] }).structures
+    ? yield* roleSkipped(
+        "structures-reader",
+        undefined,
+        "structures.yaml passes its check",
+      )
+    : yield* structuresReader(rolesRun);
+  if (!read) return false;
+  const ready = !leftOf({ files: await readFiles(dir), interfaces: [] }).common
+    ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
+    : yield* commonReader(rolesRun);
+  if (!ready) return false;
+  const done = yield* inParallel(
+    interfaces.map((bound) => () => reader(rolesRun, bound)),
+    jobs,
+  );
+  return done.every(Boolean);
+}
+
+export function rolesRead(rolesRun: RolesRun): AsyncGenerator<Event> {
+  return rolesCommand("roles-read", rolesRun, (setting) => runReaders(rolesRun, setting));
 }

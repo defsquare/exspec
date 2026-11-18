@@ -22,6 +22,27 @@ export type RolesRun = {
   readonly removeFile: (dir: string, path: string) => Promise<void>;
 };
 
+// what a roles' command runs on once its frame has read target.yaml and interfaces.yaml
+export type RolesSetting = {
+  readonly target: Target;
+  readonly interfaces: readonly Interface[];
+};
+
+// The run of the roles' sessions: one drive, given the roles' effort when there is one.
+export function rolesRunOf({
+  drive,
+  effort,
+  ...run
+}: Omit<RolesRun, "drive"> & {
+  readonly drive: Drive;
+  readonly effort: Session["effort"];
+}): RolesRun {
+  return {
+    ...run,
+    drive: effort === undefined ? drive : (session) => drive({ ...session, effort }),
+  };
+}
+
 export type RolesCommand = Extract<Command, `roles-${string}`>;
 
 const messageOf = (error: unknown) =>
@@ -32,10 +53,7 @@ const messageOf = (error: unknown) =>
 export async function* rolesCommand(
   command: RolesCommand,
   { dir, only, readFiles }: RolesRun,
-  body: (setting: {
-    readonly target: Target;
-    readonly interfaces: readonly Interface[];
-  }) => AsyncGenerator<Event, boolean>,
+  body: (setting: RolesSetting) => AsyncGenerator<Event, boolean>,
 ): AsyncGenerator<Event> {
   yield { type: "command-started", command, dir };
   const finished = (ok: boolean): Event => ({ type: "command-finished", command, ok });

@@ -17,6 +17,7 @@ import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
 import {
   type RolesRun,
+  type RolesSetting,
   roleJob,
   roleRounds,
   roleSkipped,
@@ -148,39 +149,46 @@ async function* builder(
 // The target started once, when a builder has something to do; then one builder per
 // interface whose reading passes, `jobs` at a time, their plays one at a time; the target
 // stopped at the end, also on a failure.
-export function rolesBuild(rolesRun: RolesRun): AsyncGenerator<Event> {
+export async function* runBuilders(
+  rolesRun: RolesRun,
+  { target, interfaces }: RolesSetting,
+): AsyncGenerator<Event, boolean> {
   const { dir, io, jobs, only, readFiles } = rolesRun;
-  return rolesCommand("roles-build", rolesRun, async function* ({ target, interfaces }) {
-    const skipped = leftOf({
-      files: await readFiles(dir),
-      interfaces,
-    }).interfaces.flatMap((left) => {
-      const why = builderSkip(left, only);
-      return why === undefined ? [] : [{ name: left.interface, why }];
-    });
-    if (skipped.length === interfaces.length) {
-      for (const { name, why } of skipped) yield* roleSkipped("builder", name, why);
-      return true;
-    }
-    const lifecycle = { dir, target, io };
-    try {
-      yield* startTarget(lifecycle);
-      const credentials = await io.readCredentials(dir, target);
-      const lock = oneAtATime();
-      const building: Building = {
-        rolesRun,
-        credentials,
-        play: (steps) => lock(() => playSteps({ dir, target, io, credentials, steps })),
-      };
-      const done = yield* inParallel(
-        interfaces.map((bound) => () => builder(building, bound)),
-        jobs,
-      );
-      return done.every(Boolean);
-    } finally {
-      yield* stopTarget(lifecycle);
-    }
+  const skipped = leftOf({
+    files: await readFiles(dir),
+    interfaces,
+  }).interfaces.flatMap((left) => {
+    const why = builderSkip(left, only);
+    return why === undefined ? [] : [{ name: left.interface, why }];
   });
+  if (skipped.length === interfaces.length) {
+    for (const { name, why } of skipped) yield* roleSkipped("builder", name, why);
+    return true;
+  }
+  const lifecycle = { dir, target, io };
+  try {
+    yield* startTarget(lifecycle);
+    const credentials = await io.readCredentials(dir, target);
+    const lock = oneAtATime();
+    const building: Building = {
+      rolesRun,
+      credentials,
+      play: (steps) => lock(() => playSteps({ dir, target, io, credentials, steps })),
+    };
+    const done = yield* inParallel(
+      interfaces.map((bound) => () => builder(building, bound)),
+      jobs,
+    );
+    return done.every(Boolean);
+  } finally {
+    yield* stopTarget(lifecycle);
+  }
+}
+
+export function rolesBuild(rolesRun: RolesRun): AsyncGenerator<Event> {
+  return rolesCommand("roles-build", rolesRun, (setting) =>
+    runBuilders(rolesRun, setting),
+  );
 }
 
 // On a target already up: one written scenario played after a reset, its exchanges shown.
