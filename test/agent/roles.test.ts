@@ -35,8 +35,8 @@ steps:
 `;
 
 // each session writes its files, then ends; what it may write is noted
-function fakeAgent(sessions: readonly Files[]) {
-  const files = new Map(Object.entries(reading));
+function fakeAgent(sessions: readonly Files[], more: Files = {}) {
+  const files = new Map(Object.entries({ ...reading, ...more }));
   const received: { prompt: string; resume?: string; mayWrite: boolean[] }[] = [];
   const drive: Drive = async function* ({ prompt, resume, mayWrite }) {
     const writes = sessions[received.length];
@@ -147,5 +147,93 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
     ],
     lines: ["start", "seed", "reset", "stop"],
     written: [{ path: "roles/f/evidence/exists.yaml", evidence }],
+  });
+});
+
+const scenarioAt = (path: string) => `
+rule: exists
+situation: an id no item has
+reached: yes
+steps:
+  - {when: call, as: u, request: {method: get, path: ${path}}}
+`;
+
+const evidenceAt = (path: string) => `rule: exists
+run: {target: t, version: w, at: "2026-11-01T10:00:00.000Z", clock: null}
+exchanges:
+  - {when: call, as: u, request: {method: get, path: ${path}}, response: {status: 404, body: null}}
+noise: []
+`;
+
+test("a builder's gate plays a scenario whose evidence is of it as it was, and leaves the other alone", async () => {
+  const agent = fakeAgent([{}], {
+    "roles/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
+    "roles/f/scenarios/exists-b.yaml": scenarioAt("/f/y"),
+    "roles/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
+    "roles/f/evidence/exists-b.yaml": evidenceAt("/f/z"),
+  });
+  const { io, lines } = fakeIo({ "http://h/f/y": [{ status: 404, body: null }] });
+  const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
+  const evidence: Evidence = {
+    rule: "exists",
+    run: { target: "t", version: "v", at, clock: null },
+    exchanges: [
+      {
+        when: "call",
+        as: "u",
+        request: { method: "get", path: "/f/y" },
+        response: { status: 404, body: null },
+      },
+    ],
+  };
+  expect({
+    events,
+    lines,
+    written: agent.written.map(({ path, text }) => ({
+      path,
+      evidence: Bun.YAML.parse(text),
+    })),
+  }).toEqual({
+    events: [
+      { type: "command-started", command: "roles-build", dir: "/d" },
+      ...step("start"),
+      ...step("alive"),
+      ...step("seed"),
+      { type: "role-started", ...by },
+      { type: "agent-ended", ...by, turns: 1, seconds: 1 },
+      { type: "steps-played", interface: "f", scenario: "exists-b", evidence },
+      { type: "gate-checked", ...by, ok: true, findings: [] },
+      { type: "role-finished", ...by, ok: true },
+      ...step("stop"),
+      { type: "command-finished", command: "roles-build", ok: true },
+    ],
+    lines: ["start", "seed", "reset", "stop"],
+    written: [{ path: "roles/f/evidence/exists-b.yaml", evidence }],
+  });
+});
+
+test("a builder is skipped when every scenario has its evidence as written", async () => {
+  const agent = fakeAgent([], {
+    "roles/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
+    "roles/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
+  });
+  const { io, lines } = fakeIo({});
+  const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
+  expect({ events, lines, written: agent.written }).toEqual({
+    events: [
+      { type: "command-started", command: "roles-build", dir: "/d" },
+      ...step("start"),
+      ...step("alive"),
+      ...step("seed"),
+      {
+        type: "role-skipped",
+        ...by,
+        why: "every scenario passes and has its evidence as written",
+      },
+      ...step("stop"),
+      { type: "command-finished", command: "roles-build", ok: true },
+    ],
+    lines: ["start", "seed", "stop"],
+    written: [],
   });
 });

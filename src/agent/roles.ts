@@ -6,6 +6,7 @@ import {
 import type { Io } from "../run/io.ts";
 import type { Command, Event, Role } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
+import { type Evidence, evidenceSchema, readYaml } from "../shapes/roles.ts";
 import type { Interface, Target } from "../shapes/target.ts";
 import type { Drive, Session } from "./drive.ts";
 import { roleInstructions } from "./instructions.ts";
@@ -49,6 +50,18 @@ export function slugsIn(
       : undefined;
     return slug === undefined ? [] : [{ slug, text }];
   });
+}
+
+// the evidence of a scenario, when it is there and parses
+export function evidenceAt(
+  files: readonly SourceFile[],
+  name: string,
+  slug: string,
+): Evidence | undefined {
+  const file = `${folderOf(name)}/evidence/${slug}.yaml`;
+  const text = textAt(files, file);
+  const read = text === undefined ? undefined : readYaml(file, text, evidenceSchema);
+  return read !== undefined && "value" in read ? read.value : undefined;
 }
 
 // what a reader wrote for one interface, checked against what the common reader and the

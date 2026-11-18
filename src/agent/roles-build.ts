@@ -1,10 +1,12 @@
 import { checkBuilt } from "../derive/check-built.ts";
+import { isAsWritten } from "../derive/evidence.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import {
   type Evidence,
+  type RoleScenario,
   readYaml,
   roleScenarioSchema,
   type Step,
@@ -13,6 +15,7 @@ import type { Credentials, Interface } from "../shapes/target.ts";
 import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
 import {
+  evidenceAt,
   folderOf,
   type RolesRun,
   readerFilesOf,
@@ -36,7 +39,7 @@ type Building = {
 };
 
 // what the builder wrote for one interface, checked; undefined when its reading does not pass
-function builtOf(
+export function builtOf(
   files: readonly SourceFile[],
   bound: Interface,
   actors: readonly string[],
@@ -52,8 +55,17 @@ function builtOf(
   });
 }
 
-// Each scenario played, its evidence written by the tool; an evidence whose scenario is
-// gone, removed. A step that could not be played is a finding.
+const hasEvidenceAsWritten = (
+  files: readonly SourceFile[],
+  name: string,
+  { slug, scenario }: { readonly slug: string; readonly scenario: RoleScenario },
+) => {
+  const evidence = evidenceAt(files, name, slug);
+  return evidence !== undefined && isAsWritten(scenario, evidence);
+};
+
+// Each scenario without its evidence as written played, its evidence written by the tool;
+// an evidence whose scenario is gone, removed. A step that could not be played is a finding.
 async function* buildGate(
   { rolesRun, credentials, play }: Building,
   bound: Interface,
@@ -66,7 +78,8 @@ async function* buildGate(
   if (built === undefined) return ["rules.yaml or hints.yaml no longer pass their check"];
   if (built.findings.length > 0) return built.findings;
   const findings: string[] = [];
-  for (const { slug, scenario } of built.scenarios) {
+  const toPlay = built.scenarios.filter((one) => !hasEvidenceAsWritten(files, name, one));
+  for (const { slug, scenario } of toPlay) {
     const { run, exchanges } = await play(scenario.steps);
     const evidence: Evidence = { rule: scenario.rule, run, exchanges };
     await writeFile(
@@ -108,16 +121,15 @@ async function* builder(
       "its rules and hints do not pass their check",
     );
   }
-  const evidenced = new Set(slugsIn(files, `${folder}/evidence`).map(({ slug }) => slug));
   if (
     only === undefined &&
     built.findings.length === 0 &&
-    built.scenarios.every(({ slug }) => evidenced.has(slug))
+    built.scenarios.every((one) => hasEvidenceAsWritten(files, name, one))
   ) {
     return yield* roleSkipped(
       "builder",
       name,
-      "every scenario passes and has its evidence",
+      "every scenario passes and has its evidence as written",
     );
   }
   const own = (path: string) =>
