@@ -7,19 +7,7 @@ import {
   flowAfter,
   panelOf,
 } from "../../src/cli/flow.ts";
-import type { Counts, Event } from "../../src/shapes/event.ts";
-
-const counts: Counts = {
-  interfaces: 2,
-  structures: 4,
-  facts: 0,
-  operations: 17,
-  rules: 31,
-  projections: 0,
-  triggers: 0,
-  scenarios: 0,
-  references: 0,
-};
+import type { Event } from "../../src/shapes/event.ts";
 
 test("a run is folded into its boxes, its panel and its totals", () => {
   const events: readonly (readonly [number, Event])[] = [
@@ -41,11 +29,10 @@ test("a run is folded into its boxes, its panel and its totals", () => {
     ],
     [8, { type: "agent-ended", phase: "interfaces", turns: 2, seconds: 1, cost: 0.5 }],
     [9, { type: "gate-checked", phase: "interfaces", ok: true, findings: [] }],
-    [10, { type: "extraction-counted", counts }],
+    [10, { type: "phase-finished", phase: "interfaces", ok: true }],
     [11, { type: "agent-said", role: "reader", text: "ignored" }],
-    [12, { type: "phase-finished", phase: "interfaces", ok: true }],
-    [13, { type: "command-failed", message: "m" }],
-    [14, { type: "command-finished", command: "extract", ok: false }],
+    [12, { type: "command-failed", message: "m" }],
+    [13, { type: "command-finished", command: "extract", ok: false }],
   ];
   const flow = events.reduce(
     (folded, [at, event]) => flowAfter(folded, event, at),
@@ -54,9 +41,8 @@ test("a run is folded into its boxes, its panel and its totals", () => {
   const expected: Flow = {
     dir: "/abs/dir",
     startedAt: 0,
-    endedAt: 14,
+    endedAt: 13,
     ok: false,
-    counts,
     gate: { round: 1, findings: ["f.yaml a.0: m"] },
     said: "a",
     used: { tool: "Read", about: "f.yaml" },
@@ -71,7 +57,7 @@ test("a run is folded into its boxes, its panel and its totals", () => {
         turns: 5,
         cost: 0.75,
         startedAt: 2,
-        endedAt: 12,
+        endedAt: 10,
       },
       { phase: "reading", state: "to-do", round: 0, turns: 0 },
       { phase: "evidence", state: "to-do", round: 0, turns: 0 },
@@ -102,17 +88,93 @@ test("a phase starting empties the panel", () => {
   });
 });
 
-test("countsOf says the counts a phase writes, a zero left out", () => {
+test("a roles' phase takes the events of its sessions", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "reading" },
+    {
+      type: "agent-ended",
+      role: "reader",
+      interface: "f",
+      turns: 4,
+      seconds: 1,
+      cost: 0.1,
+    },
+    {
+      type: "agent-ended",
+      role: "reader",
+      interface: "g",
+      turns: 2,
+      seconds: 1,
+      cost: 0.2,
+    },
+    { type: "gate-checked", role: "reader", interface: "g", ok: false, findings: ["x"] },
+    { type: "agent-said", role: "reader", interface: "g", text: "t" },
+    { type: "agent-used", role: "reader", interface: "g", tool: "Read", about: "a" },
+  ];
+  const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
   expect({
-    interfaces: countsOf("interfaces", counts),
-    reading: countsOf("reading", counts),
-    target: countsOf("target", counts),
-    unknown: countsOf("interfaces", undefined),
+    box: flow.boxes[2],
+    gate: flow.gate,
+    said: flow.said,
+    used: flow.used,
+    panel: panelOf(flow, 2),
   }).toEqual({
-    interfaces: ["2 interfaces"],
-    reading: [],
-    target: [],
-    unknown: [],
+    box: {
+      phase: "reading",
+      state: "running",
+      round: 1,
+      turns: 6,
+      cost: 0.1 + 0.2,
+      startedAt: 1,
+    },
+    gate: { round: 1, findings: ["g: x"] },
+    said: "t",
+    used: { tool: "Read", about: "a" },
+    panel: { phase: "reading", running: { round: 1 }, findings: ["g: x"], more: 0 },
+  });
+});
+
+test("a role's event outside any running phase changes nothing", () => {
+  const events: readonly Event[] = [
+    { type: "agent-ended", role: "reader", interface: "f", turns: 4, seconds: 1 },
+    { type: "gate-checked", role: "reader", interface: "f", ok: false, findings: ["x"] },
+    { type: "agent-said", role: "reader", text: "t" },
+    { type: "agent-used", role: "reader", tool: "Read", about: "a" },
+  ];
+  expect(
+    events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow),
+  ).toEqual(emptyFlow);
+});
+
+test("a roles' phase counts what it wrote, a zero left out", () => {
+  const written: readonly Event[] = [
+    { type: "role-finished", role: "reader", interface: "f", ok: true },
+    { type: "role-finished", role: "reader", interface: "g", ok: true },
+    { type: "role-finished", role: "reader", interface: "h", ok: false },
+    { type: "role-finished", role: "common-reader", ok: true },
+    { type: "reference-written", path: "p", noise: 0 },
+    {
+      type: "judgement-written",
+      interface: "f",
+      scenario: "s",
+      rule: "r",
+      verdict: "holds",
+      confidence: 1,
+    },
+  ];
+  const flow = written.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect({
+    reading: countsOf("reading", flow.counts),
+    evidence: countsOf("evidence", flow.counts),
+    judgement: countsOf("judgement", flow.counts),
+    interfaces: countsOf("interfaces", flow.counts),
+    none: countsOf("reading", undefined),
+  }).toEqual({
+    reading: ["2 read"],
+    evidence: ["1 references"],
+    judgement: ["1 judged"],
+    interfaces: [],
+    none: [],
   });
 });
 

@@ -1,4 +1,4 @@
-import { type Counts, type Event, type Phase, phaseSchema } from "../shapes/event.ts";
+import { type Event, type Phase, phaseSchema } from "../shapes/event.ts";
 
 export type PhaseState = {
   readonly phase: Phase;
@@ -17,7 +17,8 @@ export type Flow = {
   readonly endedAt?: number;
   readonly ok?: boolean;
   readonly boxes: readonly PhaseState[];
-  readonly counts?: Counts;
+  // what a roles' phase did in this run: {reading: 3} -> "3 read"
+  readonly counts?: Readonly<Partial<Record<Phase, number>>>;
   // the running phase's panel, all four cleared at phase-started
   readonly gate?: { readonly round: number; readonly findings: readonly string[] };
   readonly said?: string;
@@ -44,6 +45,15 @@ const inBox = (
   boxes: flow.boxes.map((box) => (box.phase === phase ? change(box) : box)),
 });
 
+// a role's event names no phase: it serves the one running
+const runningPhase = (flow: Flow): Phase | undefined =>
+  flow.boxes.find(({ state }) => state === "running")?.phase;
+
+const counting = (flow: Flow, phase: Phase): Flow => ({
+  ...flow,
+  counts: { ...flow.counts, [phase]: (flow.counts?.[phase] ?? 0) + 1 },
+});
+
 // f(flow, {phase-started: a}) -> flow with a running, round 1, and its panel emptied
 export function flowAfter(flow: Flow, event: Event, at: number): Flow {
   switch (event.type) {
@@ -53,8 +63,6 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
       return { ...flow, endedAt: at, ok: event.ok };
     case "command-failed":
       return { ...flow, failed: event.message };
-    case "extraction-counted":
-      return { ...flow, counts: event.counts };
     case "target-step":
       return { ...flow, target: { step: event.step, state: event.state } };
     case "phase-started": {
@@ -75,8 +83,18 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
         endedAt: at,
       }));
     case "gate-checked": {
-      if (!("phase" in event) || event.ok) return flow;
-      const { phase, findings } = event;
+      const phase = "phase" in event ? event.phase : runningPhase(flow);
+      if (phase === undefined || event.ok) return flow;
+      if (!("phase" in event)) {
+        // sessions run at once, so no round of their own: {interface: g, findings: ["x"]} -> "g: x"
+        const { interface: by, findings } = event;
+        const round = flow.boxes.find((box) => box.phase === phase)?.round ?? 0;
+        const named = findings.map((finding) =>
+          by === undefined ? finding : `${by}: ${finding}`,
+        );
+        return { ...flow, gate: { round, findings: named } };
+      }
+      const { findings } = event;
       const round = flow.boxes.find((box) => box.phase === phase)?.round ?? 0;
       return inBox({ ...flow, gate: { round, findings } }, phase, (box) => ({
         ...box,
@@ -84,29 +102,36 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
       }));
     }
     case "agent-said":
-      return "phase" in event
-        ? { ...flow, said: event.text.replace(/\n[\s\S]*/, "") }
-        : flow;
+      return ("phase" in event ? event.phase : runningPhase(flow)) === undefined
+        ? flow
+        : { ...flow, said: event.text.replace(/\n[\s\S]*/, "") };
     case "agent-used":
-      return "phase" in event
-        ? { ...flow, used: { tool: event.tool, about: event.about } }
-        : flow;
+      return ("phase" in event ? event.phase : runningPhase(flow)) === undefined
+        ? flow
+        : { ...flow, used: { tool: event.tool, about: event.about } };
     case "agent-ended": {
-      if (!("phase" in event)) return flow;
+      const phase = "phase" in event ? event.phase : runningPhase(flow);
+      if (phase === undefined) return flow;
       const { turns, cost } = event;
-      return inBox(flow, event.phase, (box) => ({
+      return inBox(flow, phase, (box) => ({
         ...box,
         turns: box.turns + turns,
         ...(cost === undefined ? {} : { cost: (box.cost ?? 0) + cost }),
       }));
     }
+    case "role-finished":
+      return event.ok && event.role === "reader" ? counting(flow, "reading") : flow;
+    case "reference-written":
+      return counting(flow, "evidence");
+    case "judgement-written":
+      return counting(flow, "judgement");
     case "extraction-not-found":
     case "problem":
     case "gap":
+    case "extraction-counted":
     case "extraction-phases":
     case "scenario-played":
     case "scenario-unplayable":
-    case "reference-written":
     case "reference-kept":
     case "scenario-unstable":
     case "scenario-replayed":
@@ -118,9 +143,7 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
     case "not-observed":
     case "role-started":
     case "role-skipped":
-    case "role-finished":
     case "steps-played":
-    case "judgement-written":
     case "roles-counted":
       return flow;
     default: {
@@ -158,20 +181,18 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
     : undefined;
 }
 
-const written: Readonly<Record<Phase, readonly (keyof Counts)[]>> = {
-  target: [],
-  interfaces: ["interfaces"],
-  reading: [],
-  evidence: [],
-  judgement: [],
+const written: Readonly<Record<Phase, string>> = {
+  target: "",
+  interfaces: "",
+  reading: "read",
+  evidence: "references",
+  judgement: "judged",
 };
 
-// ("interfaces", {interfaces: 17, …}) -> ["17 interfaces"]
-export function countsOf(phase: Phase, counts: Counts | undefined): readonly string[] {
-  if (counts === undefined) return [];
-  return written[phase].flatMap((name) =>
-    counts[name] === 0 ? [] : [`${counts[name]} ${name}`],
-  );
+// ("reading", {reading: 3}) -> ["3 read"]; a phase with no count, or a zero, -> []
+export function countsOf(phase: Phase, counts: Flow["counts"]): readonly string[] {
+  const n = counts?.[phase] ?? 0;
+  return n === 0 ? [] : [`${n} ${written[phase]}`];
 }
 
 // 0 -> "0s"; 65_000 -> "1m05"; 3_725_000 -> "1h02m"

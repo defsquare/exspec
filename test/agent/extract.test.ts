@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Drive } from "../../src/agent/drive.ts";
 import { type Extracting, extract } from "../../src/agent/extract.ts";
-import type { Counts, Event, Phase } from "../../src/shapes/event.ts";
+import type { Event, Phase } from "../../src/shapes/event.ts";
 import type { Evidence } from "../../src/shapes/roles.ts";
 import { interfaces, target } from "../files.ts";
 import { declared, type Files, points, reading } from "../roles-left-fixture.ts";
@@ -45,23 +45,6 @@ const failed = (...findings: string[]) =>
     "",
     ...findings,
   ].join("\n");
-
-const noCounts: Counts = {
-  interfaces: 0,
-  structures: 0,
-  facts: 0,
-  operations: 0,
-  rules: 0,
-  projections: 0,
-  triggers: 0,
-  scenarios: 0,
-  references: 0,
-};
-
-const counted = (counts: Partial<Counts> = {}): Event => ({
-  type: "extraction-counted",
-  counts: { ...noCounts, ...counts },
-});
 
 const ended = (phase: Phase): Event => ({
   type: "agent-ended",
@@ -107,10 +90,8 @@ test("the target phase runs its session, then the target's lifecycle once", asyn
   expect({ events, received: agent.received, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted(),
       { type: "phase-started", phase: "target" },
       ended("target"),
-      counted(),
       ...step("stop"),
       ...step("start"),
       ...step("alive"),
@@ -136,10 +117,8 @@ test("a failed gate resumes the session with its findings", async () => {
   expect({ events, received: agent.received }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted(),
       { type: "phase-started", phase: "interfaces" },
       ended("interfaces"),
-      counted(),
       {
         type: "gate-checked",
         phase: "interfaces",
@@ -147,7 +126,6 @@ test("a failed gate resumes the session with its findings", async () => {
         findings: ["no interface is declared"],
       },
       ended("interfaces"),
-      counted({ interfaces: 1 }),
       { type: "gate-checked", phase: "interfaces", ok: true, findings: [] },
       { type: "phase-finished", phase: "interfaces", ok: true },
       { type: "command-finished", command: "extract", ok: true },
@@ -177,9 +155,8 @@ test("a gate still failing after three rounds ends the extraction", async () => 
   expect({ events, received: agent.received, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted(),
       { type: "phase-started", phase: "target" },
-      ...[1, 2, 3, 4].flatMap(() => [ended("target"), counted(), gate]),
+      ...[1, 2, 3, 4].flatMap(() => [ended("target"), gate]),
       { type: "phase-finished", phase: "target", ok: false },
       { type: "command-finished", command: "extract", ok: false },
     ],
@@ -196,7 +173,6 @@ test("a session that ends in error fails its phase", async () => {
   const { io } = fakeIo({});
   expect(await Array.fromAsync(extract(extracting(agent, io, "target")))).toEqual([
     { type: "command-started", command: "extract", dir: "/d" },
-    counted(),
     { type: "phase-started", phase: "target" },
     ended("target"),
     { type: "command-failed", message: "the agent's session ended in error" },
@@ -212,7 +188,6 @@ test("every phase done: each is skipped, no session, the target never started", 
   expect({ events, received: agent.received, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted({ interfaces: 1 }),
       { type: "phase-skipped", phase: "target" },
       { type: "phase-skipped", phase: "interfaces" },
       { type: "phase-skipped", phase: "reading" },
@@ -255,7 +230,6 @@ test("a scenario waiting for its second play: its reference recorded, then judge
   expect({ events, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted({ interfaces: 1 }),
       { type: "phase-skipped", phase: "target" },
       { type: "phase-skipped", phase: "interfaces" },
       { type: "phase-skipped", phase: "reading" },
@@ -303,7 +277,6 @@ test("a phase named with nothing left: its roles skipped, no session", async () 
   expect({ events, received: agent.received }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted({ interfaces: 1 }),
       { type: "phase-started", phase: "judgement" },
       {
         type: "role-skipped",
@@ -340,7 +313,6 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
   expect({ events, sessions: agent.received.length, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      counted({ interfaces: 1 }),
       { type: "phase-skipped", phase: "target" },
       { type: "phase-skipped", phase: "interfaces" },
       { type: "phase-started", phase: "reading" },

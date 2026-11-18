@@ -1,4 +1,3 @@
-import { countExtraction } from "../derive/count.ts";
 import {
   type AgentPhase,
   declaredIn,
@@ -68,11 +67,6 @@ async function phasesNow({ dir, readFiles }: Extracting) {
   );
 }
 
-const counted = ({ extraction }: Examined): Event => ({
-  type: "extraction-counted",
-  counts: countExtraction(extraction),
-});
-
 // stop, start, reset, stop: the target's lifecycle as declared, run once
 async function* lifecycleGate(
   target: Target,
@@ -101,7 +95,6 @@ async function* gate(
   extracting: Extracting,
 ): AsyncGenerator<Event, readonly string[]> {
   const examined = await examineAgain(extracting);
-  yield counted(examined);
   const found = staticFindings(phase, examined);
   const { target } = examined.extraction;
   if (found.length > 0 || phase === "interfaces" || target === undefined) return found;
@@ -205,7 +198,6 @@ export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
     removeFile,
   });
   yield { type: "command-started", command: "extract", dir };
-  yield counted(await examineAgain(extracting));
   for (const phase of phaseSchema.options) {
     if (only !== undefined && phase !== only) continue;
     if (only === undefined && (await phasesNow(extracting))[phase] === "done") {
