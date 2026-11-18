@@ -471,9 +471,12 @@ them in; each of the first five is a branch of its own.
     no operation in `view`; nothing says a structure is shown, where the terms had a
     projection. Derivable: shown when an operation that answers it has `answers` judged
     to hold.
-  - *Three findings of the review left open:* an unreadable evidence file fails the whole
-    command; `roles play` drops the events of the reset; evidence older than its scenario
-    counts as done.
+  - *Two findings of the review left open:* an unreadable evidence file fails the whole
+    command; `roles play` drops the events of the reset.
+  - *One stale judgement, and the whole interface is judged again*: the judge is skipped
+    only when every evidence of the interface is fresh, and otherwise reads them all and
+    writes the whole file — verdicts that had not to move may. With the shared part of the
+    hash (every requirement of the operation), one rule reworded costs the operation.
   - *Names the challenger left:* the stored key `of` holds a hash (`given-hash` would
     say so; renaming it rewrites every judgements file); the parameter `bound` of the
     judge's task is an interface. `src/derive/roles-view.ts` is past 400 lines: ask which
@@ -488,7 +491,7 @@ them in; each of the first five is a branch of its own.
     `answers` as sentences — and does not draw until read again (about 56 USD the first
     time).
 - **Settled.** Nothing: each is to take on its own.
-- **Next.** The three findings first, each with its test.
+- **Next.** The two findings first, each with its test.
 - **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, its Backlog.
 
 ## The runs were made before the reads were held

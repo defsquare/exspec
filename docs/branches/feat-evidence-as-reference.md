@@ -24,23 +24,24 @@ difference outside the noise is told.
 
 ## Journal
 
-## Backlog
+- **The user: go to the end of this branch, autonomous.** The design's choices are the
+  main thread's, the challenger's review taken.
+- **Design, challenger (opus): the direction kept, two points changed.** Kept: the noise
+  as a key of the evidence; the hash left alone — the cause is the gate of `roles build`
+  rewriting every evidence, not the hash, which reads `{rule, exchanges}` only. Changed:
+  a `roles record` apart instead of a gate that plays twice — two plays on one stack call
+  stable what the seed drew (ADR-0004), and a first copy that exists needs one play on a
+  stack started for it; "of its scenario as written" compares the rule, `when` and `as`
+  and the number of exchanges, not the requests only, and an evidence with an unplayable
+  step is never a reference; `markNoise` pairs by index and drops what is left over — two
+  copies of different lengths must be unstable; a first copy of another version of the
+  target is not a first copy. Against the proposal's "only those are judged again": the
+  judge reads the whole interface as soon as one judgement is stale — said in ADR-0013,
+  left to the backlog. ADR-0013 written; ADR-0010 marked amended.
+- **The measure will be on Conduit** (`targets/conduit`, 224 evidences, 19 files of
+  judgements): the smallest, and the one read again since the reads are held.
 
-- **The design, before the code — keys added to stored shapes, so an ADR and the
-  challenger first.** It extends ADR-0005 (a reference is a played copy, its noise beside
-  it) and amends ADR-0010 (the evidence is played once; a judgement's hash is of what the
-  judge was given).
-  - Where the noise lives: a key of the evidence file, as a reference carries it, or a
-    file beside it.
-  - What a judgement's hash covers. Today `src/derive/judge-task.ts` hashes the raw
-    exchanges, so a timestamp in an error body makes every judgement stale at each replay.
-    The hash on the reference with its noisy places set aside — and what the judge is
-    then given to read at those places.
-  - The hash also covers what the operation's rules share: one rule changed makes every
-    judgement of the operation stale. Kept or cut down.
-  - The commands: `roles build` records twice, or a `roles record` apart; a `roles
-    replay`, or `replay` reading both forms.
-  - An evidence older than its scenario counts as done today: a reference cannot.
+## Backlog
 
 - **The first check, with no target.** Two evidences of a fixture that differ by one
   timestamp: the noise marked; a third copy compared with the reference answers no
@@ -56,3 +57,7 @@ difference outside the noise is told.
     attached to it.
   - **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "Three whole targets
     through the tool".
+
+- **An evidence older than its scenario counts as done** (a finding of the review of the
+  roles, from the backlog's "Loose ends of the roles"): the builder is skipped when every
+  scenario has an evidence, whatever it is of.

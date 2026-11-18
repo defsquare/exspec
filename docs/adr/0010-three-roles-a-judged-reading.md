@@ -1,7 +1,8 @@
 # ADR-0010 — A judged reading by three roles: a reader, a scenario builder, a judge
 
 Status: Accepted (2026-11-15) — by the user, after three whole targets were run through the
-roles.
+roles. Amended 2026-11-18: the evidence is no longer played once — it becomes a
+reference, its noise beside it (ADR-0013); the consequence on it below is as it was written.
 
 ## Context
 
