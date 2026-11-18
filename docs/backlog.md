@@ -520,3 +520,18 @@ them in; each of the first five is a branch of its own.
 - A constraint between two inputs ("the end is after the start").
 - The decision on a refuted claim — the claim was wrong, or the target has a bug — and how
   a wanted deviation is named.
+
+## The roles drawn as a flow
+
+- **Seen.** `specimen extract` on a terminal draws its phases as a flow of boxes with a
+  panel for the running phase; `roles-read`, `roles-build` and `roles-judge` still print
+  one line per event, the sessions of several interfaces interleaved under a `[interface]`
+  prefix. The flow of `extract` itself has been watched on hand-written events only, not on
+  a real extraction.
+- **Settled.** A drawing is a reading of the event stream: a pure fold into a state, an Ink
+  component that draws it, chosen when the output is a terminal; no event is added for it.
+- **Next.** Watch a real extraction through the flow and adjust the drawing. Then the same
+  for the roles: the roles as columns (reader, builder, judge), one row per interface, the
+  sessions running side by side — a fold of the events that carry `role` and `interface`.
+- **Source.** `docs/branches/feat-extract-flow.md` at `b8300ed`; `src/cli/flow.ts`,
+  `src/cli/render-flow.tsx`.
