@@ -1,9 +1,9 @@
+import { builtOf, evidenceAt } from "../derive/roles-files.ts";
 import { playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence, RoleScenario } from "../shapes/roles.ts";
 import type { Credentials, Interface, Target } from "../shapes/target.ts";
-import { evidenceAt, type RolesRun } from "./roles.ts";
-import { builtOf } from "./roles-build.ts";
+import type { RolesRun } from "./roles.ts";
 
 export type CheckedScenario = {
   readonly name: string;

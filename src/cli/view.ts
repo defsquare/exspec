@@ -1,10 +1,15 @@
 import { basename, join } from "node:path";
-import { folderOf, readerFilesOf, slugsIn, textAt } from "../agent/roles.ts";
-import { judgementsIn } from "../agent/roles-judge.ts";
 import { checkBuilt } from "../derive/check-built.ts";
 import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
 import { placeOperations } from "../derive/placing.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
+import {
+  folderOf,
+  judgementsIn,
+  readerFilesOf,
+  slugsIn,
+  textAt,
+} from "../derive/roles-files.ts";
 import { type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 import {

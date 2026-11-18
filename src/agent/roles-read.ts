@@ -1,17 +1,15 @@
 import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
+import { folderOf, readerFilesOf, textAt } from "../derive/roles-files.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Interface } from "../shapes/target.ts";
 import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
 import {
-  folderOf,
   type RolesRun,
-  readerFilesOf,
   roleJob,
   roleRounds,
   roleSkipped,
   rolesCommand,
-  textAt,
 } from "./roles.ts";
 
 const tools = ["Read", "Glob", "Grep", "Write", "Edit"];

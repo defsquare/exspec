@@ -1,12 +1,6 @@
-import {
-  checkCommon,
-  checkRulesAndHints,
-  checkStructuresFile,
-} from "../derive/check-reader.ts";
 import type { Io } from "../run/io.ts";
 import type { Command, Event, Role } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
-import { type Evidence, evidenceSchema, readYaml } from "../shapes/roles.ts";
 import type { Interface, Target } from "../shapes/target.ts";
 import type { Drive, Session } from "./drive.ts";
 import { roleInstructions } from "./instructions.ts";
@@ -32,55 +26,6 @@ export type RolesCommand = Extract<Command, `roles-${string}`>;
 
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
-
-// "delete-item" -> "roles/delete-item"
-export const folderOf = (name: string) => `roles/${name}`;
-
-export const textAt = (files: readonly SourceFile[], path: string) =>
-  files.find((file) => file.path === path)?.text;
-
-// the YAML files directly in a folder, by slug: "roles/i/scenarios" -> [{slug: "a", text}]
-export function slugsIn(
-  files: readonly SourceFile[],
-  folder: string,
-): readonly { readonly slug: string; readonly text: string }[] {
-  return files.flatMap(({ path, text }) => {
-    const slug = path.startsWith(`${folder}/`)
-      ? /^([^/]+)\.yaml$/.exec(path.slice(folder.length + 1))?.[1]
-      : undefined;
-    return slug === undefined ? [] : [{ slug, text }];
-  });
-}
-
-// the evidence of a scenario, when it is there and parses
-export function evidenceAt(
-  files: readonly SourceFile[],
-  name: string,
-  slug: string,
-): Evidence | undefined {
-  const file = `${folderOf(name)}/evidence/${slug}.yaml`;
-  const text = textAt(files, file);
-  const read = text === undefined ? undefined : readYaml(file, text, evidenceSchema);
-  return read !== undefined && "value" in read ? read.value : undefined;
-}
-
-// what a reader wrote for one interface, checked against what the common reader and the
-// reader of the structures wrote
-export function readerFilesOf(files: readonly SourceFile[], name: string) {
-  const { common } = checkCommon(textAt(files, "roles/common.yaml"));
-  const { structures } = checkStructuresFile(textAt(files, "structures.yaml"));
-  const folder = folderOf(name);
-  return {
-    common,
-    ...checkRulesAndHints({
-      operation: name,
-      common,
-      structures,
-      rules: textAt(files, `${folder}/rules.yaml`),
-      hints: textAt(files, `${folder}/hints.yaml`),
-    }),
-  };
-}
 
 // The frame of a roles command. It needs target.yaml and interfaces.yaml to parse, nothing
 // else of the extraction; `only` names one of the interfaces.

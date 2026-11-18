@@ -1,64 +1,41 @@
 import { parseJudgeAnswer } from "../derive/judge-answer.ts";
-import { judgeTask } from "../derive/judge-task.ts";
+import {
+  folderOf,
+  judgementsIn,
+  judgeTaskOf,
+  recordingsRead,
+} from "../derive/roles-files.ts";
 import type { Event } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
-import {
-  type Evidence,
-  evidenceSchema,
-  type Judgement,
-  judgementsSchema,
-  readYaml,
-  verdictSchema,
-} from "../shapes/roles.ts";
+import { type Evidence, verdictSchema } from "../shapes/roles.ts";
 import type { Interface } from "../shapes/target.ts";
 import { inParallel } from "./pool.ts";
 import {
-  folderOf,
   type RolesRun,
-  readerFilesOf,
   roleJob,
   roleRounds,
   roleSkipped,
   rolesCommand,
-  slugsIn,
-  textAt,
 } from "./roles.ts";
 
 export class EvidenceUnreadable extends Error {
   readonly type = "evidence-unreadable";
 }
 
-// the judgements of a folder as they are written, none when there is no file or it does
-// not parse
-export function judgementsIn(
-  files: readonly SourceFile[],
-  name: string,
-): readonly Judgement[] {
-  const file = `${folderOf(name)}/judgements.yaml`;
-  const text = textAt(files, file);
-  const read = text === undefined ? undefined : readYaml(file, text, judgementsSchema);
-  return read !== undefined && "value" in read ? read.value.judgements : [];
-}
-
+// every evidence file of a folder, parsed; one that does not parse fails the judge
 export function recordingsIn(
   files: readonly SourceFile[],
   name: string,
 ): readonly { readonly slug: string; readonly evidence: Evidence }[] {
-  return slugsIn(files, `${folderOf(name)}/evidence`).map(({ slug, text }) => {
-    const read = readYaml(`evidence/${slug}.yaml`, text, evidenceSchema);
-    if (!("value" in read)) throw new EvidenceUnreadable(read.findings.join("; "));
-    return { slug, evidence: read.value };
+  return recordingsRead(files, name).map((read) => {
+    if ("findings" in read) throw new EvidenceUnreadable(read.findings.join("; "));
+    return read;
   });
 }
 
 // the task of one interface's judge, when its reading passes and it has evidence
-export function taskOf(files: readonly SourceFile[], bound: Interface) {
-  const recordings = recordingsIn(files, bound.interface);
-  const { common, rules } = readerFilesOf(files, bound.interface);
-  if (rules === undefined || recordings.length === 0) return undefined;
-  const task = judgeTask({ bound, common, rules, recordings });
-  return { ...task, recordings };
-}
+export const taskOf = (files: readonly SourceFile[], bound: Interface) =>
+  judgeTaskOf(files, bound, recordingsIn(files, bound.interface));
 
 async function* judge(
   rolesRun: RolesRun,

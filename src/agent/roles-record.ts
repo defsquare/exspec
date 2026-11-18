@@ -1,8 +1,9 @@
 import { isAsWritten, noiseBetween } from "../derive/evidence.ts";
+import { folderOf } from "../derive/roles-files.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence } from "../shapes/roles.ts";
-import { folderOf, type RolesRun, rolesCommand } from "./roles.ts";
+import { type RolesRun, rolesCommand } from "./roles.ts";
 import { type CheckedScenario, checkedScenariosOf, playOnce } from "./roles-scenarios.ts";
 
 // The noise between a first copy and a second; stable, the first written with its noise.

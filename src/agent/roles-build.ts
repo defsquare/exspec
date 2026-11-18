@@ -1,5 +1,5 @@
-import { checkBuilt } from "../derive/check-built.ts";
 import { isAsWritten } from "../derive/evidence.ts";
+import { builtOf, evidenceAt, folderOf, slugsIn, textAt } from "../derive/roles-files.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
@@ -15,16 +15,11 @@ import type { Credentials, Interface } from "../shapes/target.ts";
 import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
 import {
-  evidenceAt,
-  folderOf,
   type RolesRun,
-  readerFilesOf,
   roleJob,
   roleRounds,
   roleSkipped,
   rolesCommand,
-  slugsIn,
-  textAt,
 } from "./roles.ts";
 
 const tools = ["Read", "Glob", "Grep", "Write", "Edit"];
@@ -37,23 +32,6 @@ type Building = {
   // a reset and its steps, one play at a time on the one target
   readonly play: (steps: readonly Step[]) => Promise<PlayedSteps>;
 };
-
-// what the builder wrote for one interface, checked; undefined when its reading does not pass
-export function builtOf(
-  files: readonly SourceFile[],
-  bound: Interface,
-  actors: readonly string[],
-) {
-  const { rules } = readerFilesOf(files, bound.interface);
-  if (rules === undefined) return undefined;
-  const folder = folderOf(bound.interface);
-  return checkBuilt({
-    bound,
-    rules,
-    actors,
-    files: slugsIn(files, `${folder}/scenarios`),
-  });
-}
 
 const hasEvidenceAsWritten = (
   files: readonly SourceFile[],
