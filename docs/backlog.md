@@ -480,6 +480,11 @@ them in; each of the first five is a branch of its own.
     say so; renaming it rewrites every judgements file); the parameter `bound` of the
     judge's task is an interface. `src/derive/roles-view.ts` is past 400 lines: ask which
     step it is doing.
+  - *The page's column:* which stop a scenario exits by is computed in the page's own
+    script, which no test runs. A scenario that exits by the stop of the inputs shows the
+    status answered, not the refusal's name. The word of a mark is the rule's name without
+    its input's, found by turning the input's name to dashes: an input in capitals keeps
+    the whole name.
   - *`view`:* a builder's finding about an unknown actor is not seen (the page reads no
     credentials). Kadai's reading is in the first form — no structure, `takes` and
     `answers` as sentences — and does not draw until read again (about 56 USD the first
@@ -487,6 +492,29 @@ them in; each of the first five is a branch of its own.
 - **Settled.** Nothing: each is to take on its own.
 - **Next.** The three findings first, each with its test.
 - **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, its Backlog.
+
+## The runs were made before the reads were held
+
+- **Seen.** Until a hook held every call, a session's reads were held by a callback the SDK
+  calls only for what it would ask a person: nothing inside the checkout. Read in the
+  transcripts of the three targets: none of the 205 builder sessions read or searched
+  outside its own files; nearly every reader searched from the checkout's root at least
+  once, and 2 such searches on Conduit, 14 on Petclinic, 21 on Kadai came back naming
+  files of the earlier extraction or of the evidence. Conduit read again with the hook,
+  one run: 46 requirements as before, 85 effects against 108, 3 contradictions against 22
+  — the 21 with one cause are gone, the readers wrote the 401 the target answers. Counts
+  only: nothing says whether fewer effects come from the reads now held or from the run.
+  The judgements stored under Petclinic's and Kadai's checkouts read as stale.
+- **Settled.** The separation is built (ADR-0010): a hook on every call, not a brief.
+- **Next.** In the transcripts of Conduit's new run, count the searches refused at the
+  root; set the rules the new run no longer has against the files the earlier searches
+  named: does a reader that cannot search from the root read less, did a rule of the kept
+  run come from a file it should not have seen. Then Petclinic and Kadai: read again, or
+  drop what is kept.
+- **Source.** `docs/branches/feat-input-rules-in-view.md` at `45c9087`, "Conduit read
+  again"; the run kept before under `targets/spike-snapshots/9-tool-conduit/run2-effort-high/`
+  and the transcripts under `~/.claude/projects/` of the machine that ran them, neither in
+  the repository.
 
 ## Open questions, no item yet
 
