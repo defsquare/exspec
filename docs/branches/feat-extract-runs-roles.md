@@ -28,6 +28,28 @@ with the challenger's verdict; it is not merged without being asked.
 
 ## Journal
 
+- **Design, challenger (opus): the direction kept, two points to change before the ADR.**
+  - "Done" must have one definition. Each role's body already decides alone what it
+    skips, interface by interface; the gaps of `roles-view.ts` are weaker than those
+    predicates (a rule without a scenario is a problem there, not a gap; nothing tells an
+    evidence that is no longer of its scenario as written; the builder's check is run with
+    other actors). A pure module in `derive` — what is left to do, by role and by
+    interface — read by the bodies' skips, by `phasesOf`, later by the page. The pure
+    functions over the files now in `src/agent/roles*.ts` move there.
+  - What `--phase` forces must be decided: ADR-0006 runs a phase asked for "done or not",
+    and a role's body plays a done interface again only when `only` is set.
+  - Calling the bodies is not a call: they are closures given to `rolesCommand`; they are
+    exported, and the `RolesRun` built in `src/cli/roles.ts` is shared, not copied.
+  - `rolesBuild` and `rolesRecord` start the target even when nothing is left to do.
+  - `test/agent/instructions.test.ts` parses the examples of `system.md` and expects seven
+    files of the computed notation: the assertion changes, in a commit of its own.
+  - The flow counts rounds and cost on events that carry `phase`; the roles' carry `role`:
+    the four boxes would show no cost, and a role's failed gate would not show.
+  - The key `record` of `status` keeps its name and changes meaning.
+  - Agreed: the phases' names; the order 4, 3, 1 — `parseExtraction` ignores `roles/`, and
+    folding into `operations/` before `operationSchema` is deprecated makes two schemas for
+    one path.
+
 ## Backlog
 
 - **`extract` runs the roles** (the fourth decision).
