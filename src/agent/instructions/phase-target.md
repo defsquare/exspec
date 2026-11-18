@@ -28,7 +28,7 @@ authenticated (a token from a login, basic auth, nothing).
   credentials serve a whole run.
 
 **A seed**, `specimen/target/seed.sh` — from the empty, freshly started target to the
-**starting state** every scenario starts from:
+**starting state** every trial of the system starts from:
 
 - Go through the target's API where it has one for the thing (register, create); go to
   the database only for what the API cannot create.
@@ -43,10 +43,10 @@ authenticated (a token from a login, basic auth, nothing).
 - It must fail loudly (`set -euo pipefail`, non-2xx answers checked): a half-seeded target
   is worse than none.
 
-**A reset**, `specimen/target/reset.sh` — from whatever a scenario left, back to the
+**A reset**, `specimen/target/reset.sh` — from whatever a trial left, back to the
 starting state, **without restarting the application** if it can be avoided: empty the
 tables and reload the snapshot, sequences included, so that the next thing created gets
-the same identifier every time. It runs before every scenario: it must take about a second.
+the same identifier every time. It runs before every trial: it must take about a second.
 If the application keeps state in memory that the database restore does not undo (a
 cache, a pool of identifiers), say so in your final message.
 

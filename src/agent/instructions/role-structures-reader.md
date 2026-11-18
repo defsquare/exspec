@@ -13,6 +13,11 @@ The system's checkout: your working directory. Modify nothing there. Of its `spe
 folder you may read only `interfaces.yaml`: the list of its HTTP interfaces and the shape of
 what each accepts and answers.
 
+A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
+instance), never from the root of your working directory: from the root it is refused. A
+search that is refused is narrowed to those folders and run again. What you write comes
+from the code you read, never from the description of the interfaces alone.
+
 Read the model the code is built on — its entities, what identifies each, what each is made
 of, what refers to what — and how the interfaces show them.
 

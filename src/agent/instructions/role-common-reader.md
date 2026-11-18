@@ -13,6 +13,11 @@ The system's checkout: your working directory. Modify nothing there. Of its `spe
 folder you may read only `target.yaml`, `interfaces.yaml` and what is under `target/` — how
 the system under trial is built and started, and the list of its HTTP interfaces.
 
+A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
+instance), never from the root of your working directory: from the root it is refused. A
+search that is refused is narrowed to those folders and run again. What you write comes
+from the code you read, never from the description of the interfaces alone.
+
 Read what no single operation owns:
 
 - **How the system under trial is started**: the settings its start changes from the

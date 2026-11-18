@@ -12,6 +12,11 @@ operation: an HTTP method and a path. Of the `specimen/` folder you may read onl
 `specimen/roles/common.yaml`, `specimen/structures.yaml` and your own folder: the rest is
 someone else's work, it would bias you.
 
+A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
+instance), never from the root of your working directory: from the root it is refused. A
+search that is refused is narrowed to those folders and run again. What you write comes
+from the code you read, never from the description of the interfaces alone.
+
 First read `specimen/roles/common.yaml`: what holds for every operation of this system
 has been read once — how it is started, who a caller is, how an error becomes an answer,
 how a request's fields are checked, where the contract and the code differ. What it settles
