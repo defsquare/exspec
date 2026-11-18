@@ -55,13 +55,19 @@ test("the roles are two words, each refused to the agent", () => {
     askedOf(["roles", "build", "d"], true),
     askedOf(["roles", "page", "d"], false),
     askedOf(["roles", "record", "d"], false),
+    askedOf(["roles", "replay", "d"], false),
+    askedOf(["roles", "record", "d"], true),
+    askedOf(["roles", "replay", "d"], true),
     askedOf(["roles"], false),
   ]).toEqual([
     { type: "command", command: "roles-read", rest: ["d"] },
     { type: "command", command: "roles-play", rest: ["d", "f/a"] },
     { type: "refused-to-agent", command: "roles-build" },
     { type: "unknown" },
-    { type: "unknown" },
+    { type: "command", command: "roles-record", rest: ["d"] },
+    { type: "command", command: "roles-replay", rest: ["d"] },
+    { type: "refused-to-agent", command: "roles-record" },
+    { type: "refused-to-agent", command: "roles-replay" },
     { type: "unknown" },
   ]);
 });

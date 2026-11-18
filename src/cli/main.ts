@@ -37,7 +37,9 @@ const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
        specimen record <dir> [<operation>/<slug>…] [--force]
        specimen extract <dir> [--phase <phase>] [--model <model>] [--format json]
        specimen roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
-       specimen roles play <dir> <interface>/<slug>`;
+       specimen roles play <dir> <interface>/<slug>
+       specimen roles record <dir> [--only <interface>] [--force]
+       specimen roles replay <dir> [--only <interface>]`;
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -145,7 +147,9 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
     case "roles-read":
     case "roles-build":
     case "roles-judge":
-    case "roles-play": {
+    case "roles-play":
+    case "roles-record":
+    case "roles-replay": {
       const jobs = Number(values.jobs);
       const [scenario] = paths;
       const misused =
@@ -158,6 +162,7 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
         dir: examination.dir,
         scenario,
         only: values.only,
+        force: values.force,
         jobs,
         model: values.model,
         effort: z.enum(["low", "medium", "high"]).optional().parse(values.effort),

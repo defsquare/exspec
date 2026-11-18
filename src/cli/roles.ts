@@ -3,6 +3,8 @@ import type { RolesCommand, RolesRun } from "../agent/roles.ts";
 import { rolesBuild, rolesPlay } from "../agent/roles-build.ts";
 import { rolesJudge } from "../agent/roles-judge.ts";
 import { rolesRead } from "../agent/roles-read.ts";
+import { rolesRecord } from "../agent/roles-record.ts";
+import { rolesReplay } from "../agent/roles-replay.ts";
 import {
   readExtractionFiles,
   removeSpecimenFile,
@@ -18,6 +20,8 @@ export type RolesAsked = {
   // roles play: "<interface>/<slug>"
   readonly scenario: string | undefined;
   readonly only: string | undefined;
+  // roles record: a reference of the scenario as written is recorded again
+  readonly force: boolean;
   readonly jobs: number;
   readonly model: string;
   readonly effort: Session["effort"];
@@ -29,12 +33,15 @@ export function rolesEvents({
   dir,
   scenario,
   only,
+  force,
   jobs,
   model,
   effort,
   io,
 }: RolesAsked): AsyncIterable<Event> {
-  const executable = command === "roles-play" ? undefined : claudeExecutable();
+  const executable = ["roles-play", "roles-record", "roles-replay"].includes(command)
+    ? undefined
+    : claudeExecutable();
   const rolesRun: RolesRun = {
     dir,
     ...(only === undefined ? {} : { only }),
@@ -60,6 +67,10 @@ export function rolesEvents({
       return rolesJudge(rolesRun);
     case "roles-play":
       return rolesPlay(rolesRun, scenario ?? "");
+    case "roles-record":
+      return rolesRecord(rolesRun, force);
+    case "roles-replay":
+      return rolesReplay(rolesRun);
     default: {
       const unreachable: never = command;
       return unreachable;

@@ -2,10 +2,10 @@
 //   read the extraction    status, check, verdicts
 //   drive the target       target up, target down, target play
 //   the references and the agent itself    record, replay, extract, view — refused to the agent
-//   the three roles        roles read, roles build, roles judge, roles play — refused to the
-//                          agent
+//   the three roles        roles read, roles build, roles judge, roles play, roles record,
+//                          roles replay — refused to the agent
 const read = ["status", "check", "verdicts"];
-const roles = ["read", "build", "judge", "play"];
+const roles = ["read", "build", "judge", "play", "record", "replay"];
 export const onTarget = ["up", "down", "play"];
 // view: a page for a person, every recorded answer in it
 const refusedToAgent = ["record", "replay", "extract", "view"];

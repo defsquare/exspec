@@ -72,5 +72,7 @@ bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # the st
 bun src/cli/main.ts roles build <dir> [--only <interface>] [--jobs n]   # target up, a scenario builder per interface, evidence played
 bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judge per interface, no tool -> judgements.yaml
 bun src/cli/main.ts roles play <dir> <interface>/<slug>                  # on a target up: reset, play one written scenario
+bun src/cli/main.ts roles record <dir> [--only <interface>] [--force]   # each evidence played again on fresh stacks, its noise beside it
+bun src/cli/main.ts roles replay <dir> [--only <interface>]              # each reference played once on a fresh stack, compared outside its noise
 bun run live                                # record and replay Conduit's fixture (Docker)
 ```
