@@ -73,6 +73,11 @@ them in; each of the first five is a branch of its own.
   place: `reference-written` counts 1, and a whole body or list is free. Lists are walked
   by index: two elements swapped become two crossed classes, and a replay that duplicates
   one element can pass.
+- **Seen.** A class holds by the grain of its values. On Conduit a token carries its
+  expiry to the second: two tokens issued in the same second are equal, a second apart
+  they are not. Two noisy places were one class in both recordings and two values in a
+  replay; two classes in the recordings were one value in a replay — 2 of 224 references
+  told different, none the target's (`roles replay`; the rule is the same for `replay`).
 - **Settled.** Noise is derived from two executions, in classes (ADR-0005); a reference
   where most of the answer is noisy compares little, and that is to show.
 - **Next.** Count the leaves a noisy place frees, show it in `reference-written` and in
