@@ -61,6 +61,41 @@ with the challenger's verdict; it is not merged without being asked.
     belongs with comparing two versions of a target; written there in the backlog.
   - So the order: the results first — one whole reading by the roles as they are, the
     reads held, looked at with the user — then the phases of `extract`.
+- **The results: Petclinic read whole by the roles as they are, the reads held** (the
+  user's go; default model, no effort, 4 jobs). A clone of the checkout at `afc8fc1`
+  holding the code and, from the extraction made the same day by `extract`, its
+  `target.yaml`, its 37 interfaces and its lifecycle files — not that checkout itself: a
+  reader may read all of a checkout outside `specimen/`, and it held earlier extractions
+  at its root. The target runs without security, as that extraction's did.
+
+  | | sessions | USD | what came out |
+  |---|---|---|---|
+  | `roles read` | 43 | 4.49 | 8 structures, the common reading, 37 interfaces, 336 rules; 4 gates failed once, on `hints.yaml` |
+  | `roles build` | 37 | 2.95 | 364 scenarios, every gate passed at once |
+  | `roles record` | none | 0 | 364 references on one stack, none unstable |
+  | `roles judge` | 37 | 1.54 | 364 judgements |
+
+  8.98 USD. By judgement: 328 hold, 11 contradicted, 2 refused unexpectedly, 23 not
+  shown. By rule, on the page: 308 hold, 11 contradicted, 2 refused unexpectedly, 14 not
+  shown, 1 with no scenario; no problem, no gap, no stale judgement. Beside it, `extract`
+  on the same target and interfaces the same day: 23 operations, 140 rules, 103 verified,
+  none refuted, 37 declared only — 23 of them effects in a sentence, never judged.
+  - *The 13 that do not hold are answers of the target*, read in the judgements, not
+    checked against the code by hand: deleting an owner with pets, or a specialty, is
+    refused 404 on a constraint (4); a creation given an existing id overwrites it (2); a
+    page size of 101 answers 500 where 400 is read (2); an update without the id in its
+    body is accepted (2); a visit with no date keeps none; a 204 with no body where one is
+    read; a user's answer shows the password.
+  - *The 23 not shown*: 7 are a `Location` header the evidence does not record; 8 a
+    scenario that is not its rule's case (an id `abc` answered 500 for "does not exist");
+    the others a situation not reached or a 204 that shows nothing.
+  - *The reader of the structures read no code.* Its first search ran from the
+    checkout's root, which the hook refuses since it runs through `specimen/`; it wrote
+    the 8 structures from `interfaces.yaml` alone, in 7 seconds, saying so in its last
+    sentence; its gate passed — it checks a form. 36 of 37 operations are filed under a
+    structure all the same. Not read again: 37 readings name its fields.
+  - The page: `targets/pages/petclinic-roles-2026-11-18.html`; the events of the four
+    commands are in the session's scratchpad, not kept.
 
 ## Backlog
 
