@@ -96,6 +96,42 @@ with the challenger's verdict; it is not merged without being asked.
     structure all the same. Not read again: 37 readings name its fields.
   - The page: `targets/pages/petclinic-roles-2026-11-18.html`; the events of the four
     commands are in the session's scratchpad, not kept.
+- **ADR-0014 written, by the user's go on the results.**
+- **What is left for each role, one definition** (`e5c251d` refactor, `7a11248`):
+  implementer (opus), reviewer. Two findings, taken in the thread: the judge skipped while
+  scenarios wait for their evidence or its second play says so; a reference whose actor
+  the credentials no longer hold stands — assumed, said in the code and in the ADR. Said
+  in the ADR too, as the code now does: only a reference is judged, so `roles build` then
+  `roles judge` with no `roles record` between judges nothing.
+- **`extract` runs the roles in five phases** (`28d3a47` refactor, `ebf6dad`, `1f0209e`):
+  implementer (opus), reviewer conformance approved. Taken in the thread: `target` and
+  `interfaces` asked for by name run done or not — kept, said in the ADR. Decided by the
+  implementer, kept, in its commit bodies: after a builder fails the other interfaces'
+  references are still recorded and the phase fails; `--effort` reaches the roles'
+  sessions only; `claude` is looked up on every `extract`.
+- **The flow, and readers that search where they may** (`f7bea55`, `a899382`): implementer
+  (sonnet), reviewer approved both, Minor only. `extract` no longer yields the counts of
+  the computed files, which read "0 operations" for "not looked at".
+- **Not seen: a real `extract` through the five phases, nor the readers' new paragraph on
+  a real run.** Both spend on the agent: the user's to launch.
+- For the challenger (reviewers' Minor, and the main thread's):
+  - the page's gaps (`src/derive/roles-view.ts`) are weaker than `leftOf` and disagree
+    with it on an evidence played once, an evidence no longer of its scenario as written,
+    a reading that fails its check;
+  - `status` still prints the counts and verdicts of the computed files beside the five
+    phases; with only a computed specification it shows three phases to do and 140 rules;
+  - `status` shows `reading` to do while `target` is, though `roles read` needs no target
+    that starts;
+  - the judge judges an interface's references while its builder's check fails;
+  - the two agent phases may write anywhere under `specimen/` but `references/`: their
+    confinement says nothing of `roles/`, their instructions do;
+  - `src/cli/flow.ts`: `round` computed twice in `gate-checked`; `written` holds `""` for
+    two phases; the three counts add up outside a running phase, harmless while `extract`
+    alone draws the flow; the `interfaces` box shows no count any more; "1 references";
+  - `phase-target.md`: "every trial of the system" is vague to a session that has not
+    heard of scenarios;
+  - `test/cli/flow.test.ts`: a role's failed gate not adding to `round` shows only at
+    round 1.
 
 ## Backlog
 
