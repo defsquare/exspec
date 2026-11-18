@@ -97,19 +97,20 @@ with the challenger's verdict; it is not merged without being asked.
   - The page: `targets/pages/petclinic-roles-2026-11-18.html`; the events of the four
     commands are in the session's scratchpad, not kept.
 - **ADR-0014 written, by the user's go on the results.**
-- **What is left for each role, one definition** (`e5c251d` refactor, `7a11248`):
+- **What is left for each role, one definition** (`24d7fe6` refactor, `23f34c0`):
   implementer (opus), reviewer. Two findings, taken in the thread: the judge skipped while
   scenarios wait for their evidence or its second play says so; a reference whose actor
   the credentials no longer hold stands — assumed, said in the code and in the ADR. Said
-  in the ADR too, as the code now does: only a reference is judged, so `roles build` then
-  `roles judge` with no `roles record` between judges nothing.
-- **`extract` runs the roles in five phases** (`28d3a47` refactor, `ebf6dad`, `1f0209e`):
+  in the ADR too: only a reference that waits starts the judge, so `roles build` then
+  `roles judge` with no `roles record` between judges nothing; once started, the judge
+  still reads every evidence of the interface.
+- **`extract` runs the roles in five phases** (`b0bba72` refactor, `0a53a08`, `a7930b0`):
   implementer (opus), reviewer conformance approved. Taken in the thread: `target` and
   `interfaces` asked for by name run done or not — kept, said in the ADR. Decided by the
   implementer, kept, in its commit bodies: after a builder fails the other interfaces'
   references are still recorded and the phase fails; `--effort` reaches the roles'
   sessions only; `claude` is looked up on every `extract`.
-- **The flow, and readers that search where they may** (`f7bea55`, `a899382`): implementer
+- **The flow, and readers that search where they may** (`62ce2f9`, `c8c5604`): implementer
   (sonnet), reviewer approved both, Minor only. `extract` no longer yields the counts of
   the computed files, which read "0 operations" for "not looked at".
 - **Not seen: a real `extract` through the five phases, nor the readers' new paragraph on
@@ -132,6 +133,21 @@ with the challenger's verdict; it is not merged without being asked.
     heard of scenarios;
   - `test/cli/flow.test.ts`: a role's failed gate not adding to `round` shows only at
     round 1.
+- **Before the merge, challenger (opus): merge after fixes; nothing blocking.** Checked in
+  the code: the two phases of one session run when named, done or not; one definition of
+  what is left, read by the four roles' skips, `phasesOf` and `status`; the target started
+  only when something is left; `derive` pure; the two refactors touch no test. Fixed:
+  ADR-0014 said "only a reference is judged" where a reference only starts the judge; the
+  page named there as the second definition left; the Journal's hashes. To the backlog:
+  the page reading `leftOf`; `status`' counts of the computed files, with the
+  deprecations; the judge given only the references, and waiting for the builder's check;
+  the hook holding `roles/` in the two agent phases; three names. Dropped, each for its
+  reason: `reading` to do while `target` is — `extract` wants a target declared without a
+  problem, and `status` agrees with it; the flow's cosmetics; "every trial"; the test at
+  round 1. On the run for real: nothing technical waits on it — `extract` composes what
+  was played on Petclinic, the fakes cover the glue — but the Frame makes it the
+  criterion, and the readers' paragraph has not been seen on a run: the user's choice,
+  before the merge or struck from the Frame at the close with the reason.
 
 ## Backlog
 

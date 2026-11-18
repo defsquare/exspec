@@ -402,14 +402,22 @@ them in; each of the first five is a branch of its own.
   again with no agent (ADR-0013). On Conduit, 224 evidences made references by one more
   play each, no judgement stale; 222 equal at a replay, the two others a token told to
   the second.
-- **Next.** In this order. Petclinic read again with
-  the reads held, once, before the default moves (see "The runs were made before the
-  reads were held"). (4) is on its own branch, ADR-0006 superseded there. Then (1), with
-  its ADR: ADR-0010's first alternative is taken up. Then (3) and the deprecations, concept
+- **Done.** (4): `extract` runs the roles in five phases named for what they produce —
+  target, interfaces, reading, evidence, judgement — each doing what is left of it
+  (ADR-0014, ADR-0006 superseded). Before it, Petclinic read whole by the roles with the
+  reads held: 336 rules on 37 interfaces for 8.98 USD, 308 hold, 13 contradicted or
+  refused by the target, 14 not shown, where `extract` the same day wrote 140 rules and
+  verified 103.
+- **Next.** In this order. (3) and the deprecations, concept
   by concept —
   ADR-0007 and ADR-0008, the facts' conditions, the projections, the triggers, an input
   rule's `violates`; and the items of this backlog that grow the computed terms are
-  dropped with them, each with its reason. `on` (ADR-0011) is kept: the roles' shape has
+  dropped with them, each with its reason. `status` goes with them: it prints the
+  counts and the verdicts of the computed files beside the five phases — "0 operations"
+  for "not looked at" in a checkout the roles read, 140 rules beside three phases to do in
+  one that holds a computed specification. Then (1), with its ADR: ADR-0010's first
+  alternative is taken up — after (3), since `operations/` is read with the computed
+  path's schema until it is deprecated. `on` (ADR-0011) is kept: the roles' shape has
   it.
 - **Tried, not merged.** A field's `pattern`, the code's regular expression computed
   against the whole value (`feat/field-pattern`, closed without a merge): on Petclinic,
@@ -508,6 +516,20 @@ them in; each of the first five is a branch of its own.
     the actors' names: in a checkout no stack has run in, the file is not there.
   - *`isAsWritten` has no test* for an unnamed step a hole cites, nor for a hole in a body
     or a query; wrong, it has a scenario played again.
+  - *The page has a definition of its own of what is left.* `src/derive/roles-view.ts`
+    derives gaps weaker than `leftOf` (`src/derive/roles-left.ts`), which the roles,
+    `extract` and `status` read: an evidence played once is "not judged" there, one no
+    longer of its scenario as written has no gap, a reading that fails its check is not
+    "not read". The page reads `leftOf`.
+  - *The judge is started by a reference and reads everything.* Once one reference of an
+    interface waits, the judge is given every evidence of the folder — played once, no
+    longer of its scenario — and judges while the builder's check of the interface fails.
+    Give it the references only.
+  - *The two agent phases of `extract` may write under `specimen/roles/`*: their hook
+    refuses `references/` alone; only their instructions keep them out.
+  - *Names the challenger left:* `RolesSetting` for `{target, interfaces}` and `declaredIn`
+    returning an `Examined` — `Declared` would say both; `recordReferences(…, false)`, a
+    positional boolean — `{force: false}`.
   - *One stale judgement, and the whole interface is judged again*: the judge is skipped
     only when every evidence of the interface is fresh, and otherwise reads them all and
     writes the whole file — verdicts that had not to move may. With the shared part of the
@@ -561,11 +583,13 @@ them in; each of the first five is a branch of its own.
 
 ## The roles drawn as a flow
 
-- **Seen.** `specimen extract` on a terminal draws its phases as a flow of boxes with a
-  panel for the running phase; `roles-read`, `roles-build` and `roles-judge` still print
-  one line per event, the sessions of several interfaces interleaved under a `[interface]`
-  prefix. The flow of `extract` itself has been watched on hand-written events only, not on
-  a real extraction.
+- **Seen.** `specimen extract` on a terminal draws its five phases as a flow of boxes with
+  a panel for the running phase; the roles' sessions of a phase add their turns and cost
+  to its box, a role's failed gate shows in the panel, and a box counts what the phase did
+  in this run (read, references, judged) — the `interfaces` box counts nothing any more.
+  The commands of `roles` still print one line per event, the sessions of several
+  interfaces interleaved under a `[interface]` prefix. The flow of `extract` has been
+  watched on hand-written events only, not on a real extraction.
 - **Settled.** A drawing is a reading of the event stream: a pure fold into a state, an Ink
   component that draws it, chosen when the output is a terminal; no event is added for it.
 - **Next.** Watch a real extraction through the flow and adjust the drawing. Then the same
