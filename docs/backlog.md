@@ -227,15 +227,13 @@ them in; each of the first five is a branch of its own.
   is answered as its rule needs: on Kadai twelve scenarios said to prove an effect were
   refused and the phase passed. A session of the agent that ends on an error of the API
   (a 403 at the start of a phase) fails the phase at once, where a failed gate is given
-  three more rounds. The terminal renderer prints the whole history again at every event
-  once the output is taller than the window.
+  three more rounds.
 - **Settled.** A gate is a check the tool runs and whose findings go back to the same
   session (ADR-0006).
 - **Next.** In the gate, a scenario whose proved rule is an effect and whose judged call
   is refused is a finding; useless before a scenario can name a seeded instance. Retry a
-  session that ended on an API error. Render past events once (Ink's `Static`).
-- **Source.** The run on Kadai of 2026-11-13; `src/agent/extract.ts`,
-  `src/cli/render-terminal.tsx`.
+  session that ended on an API error.
+- **Source.** The run on Kadai of 2026-11-13; `src/agent/extract.ts`.
 - **Tried.** On a closed spike: the gate was built, then removed. On one target it met a
   real contradiction — the target refuses what its code accepts — and the agent, told the
   gate had failed, deleted the scenario. The tool cannot tell a scenario that misses its

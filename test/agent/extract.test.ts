@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Drive } from "../../src/agent/drive.ts";
 import { type Extracting, extract } from "../../src/agent/extract.ts";
-import type { Event, Phase } from "../../src/shapes/event.ts";
+import type { Counts, Event, Phase } from "../../src/shapes/event.ts";
 import type { PlayedScenario } from "../../src/shapes/scenario.ts";
 import { bindings, facts, interfaces, operation, reference, target } from "../files.ts";
 import { at, fakeIo, scenarioFile, step } from "../run/fake.ts";
@@ -62,6 +62,25 @@ const playedCopy: PlayedScenario = {
   readings: [{ of: { fact: "p" }, as: "u", before: [], after: [] }],
 };
 
+const noCounts: Counts = {
+  interfaces: 0,
+  structures: 0,
+  facts: 0,
+  operations: 0,
+  rules: 0,
+  projections: 0,
+  triggers: 0,
+  scenarios: 0,
+  references: 0,
+};
+
+const counted = (counts: Partial<Counts> = {}): Event => ({
+  type: "extraction-counted",
+  counts: { ...noCounts, ...counts },
+});
+
+const specifiedCounts = { interfaces: 1, facts: 1, operations: 1, rules: 2, triggers: 1 };
+
 const ended = (phase: Phase): Event => ({
   type: "agent-ended",
   phase,
@@ -106,8 +125,10 @@ test("each phase not done is run, its gate checked, then the references recorded
   expect({ events, received: agent.received, lines, written }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
+      counted(),
       { type: "phase-started", phase: "target" },
       ended("target"),
+      counted(),
       ...step("stop"),
       ...step("start"),
       ...step("alive"),
@@ -118,10 +139,12 @@ test("each phase not done is run, its gate checked, then the references recorded
       { type: "phase-finished", phase: "target", ok: true },
       { type: "phase-started", phase: "interfaces" },
       ended("interfaces"),
+      counted({ interfaces: 1 }),
       { type: "gate-checked", phase: "interfaces", ok: true, findings: [] },
       { type: "phase-finished", phase: "interfaces", ok: true },
       { type: "phase-started", phase: "specification" },
       ended("specification"),
+      counted(specifiedCounts),
       { type: "gate-checked", phase: "specification", ok: true, findings: [] },
       { type: "phase-finished", phase: "specification", ok: true },
       { type: "phase-started", phase: "scenarios" },
@@ -129,12 +152,14 @@ test("each phase not done is run, its gate checked, then the references recorded
       ...step("alive"),
       ...step("seed"),
       ended("scenarios"),
+      counted({ ...specifiedCounts, scenarios: 1 }),
       ...step("reset"),
       { type: "scenario-played", path: "f/a", played: playedCopy },
       { type: "gate-checked", phase: "scenarios", ok: true, findings: [] },
       ...step("stop"),
       { type: "phase-finished", phase: "scenarios", ok: true },
       { type: "phase-started", phase: "record" },
+      counted({ ...specifiedCounts, scenarios: 1 }),
       { type: "command-started", command: "record", dir: "/d" },
       ...step("stop"),
       ...step("start"),
@@ -152,6 +177,7 @@ test("each phase not done is run, its gate checked, then the references recorded
       { type: "reference-written", path: "f/a", noise: 0 },
       { type: "command-finished", command: "record", ok: true },
       { type: "gate-checked", phase: "record", ok: true, findings: [] },
+      counted({ ...specifiedCounts, scenarios: 1 }),
       { type: "phase-finished", phase: "record", ok: true },
       { type: "command-finished", command: "extract", ok: true },
     ],
@@ -184,6 +210,7 @@ test("phases already done are skipped", async () => {
   expect({ events, received: agent.received, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
+      counted({ ...specifiedCounts, scenarios: 1, references: 1 }),
       { type: "phase-skipped", phase: "target" },
       { type: "phase-skipped", phase: "interfaces" },
       { type: "phase-skipped", phase: "specification" },
@@ -206,8 +233,10 @@ test("a failed gate resumes the session with its findings", async () => {
   expect({ events, received: agent.received }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
+      counted(),
       { type: "phase-started", phase: "interfaces" },
       ended("interfaces"),
+      counted(),
       {
         type: "gate-checked",
         phase: "interfaces",
@@ -215,6 +244,7 @@ test("a failed gate resumes the session with its findings", async () => {
         findings: ["no interface is declared"],
       },
       ended("interfaces"),
+      counted({ interfaces: 1 }),
       { type: "gate-checked", phase: "interfaces", ok: true, findings: [] },
       { type: "phase-finished", phase: "interfaces", ok: true },
       { type: "command-finished", command: "extract", ok: true },
@@ -244,8 +274,9 @@ test("a gate still failing after three rounds ends the extraction", async () => 
   expect({ events, received: agent.received, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
+      counted(),
       { type: "phase-started", phase: "target" },
-      ...[1, 2, 3, 4].flatMap(() => [ended("target"), gate]),
+      ...[1, 2, 3, 4].flatMap(() => [ended("target"), counted(), gate]),
       { type: "phase-finished", phase: "target", ok: false },
       { type: "command-finished", command: "extract", ok: false },
     ],
@@ -264,8 +295,10 @@ test("a phase named runs alone, done or not", async () => {
   expect({ events, received: agent.received }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
+      counted(specifiedCounts),
       { type: "phase-started", phase: "specification" },
       ended("specification"),
+      counted(specifiedCounts),
       { type: "gate-checked", phase: "specification", ok: true, findings: [] },
       { type: "phase-finished", phase: "specification", ok: true },
       { type: "command-finished", command: "extract", ok: true },
@@ -283,7 +316,9 @@ test("a scenario that cannot be played fails the gate, the target stopped after"
   ]);
   const { io, lines } = fakeIo({});
   const events = await Array.fromAsync(extract(extracting(agent, io, "scenarios")));
+  const scenarioCounts = { ...specifiedCounts, scenarios: 1 };
   const gate: Event[] = [
+    counted(scenarioCounts),
     ...step("reset"),
     { type: "scenario-unplayable", path: "f/a", message: 'no credentials for "w"' },
     {
@@ -296,6 +331,7 @@ test("a scenario that cannot be played fails the gate, the target stopped after"
   expect({ events, lines }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
+      counted(specifiedCounts),
       { type: "phase-started", phase: "scenarios" },
       ...step("start"),
       ...step("alive"),
@@ -314,6 +350,7 @@ test("a session that ends in error fails its phase", async () => {
   const { io } = fakeIo({});
   expect(await Array.fromAsync(extract(extracting(agent, io, "target")))).toEqual([
     { type: "command-started", command: "extract", dir: "/d" },
+    counted(),
     { type: "phase-started", phase: "target" },
     ended("target"),
     { type: "command-failed", message: "the agent's session ended in error" },

@@ -1,4 +1,5 @@
 import { checkExtraction } from "../derive/check.ts";
+import { countExtraction } from "../derive/count.ts";
 import {
   type AgentPhase,
   type Examined,
@@ -47,6 +48,11 @@ async function examineAgain({ dir, readFiles }: Extracting): Promise<Examined> {
     gaps: checked.gaps,
   };
 }
+
+const counted = ({ extraction }: Examined): Event => ({
+  type: "extraction-counted",
+  counts: countExtraction(extraction),
+});
 
 // stop, start, reset, stop: the target's lifecycle as declared, run once
 async function* lifecycleGate(
@@ -125,6 +131,7 @@ async function* gate(
   extracting: Extracting,
 ): AsyncGenerator<Event, readonly string[]> {
   const examined = await examineAgain(extracting);
+  yield counted(examined);
   const found =
     phase === "record"
       ? examined.problems.map(problemLine)
@@ -208,6 +215,7 @@ async function* runPhase(
 export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
   const { dir, only } = extracting;
   yield { type: "command-started", command: "extract", dir };
+  yield counted(await examineAgain(extracting));
   for (const phase of phaseSchema.options) {
     if (only !== undefined && phase !== only) continue;
     if (
@@ -219,6 +227,8 @@ export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
     }
     yield { type: "phase-started", phase };
     const ok = yield* runPhase(phase, extracting);
+    // the record writes its references after its gate has counted
+    if (phase === "record") yield counted(await examineAgain(extracting));
     yield { type: "phase-finished", phase, ok };
     if (!ok) {
       yield { type: "command-finished", command: "extract", ok: false };
