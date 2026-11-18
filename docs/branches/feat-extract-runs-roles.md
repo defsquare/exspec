@@ -178,6 +178,12 @@ with the challenger's verdict; it is not merged without being asked.
   - `status` on that checkout: the five phases done, and beside them 37 gaps
     "interface-not-bound" and "0 operations" — the computed path's reading of a checkout
     it has nothing in.
+- **Fixed in the thread, by the user's go** (`2a7d094`): the hook holds each of the two
+  agent phases to its own files, the system prompt says two sessions write the two files,
+  the target's task says not to write the list of interfaces. Neither may write
+  `structures.yaml` nor under `roles/` any more — the loose end the challenger sent to the
+  backlog, closed there but for the shell. Not reviewed by the reviewer; not seen on a
+  run.
 
 ## Backlog
 

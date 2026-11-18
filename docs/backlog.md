@@ -525,8 +525,9 @@ them in; each of the first five is a branch of its own.
     interface waits, the judge is given every evidence of the folder — played once, no
     longer of its scenario — and judges while the builder's check of the interface fails.
     Give it the references only.
-  - *The two agent phases of `extract` may write under `specimen/roles/`*: their hook
-    refuses `references/` alone; only their instructions keep them out.
+  - *The two agent phases of `extract` keep a shell.* The hook holds each to its own
+    files — `target.yaml`, `.gitignore`, `target/` for the first, `interfaces.yaml` for
+    the second — through the file tools only: a redirection in a shell writes anywhere.
   - *Names the challenger left:* `RolesSetting` for `{target, interfaces}` and `declaredIn`
     returning an `Examined` — `Declared` would say both; `recordReferences(…, false)`, a
     positional boolean — `{force: false}`.
