@@ -148,6 +148,36 @@ with the challenger's verdict; it is not merged without being asked.
   was played on Petclinic, the fakes cover the glue — but the Frame makes it the
   criterion, and the readers' paragraph has not been seen on a run: the user's choice,
   before the merge or struck from the Frame at the close with the reason.
+- **Seen: a real `extract` through the five phases** (run by the user with the branch's
+  binary, Petclinic's own checkout at `afc8fc1`, its earlier extractions removed; default
+  model). 14 min 34, 9.42 USD: `target` 3 min 06 and 0.25, `interfaces` done already,
+  `reading` 4 min 12 and 4.10 with 37 read, `evidence` 6 min 01 and 3.31 with 399
+  references, `judgement` 1 min 13 and 1.76 with 399 judged; `extract ok`. The flow drew
+  the five boxes with their times, costs and counts.
+  - By rule, on the page: 364 rules, 282 hold, 14 contradicted, 4 refused unexpectedly, 63
+    not shown, 1 with no scenario; no problem, no gap. About 50 of the not shown are one
+    choice of the common reader: the role checks written as shared rules "only when
+    security is on", which this start does not have. The run by the four commands, the
+    same day, had 336 rules, 308 hold, 13, 14 not shown: the count of rules and of "not
+    shown" moves with a run of the common reader.
+  - The 18 that do not hold are the target's again, most seen in the other run: a page of
+    -1, of size 0 or 101 answers 500 (6); a delete refused 404 on a constraint (3); an id
+    given at a creation overwrites (2); a visit with no date keeps none (2); `%` in a last
+    name is a wildcard; a valid update of an owner answers 500.
+  - **The session of `target` wrote `interfaces.yaml`.** `target.yaml` at 21:56:05,
+    `interfaces.yaml` at 21:58:36, `structures.yaml` at 21:59:01: the list of interfaces is
+    the last file of the first session, the phase `interfaces` found it done and never
+    ran — neither its session nor its instructions. The system prompt the two phases share
+    teaches both files and says both are the session's to write; nothing holds a phase to
+    its own file.
+  - *The reader of the structures: not told.* It wrote in under 25 seconds; the fields
+    are those the interfaces show (`ownerId`, `petId`), as in the run where it read no
+    code. The events of the run were not kept: nothing says what it read.
+  - Every source the rules cite is under `src/` or `specimen/target/`; three files of
+    earlier tools were still at the checkout's root, none cited.
+  - `status` on that checkout: the five phases done, and beside them 37 gaps
+    "interface-not-bound" and "0 operations" — the computed path's reading of a checkout
+    it has nothing in.
 
 ## Backlog
 
