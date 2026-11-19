@@ -53,11 +53,19 @@ a roles' phase, several sessions interleaved, drawn on a terminal and read by th
 
 ## Backlog
 
-- [x] The fold keeps the roles' sessions that run, what is wrong by session, the counts of
-  a phase (written, running, failed, done already, kept, unstable) and the verdicts; the
-  panel draws them. `turns`, kept and never drawn, goes.
-- [ ] Taken from `docs/backlog.md`, "The roles drawn as a flow", and not done here — goes
-  back at the merge: the flow of `extract` has been watched by the user on real
-  extractions of one target and what it showed was not reported back; the commands of
-  `roles` still print one line per event, the sessions of several interfaces interleaved
-  under a `[interface]` prefix. Source: `docs/branches/feat-extract-flow.md` at `b8300ed`.
+By the user, after the challenger's verdict: everything found in this branch is done in it,
+nothing goes back to `docs/backlog.md`. The frame's non-goals on a new event and on the
+commands of `roles` no longer hold.
+
+- [ ] What fails a role is told with its role and interface, not by `command-failed`
+  (an event: ADR, the user's decision).
+- [ ] A roles' phase says how many sessions it has (an event: ADR, the user's decision).
+- [ ] The recording of the references shows in the panel: the last scenario played.
+- [ ] A box says what it counts: scenarios, or sessions.
+- [ ] Nothing of a role is counted outside a running phase.
+- [ ] The commands `roles read`, `build`, `record`, `judge` on a terminal are drawn by the
+  same panel.
+- [ ] The drawing read in a window under 100 columns.
+- Dropped, with its reason at the merge: watching a real extraction through the flow —
+  it needs a target and spends on the agent, the user's to run; `bun run demo:flow` stands
+  in for the drawing.
