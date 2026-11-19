@@ -602,15 +602,3 @@ them in; each of the first five is a branch of its own.
 - A constraint between two inputs ("the end is after the start").
 - The decision on a refuted claim — the claim was wrong, or the target has a bug — and how
   a wanted deviation is named.
-
-## What the flow cannot say from the stream
-
-- **Seen.** Read in the code, not on a run. The sessions of a roles' phase are started as
-  the others end (`src/agent/pool.ts`): nothing in the stream says how many interfaces a
-  phase has to read, build or judge, so a box can count what is done and what runs, never
-  "12 of 56". And `command-failed` names no role and no interface: when one role fails
-  alone while the others go on, its message cannot be put beside its session.
-- **Settled.** Nothing. Each changes an event's shape or adds one: an ADR.
-- **Next.** Decide whether a phase says its size when it starts (a key of `phase-started`,
-  or an event of its own), and whether what fails a role is told by `role-finished`.
-- **Source.** `src/cli/flow.ts`, `src/agent/roles.ts` (`roleJob`), `src/agent/rounds.ts`.

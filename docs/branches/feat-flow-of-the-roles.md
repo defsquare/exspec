@@ -48,24 +48,33 @@ a roles' phase, several sessions interleaved, drawn on a terminal and read by th
 - The stream written by hand is kept, on the user's request: `bun run demo:flow` draws a
   whole extraction — an agent phase with a round, the three phases of the roles, a
   judgement that fails — with no target and no agent. `scripts/` is type-checked now.
-- Seen, left: `flow.failed`, the message of the last `command-failed`, stays drawn under
-  the panel in the phases that follow — as before this branch.
+- Challenger (opus), first verdict, on the fold and its drawing: merge after one fix,
+  nothing Critical, no ADR needed for the fold. Important, fixed: "done already" said of
+  roles passed over because what they need is missing — "skipped". Minor, fixed: the line
+  of the verdicts, `RoleSession`, a trouble drawn by two components.
+- By the user, after that verdict: everything found here is done here. The events went to
+  the challenger as a design (keep, with four changes: the count by role, told before a
+  step returns early, a session's error raised, the SDK's word in the message), then to
+  the user, who chose both: ADR-0016.
+- The two events, one item (implementer opus, one round; reviewer sonnet: conformance yes,
+  quality approved, Minor only). The panel and the commands of `roles`, one item, two
+  commits (implementer sonnet, one round; reviewer sonnet: the same).
+- Read on a pseudo-terminal, 120 and 80 columns: the demonstration whole and cut during
+  the recording, and a `roles read` written by hand. Seen there and fixed in a commit of
+  its own: "3 skipped" beside "2 of 3 readers", the "N of M" line kept by the last box
+  only. Not seen: a real extraction; a command of `roles` on a real target.
+- `flow.failed` no longer takes a role's failure (ADR-0016): what stays drawn under the
+  panel is what ended the command or a phase of the agent.
+- `src/cli/flow.ts` is 309 lines: the fold alone. What could leave it is what a command
+  of the roles stands for (`phaseOfCommand`, the start and the end of a phase).
+
 
 ## Backlog
 
-By the user, after the challenger's verdict: everything found in this branch is done in it,
-nothing goes back to `docs/backlog.md`. The frame's non-goals on a new event and on the
-commands of `roles` no longer hold.
+By the user, after the challenger's first verdict: everything found in this branch is done
+in it, nothing goes back to `docs/backlog.md`. The frame's non-goals on a new event and on
+the commands of `roles` no longer hold.
 
-- [ ] What fails a role is told with its role and interface, not by `command-failed`
-  (an event: ADR, the user's decision).
-- [ ] A roles' phase says how many sessions it has (an event: ADR, the user's decision).
-- [ ] The recording of the references shows in the panel: the last scenario played.
-- [ ] A box says what it counts: scenarios, or sessions.
-- [ ] Nothing of a role is counted outside a running phase.
-- [ ] The commands `roles read`, `build`, `record`, `judge` on a terminal are drawn by the
-  same panel.
-- [ ] The drawing read in a window under 100 columns.
 - Dropped, with its reason at the merge: watching a real extraction through the flow —
   it needs a target and spends on the agent, the user's to run; `bun run demo:flow` stands
   in for the drawing.
