@@ -1,7 +1,8 @@
 # ADR-0003 — The extraction is a directory of YAML files in the target's checkout
 
 Status: Accepted (2026-11-13) — written by the main thread working alone, challenged,
-reviewed by the user.
+reviewed by the user. Amended 2026-11-19: the tool is named `exspec` and the directory is
+`<dir>/exspec/` (ADR-0015); the text below is as it was written.
 
 ## Context
 
