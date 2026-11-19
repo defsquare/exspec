@@ -33,9 +33,24 @@ a roles' phase, several sessions interleaved, drawn on a terminal and read by th
 
 ## Journal
 
+- The fold and its drawing, one item (implementer sonnet, one round). Reviewer (sonnet):
+  conformance yes, quality approved, nothing Critical or Important; its Minor findings
+  fixed in the commit — the roles' phases read from the one map of role to phase, a type
+  no longer exported, the comment of the panel's keys. Left for the challenger: a trouble
+  drawn by `running ? … : …` three times in one `<Text>`, two components would read better.
+- The drawing read on a pseudo-terminal of 120 columns, a stream written by hand (a
+  reading with three sessions, one gate failed then passed, one session ended in error;
+  an evidence that fails on a builder's gate and an unstable scenario): the session of a
+  gate that passed leaves with its trouble, the failed phase shows both troubles whole.
+  Seen there and fixed: an interface longer than its column ran into the time — the
+  column is as wide as the longest interface drawn. Not seen: a real extraction, a window
+  under 100 columns.
+- Seen, left: `flow.failed`, the message of the last `command-failed`, stays drawn under
+  the panel in the phases that follow — as before this branch.
+
 ## Backlog
 
-- [ ] The fold keeps the roles' sessions that run, what is wrong by session, the counts of
+- [x] The fold keeps the roles' sessions that run, what is wrong by session, the counts of
   a phase (written, running, failed, done already, kept, unstable) and the verdicts; the
   panel draws them. `turns`, kept and never drawn, goes.
 - [ ] Taken from `docs/backlog.md`, "The roles drawn as a flow", and not done here — goes
