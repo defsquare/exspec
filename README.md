@@ -62,6 +62,7 @@ bun install
 bun test
 bun run check
 bun run build                               # dist/exspec, one executable; extract then needs `claude` on the PATH
+# on a terminal, extract and roles read|build|record|judge draw a flow; piped (`| cat`) or with --format json they print every event — a skipped role's reason, each judgement
 bun run demo:flow                           # the flow of extract drawn from events written by hand, in a terminal; `bun run demo:flow 21` stops after 21 events
 bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
 bun src/cli/main.ts check <dir>

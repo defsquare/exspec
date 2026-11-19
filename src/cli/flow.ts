@@ -1,4 +1,11 @@
-import { type Event, type Phase, phaseSchema, type Role } from "../shapes/event.ts";
+import { problemLine } from "../derive/phases.ts";
+import {
+  type Command,
+  type Event,
+  type Phase,
+  phaseSchema,
+  type Role,
+} from "../shapes/event.ts";
 
 export type PhaseState = {
   readonly phase: Phase;
@@ -54,14 +61,20 @@ export type Flow = {
     readonly count: number;
     readonly done: number;
   };
-  // kept from one phase to the next
-  readonly failed?: string;
+  // why the interfaces of the running phase were passed over, the same reason counted once
+  readonly skips: readonly { readonly why: string; readonly count: number }[];
+  readonly command?: Command;
+  // what ended the command or a phase of the agent, and the problems of the files a
+  // command of the roles reads first; kept from one phase to the next
+  readonly failures: readonly string[];
 };
 
 export const emptyFlow: Flow = {
   boxes: phaseSchema.options.map((phase) => ({ phase, state: "to-do", round: 0 })),
   sessions: [],
   troubles: [],
+  skips: [],
+  failures: [],
 };
 
 const inBox = (
@@ -75,6 +88,14 @@ const inBox = (
 
 const runningPhase = (flow: Flow): Phase | undefined =>
   flow.boxes.find(({ state }) => state === "running")?.phase;
+
+// a command of the roles stands for the phase it does part of
+export const phaseOfCommand: Readonly<Partial<Record<Command, Phase>>> = {
+  "roles-read": "reading",
+  "roles-build": "evidence",
+  "roles-record": "evidence",
+  "roles-judge": "judgement",
+};
 
 type By = { readonly role: Role; readonly interface?: string | undefined };
 
@@ -125,10 +146,18 @@ const withSession = (
   ),
 });
 
-// a: running, round 1, its panel emptied
+// ([{why: w, count: 1}], w) -> [{why: w, count: 2}]; a reason not said yet is appended
+const skipped = (flow: Flow, why: string): Flow => ({
+  ...flow,
+  skips: flow.skips.some((one) => one.why === why)
+    ? flow.skips.map((one) => (one.why === why ? { ...one, count: one.count + 1 } : one))
+    : [...flow.skips, { why, count: 1 }],
+});
+
+// f(flow, a, 3) -> the box of a {state: running, round: 1, startedAt: 3}, the panel emptied
 const startedPhase = (flow: Flow, phase: Phase, at: number): Flow => {
   const { gate, said, used, target, queued, played, ...kept } = flow;
-  return inBox({ ...kept, sessions: [], troubles: [] }, phase, (box) => ({
+  return inBox({ ...kept, sessions: [], troubles: [], skips: [] }, phase, (box) => ({
     ...box,
     state: "running",
     round: 1,
@@ -146,12 +175,18 @@ const finishedPhase = (flow: Flow, phase: Phase, ok: boolean, at: number): Flow 
 // f(flow, {phase-started: a}) -> flow with a running, round 1, and its panel emptied
 export function flowAfter(flow: Flow, event: Event, at: number): Flow {
   switch (event.type) {
-    case "command-started":
-      return { ...flow, dir: event.dir, startedAt: at };
-    case "command-finished":
-      return { ...flow, endedAt: at, ok: event.ok };
+    case "command-started": {
+      const started = { ...flow, command: event.command, dir: event.dir, startedAt: at };
+      const phase = phaseOfCommand[event.command];
+      return phase === undefined ? started : startedPhase(started, phase, at);
+    }
+    case "command-finished": {
+      const ended = { ...flow, endedAt: at, ok: event.ok };
+      const phase = phaseOfCommand[event.command];
+      return phase === undefined ? ended : finishedPhase(ended, phase, event.ok, at);
+    }
     case "command-failed":
-      return { ...flow, failed: event.message };
+      return { ...flow, failures: [...flow.failures, event.message] };
     case "target-step":
       return { ...flow, target: { step: event.step, state: event.state } };
     case "phase-started":
@@ -228,7 +263,7 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
         : // the reader of the structures and of what is common are no interface passed over
           event.interface === undefined
           ? flow
-          : counting(queuedOver(flow, event.role), "skipped");
+          : skipped(counting(queuedOver(flow, event.role), "skipped"), event.why);
     case "role-failed":
       return runningPhase(flow) === undefined
         ? flow
@@ -267,8 +302,9 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
       return counting(flow, "written");
     case "roles-counted":
       return { ...flow, verdicts: event.verdicts };
-    case "extraction-not-found":
     case "problem":
+      return { ...flow, failures: [...flow.failures, problemLine(event)] };
+    case "extraction-not-found":
     case "gap":
     case "extraction-counted":
     case "extraction-phases":

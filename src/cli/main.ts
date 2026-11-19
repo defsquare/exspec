@@ -21,6 +21,7 @@ import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
 import { askedOf } from "./command-line.ts";
 import { extractCommand } from "./extract.ts";
+import { phaseOfCommand } from "./flow.ts";
 import { renderFlow } from "./render-flow.tsx";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
@@ -181,6 +182,9 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
   }
 }
 
+// drawn as a flow on a terminal: extract, and a command of the roles that does a phase
+const flowed = new Set<string | undefined>(["extract", ...Object.keys(phaseOfCommand)]);
+
 const events = await eventsOf();
 if (events === undefined) {
   console.error(usage);
@@ -190,7 +194,7 @@ try {
   const last =
     values.format === "json"
       ? await renderJson(events, (line) => console.log(line))
-      : command === "extract" && process.stdout.isTTY
+      : flowed.has(command) && process.stdout.isTTY
         ? await renderFlow(events)
         : await renderTerminal(events);
   process.exit(last?.type === "command-finished" && last.ok ? 0 : 1);

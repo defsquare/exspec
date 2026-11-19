@@ -7,6 +7,7 @@ import {
   type Flow,
   flowAfter,
   type PhaseState,
+  phaseOfCommand,
   type RoleSession,
   type Trouble,
 } from "./flow.ts";
@@ -154,6 +155,26 @@ function TroubleWhole({ trouble: { by, lines } }: { trouble: Trouble }) {
   );
 }
 
+// [{why: w, count: 3}] -> "skipped 3   w"; the reasons past `shown` are counted
+function Skips({ skips }: { skips: Flow["skips"] }) {
+  return (
+    <>
+      {skips.slice(0, shown).map(({ why, count }) => (
+        <Text key={why} dimColor wrap="truncate-end">
+          {column("skipped")}
+          {String(count).padEnd(4)}
+          {why}
+        </Text>
+      ))}
+      {skips.length > shown ? (
+        <Text dimColor>
+          {column("")}…{skips.length - shown} more
+        </Text>
+      ) : null}
+    </>
+  );
+}
+
 function Panel({ flow, now }: { flow: Flow; now: number }) {
   const panel = panelOf(flow, shown);
   if (panel === undefined) return null;
@@ -258,10 +279,18 @@ function Drawing({ flow, now, ended }: { flow: Flow; now: number; ended: boolean
     undefined,
   );
   const elapsed = since(flow.startedAt, flow.endedAt ?? now);
+  // nothing is drawn before the command says which it is
+  if (flow.command === undefined) return null;
+  // "roles-read" -> "roles read"
+  const typed = flow.command.replace("-", " ");
+  const only = phaseOfCommand[flow.command];
+  const boxes = flow.boxes.filter(({ phase }) => only === undefined || phase === only);
   return (
     <Box flexDirection="column">
       <Box justifyContent="space-between">
-        <Text bold>extract {flow.dir}</Text>
+        <Text bold>
+          {typed} {flow.dir}
+        </Text>
         <Text>
           {elapsed}
           {dollars(spent)}
@@ -269,13 +298,13 @@ function Drawing({ flow, now, ended }: { flow: Flow; now: number; ended: boolean
       </Box>
       {stacked ? (
         <Box flexDirection="column" marginTop={1}>
-          {flow.boxes.map((box) => (
+          {boxes.map((box) => (
             <PhaseLine key={box.phase} box={box} flow={flow} now={now} />
           ))}
         </Box>
       ) : (
         <Box alignItems="stretch" marginTop={1}>
-          {flow.boxes.map((box, index) => (
+          {boxes.map((box, index) => (
             <Fragment key={box.phase}>
               {index === 0 ? null : (
                 <Box alignItems="center">
@@ -289,8 +318,18 @@ function Drawing({ flow, now, ended }: { flow: Flow; now: number; ended: boolean
       )}
       <Panel flow={flow} now={now} />
       {flow.verdicts === undefined ? null : <Verdicts verdicts={flow.verdicts} />}
-      {flow.failed === undefined ? null : <Text color="red">{flow.failed}</Text>}
-      {ended ? <Text>extract {flow.ok ? "ok" : "failed"}</Text> : null}
+      <Skips skips={flow.skips} />
+      {flow.failures.map((failure, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: two failures may read the same
+        <Text key={index} color="red">
+          {failure}
+        </Text>
+      ))}
+      {ended ? (
+        <Text>
+          {typed} {flow.ok ? "ok" : "failed"}
+        </Text>
+      ) : null}
     </Box>
   );
 }

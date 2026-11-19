@@ -33,6 +33,7 @@ test("a run is folded into its boxes, its panel and its totals", () => {
     emptyFlow,
   );
   const expected: Flow = {
+    command: "extract",
     dir: "/abs/dir",
     startedAt: 0,
     endedAt: 13,
@@ -41,9 +42,10 @@ test("a run is folded into its boxes, its panel and its totals", () => {
     said: "a",
     used: { tool: "Read", about: "f.yaml" },
     target: { step: "alive", state: "done" },
-    failed: "m",
+    failures: ["m"],
     sessions: [],
     troubles: [],
+    skips: [],
     boxes: [
       { phase: "target", state: "skipped", round: 0 },
       {
@@ -72,9 +74,10 @@ test("a phase starting empties the panel", () => {
     { type: "phase-started", phase: "interfaces" },
   ];
   expect(events.reduce((flow, event) => flowAfter(flow, event, 1), emptyFlow)).toEqual({
-    failed: "m",
+    failures: ["m"],
     sessions: [],
     troubles: [],
+    skips: [],
     boxes: [
       { phase: "target", state: "to-do", round: 1 },
       { phase: "interfaces", state: "running", round: 1, startedAt: 1 },
@@ -191,7 +194,7 @@ test("a roles' phase takes the cost of its sessions", () => {
     },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
-  expect(flow.boxes[2]).toEqual({
+  expect(flow.boxes.find(({ phase }) => phase === "reading")).toEqual({
     phase: "reading",
     state: "running",
     round: 1,
@@ -397,6 +400,37 @@ test("a box says what it counts: the scenarios, then the sessions", () => {
   ]);
 });
 
+test("a command of the roles is folded as the phase it does", () => {
+  const events: readonly (readonly [number, Event])[] = [
+    [0, { type: "command-started", command: "roles-read", dir: "/abs/dir" }],
+    [1, { type: "roles-queued", role: "reader", count: 2 }],
+    [2, { type: "role-started", role: "reader", interface: "f" }],
+    [3, { type: "role-failed", role: "reader", interface: "f", message: "m" }],
+    [4, { type: "role-finished", role: "reader", interface: "f", ok: false }],
+    [5, { type: "command-finished", command: "roles-read", ok: false }],
+  ];
+  const flow = events.reduce(
+    (folded, [at, event]) => flowAfter(folded, event, at),
+    emptyFlow,
+  );
+  expect({
+    box: flow.boxes.find(({ phase }) => phase === "reading"),
+    counts: countsOf("reading", flow),
+    panel: panelOf(flow, 3),
+  }).toEqual({
+    box: { phase: "reading", state: "failed", round: 1, startedAt: 0, endedAt: 5 },
+    counts: ["1 failed"],
+    panel: {
+      kind: "roles",
+      phase: "reading",
+      running: false,
+      sessions: [],
+      troubles: [{ by: "f", lines: ["m"] }],
+      more: 0,
+    },
+  });
+});
+
 test("duration writes a time short", () => {
   expect([0, 9_999, 65_000, 3_725_000].map(duration)).toEqual([
     "0s",
@@ -440,5 +474,40 @@ test("panelOf cuts a running phase's findings and gives a failed extraction all 
       startedAt: 0,
       endedAt: 0,
     },
+  });
+});
+
+test("a command of the roles keeps the problems of the files it reads first", () => {
+  const events: readonly Event[] = [
+    { type: "command-started", command: "roles-read", dir: "/abs/dir" },
+    { type: "problem", file: "interfaces.yaml", at: "a.0", message: "m" },
+    { type: "problem", file: "target.yaml", at: "", message: "n" },
+    { type: "command-finished", command: "roles-read", ok: false },
+  ];
+  const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect({ failures: flow.failures, panel: panelOf(flow, 3) }).toEqual({
+    failures: ["interfaces.yaml a.0: m", "target.yaml: n"],
+    panel: undefined,
+  });
+});
+
+test("the interfaces passed over are counted by the reason given", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "judgement" },
+    { type: "role-skipped", role: "judge", interface: "f", why: "w" },
+    { type: "role-skipped", role: "judge", interface: "g", why: "x" },
+    { type: "role-skipped", role: "judge", interface: "h", why: "w" },
+  ];
+  const fold = (all: readonly Event[]) =>
+    all.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect({
+    skips: fold(events).skips,
+    next: fold([...events, { type: "phase-started", phase: "reading" }]).skips,
+  }).toEqual({
+    skips: [
+      { why: "w", count: 2 },
+      { why: "x", count: 1 },
+    ],
+    next: [],
   });
 });
