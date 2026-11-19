@@ -36,7 +36,13 @@ export type Session = {
   readonly play?: (steps: readonly Step[]) => Promise<string>;
 };
 
-export type Ended = { readonly session: string; readonly ok: boolean };
+// how: the SDK's word for an end in error ("error_max_turns", …); absent when it files the
+// end under "success", error or not
+export type Ended = {
+  readonly session: string;
+  readonly ok: boolean;
+  readonly how?: string;
+};
 
 export type Drive = (session: Session) => AsyncGenerator<AgentEvent, Ended>;
 
@@ -205,6 +211,8 @@ export async function* driveAgent(session: Session): AsyncGenerator<AgentEvent, 
       return {
         session: message.session_id,
         ok: message.subtype === "success" && !message.is_error,
+        // an error the SDK files under "success" has no word of its own
+        ...(message.subtype === "success" ? {} : { how: message.subtype }),
       };
     }
   }

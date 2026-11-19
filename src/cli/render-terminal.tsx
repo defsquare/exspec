@@ -46,9 +46,11 @@ function typedAs(command: string): string {
 }
 
 // the session an event comes from, when several run at once: "[i] " for a role on i;
-// "" for a phase
+// "" for a phase, or a roles' step
 function from(event: Event): string {
-  return "role" in event ? `[${event.interface ?? event.role}] ` : "";
+  return "role" in event && event.type !== "roles-queued"
+    ? `[${event.interface ?? event.role}] `
+    : "";
 }
 
 const verdictLine = (verdicts: Readonly<Record<string, number>>) =>
@@ -150,8 +152,12 @@ export function describeEvent(event: Event): string {
       return `${from(event)}role     ${event.role}`;
     case "role-skipped":
       return `${from(event)}role     ${event.role} skipped: ${event.why}`;
+    case "role-failed":
+      return `${from(event)}role     ${event.role} failed: ${event.message}`;
     case "role-finished":
       return `${from(event)}role     ${event.role} ${event.ok ? "done" : "failed"}`;
+    case "roles-queued":
+      return `roles    ${event.count} ${event.role}s queued`;
     case "steps-played":
       return `[${event.interface}] played   ${event.scenario}  ${event.evidence.exchanges
         .map((exchange) =>

@@ -136,6 +136,7 @@ export async function* runReaders(
     ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
     : yield* commonReader(rolesRun);
   if (!ready) return false;
+  yield { type: "roles-queued", role: "reader", count: interfaces.length };
   const done = yield* inParallel(
     interfaces.map((bound) => () => reader(rolesRun, bound)),
     jobs,

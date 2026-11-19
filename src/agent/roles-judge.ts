@@ -122,6 +122,7 @@ export async function* runJudges(
   { interfaces }: RolesSetting,
 ): AsyncGenerator<Event, boolean> {
   const { dir, jobs, readFiles } = rolesRun;
+  yield { type: "roles-queued", role: "judge", count: interfaces.length };
   const done = yield* inParallel(
     interfaces.map((bound) => () => judge(rolesRun, bound)),
     jobs,

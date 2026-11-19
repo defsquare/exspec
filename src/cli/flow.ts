@@ -45,6 +45,12 @@ export type Flow = {
   readonly target?: { readonly step: string; readonly state: string };
   readonly sessions: readonly RoleSession[];
   readonly troubles: readonly Trouble[];
+  // the sessions a roles' step was given, and how many of them are over: skipped or finished
+  readonly queued?: {
+    readonly role: Role;
+    readonly count: number;
+    readonly done: number;
+  };
   // kept from one phase to the next
   readonly failed?: string;
 };
@@ -98,6 +104,12 @@ const troubled = (flow: Flow, trouble: Trouble): Flow => ({
     : [...flow.troubles, trouble],
 });
 
+// one more session of the queued role over: {role: a, count: 3, done: 1} -> done: 2
+const queuedOver = (flow: Flow, role: Role): Flow =>
+  flow.queued?.role === role
+    ? { ...flow, queued: { ...flow.queued, done: flow.queued.done + 1 } }
+    : flow;
+
 const withSession = (
   flow: Flow,
   of: By,
@@ -121,7 +133,7 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
     case "target-step":
       return { ...flow, target: { step: event.step, state: event.state } };
     case "phase-started": {
-      const { gate, said, used, target, ...kept } = flow;
+      const { gate, said, used, target, queued, ...kept } = flow;
       return inBox({ ...kept, sessions: [], troubles: [] }, event.phase, (box) => ({
         ...box,
         state: "running",
@@ -189,11 +201,19 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
               },
             ],
           };
+    case "roles-queued":
+      return runningPhase(flow) === undefined
+        ? flow
+        : { ...flow, queued: { role: event.role, count: event.count, done: 0 } };
     case "role-skipped":
-      return counting(flow, phaseOfRole[event.role], "skipped");
+      return counting(queuedOver(flow, event.role), phaseOfRole[event.role], "skipped");
+    case "role-failed":
+      return runningPhase(flow) === undefined
+        ? flow
+        : troubled(flow, { by: byOf(event), lines: [event.message] });
     case "role-finished": {
       const left: Flow = {
-        ...flow,
+        ...queuedOver(flow, event.role),
         sessions: flow.sessions.filter((session) => !sameSession(session, event)),
       };
       if (event.ok) {

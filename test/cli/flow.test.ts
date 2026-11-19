@@ -262,13 +262,47 @@ test("a phase starting empties the sessions and the troubles", () => {
     { type: "phase-started", phase: "reading" },
     { type: "role-started", role: "reader", interface: "f" },
     { type: "gate-checked", role: "reader", interface: "f", ok: false, findings: ["x"] },
+    { type: "roles-queued", role: "reader", count: 2 },
     { type: "phase-started", phase: "evidence" },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
-  expect({ sessions: flow.sessions, troubles: flow.troubles }).toEqual({
+  expect({
+    sessions: flow.sessions,
+    troubles: flow.troubles,
+    queued: flow.queued,
+  }).toEqual({
     sessions: [],
     troubles: [],
+    queued: undefined,
   });
+});
+
+test("a roles' step queued counts its sessions over, not the readers before it", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "reading" },
+    { type: "role-skipped", role: "structures-reader", why: "w" },
+    { type: "role-started", role: "common-reader" },
+    { type: "role-finished", role: "common-reader", ok: true },
+    { type: "roles-queued", role: "reader", count: 2 },
+    { type: "role-skipped", role: "reader", interface: "f", why: "w" },
+  ];
+  const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect({ queued: flow.queued, counts: countsOf("reading", flow) }).toEqual({
+    queued: { role: "reader", count: 2, done: 1 },
+    counts: ["1 of 2 readers", "2 skipped"],
+  });
+});
+
+test("a role's failure is its session's trouble, in place of its failed gate", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "reading" },
+    { type: "role-started", role: "reader", interface: "f" },
+    { type: "gate-checked", role: "reader", interface: "f", ok: false, findings: ["x"] },
+    { type: "role-failed", role: "reader", interface: "f", message: "m" },
+    { type: "role-finished", role: "reader", interface: "f", ok: false },
+  ];
+  const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect(flow.troubles).toEqual([{ by: "f", lines: ["m"] }]);
 });
 
 test("a role's event outside any running phase changes nothing", () => {

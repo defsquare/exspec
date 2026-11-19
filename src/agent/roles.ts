@@ -97,8 +97,8 @@ export async function* roleSkipped(
   return true;
 }
 
-// One role on one interface, between its start and its end. What it raises fails it alone:
-// the others go on.
+// One role on one interface, between its start and its end. What its job raises fails it
+// alone, told as role-failed: the others go on.
 export async function* roleJob(
   role: Role,
   name: string | undefined,
@@ -110,7 +110,7 @@ export async function* roleJob(
   try {
     ok = yield* run();
   } catch (error) {
-    yield { type: "command-failed", message: messageOf(error) };
+    yield { type: "role-failed", ...by, message: messageOf(error) };
     ok = false;
   }
   yield { type: "role-finished", ...by, ok };

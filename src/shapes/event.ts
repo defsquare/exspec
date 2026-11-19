@@ -255,7 +255,11 @@ export const eventSchema = z.union([
     ok: z.boolean(),
     findings: z.array(z.string()).readonly(),
   }),
+  // what ended a role's job with no gate to say it: "the agent's session ended in error (x)"
+  z.object({ type: z.literal("role-failed"), ...bySchema, message: z.string() }),
   z.object({ type: z.literal("role-finished"), ...bySchema, ok: z.boolean() }),
+  // {role: reader, count: 3}: the interfaces a step is given, those it will skip included
+  z.object({ type: z.literal("roles-queued"), role: roleSchema, count: z.int() }),
   // scenario: its slug
   z.object({
     type: z.literal("steps-played"),

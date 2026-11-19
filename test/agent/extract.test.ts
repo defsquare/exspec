@@ -11,7 +11,7 @@ import { at, fakeIo, step } from "../run/fake.ts";
 // ends in error
 function fakeAgent(
   initial: Files,
-  sessions: readonly { writes: Files; said?: string; ok?: boolean }[],
+  sessions: readonly { writes: Files; said?: string; ok?: boolean; how?: string }[],
 ) {
   const files = new Map(Object.entries(initial));
   const received: { prompt: string; resume?: string }[] = [];
@@ -22,7 +22,11 @@ function fakeAgent(
     for (const [path, text] of Object.entries(session.writes)) files.set(path, text);
     if (session.said !== undefined) yield { type: "agent-said", text: session.said };
     yield { type: "agent-ended", turns: 1, seconds: 1 };
-    return { session: resume ?? `s${received.length}`, ok: session.ok ?? true };
+    return {
+      session: resume ?? `s${received.length}`,
+      ok: session.ok ?? true,
+      ...(session.how === undefined ? {} : { how: session.how }),
+    };
   };
   const readFiles = async () => [...files].map(([path, text]) => ({ path, text }));
   const writeFile = async (_dir: string, path: string, text: string) => {
@@ -169,13 +173,13 @@ test("a gate still failing after three rounds ends the extraction", async () => 
 });
 
 test("a session that ends in error fails its phase", async () => {
-  const agent = fakeAgent({}, [{ writes: {}, ok: false }]);
+  const agent = fakeAgent({}, [{ writes: {}, ok: false, how: "x" }]);
   const { io } = fakeIo({});
   expect(await Array.fromAsync(extract(extracting(agent, io, "target")))).toEqual([
     { type: "command-started", command: "extract", dir: "/d" },
     { type: "phase-started", phase: "target" },
     ended("target"),
-    { type: "command-failed", message: "the agent's session ended in error" },
+    { type: "command-failed", message: "the agent's session ended in error (x)" },
     { type: "phase-finished", phase: "target", ok: false },
     { type: "command-finished", command: "extract", ok: false },
   ]);
@@ -234,6 +238,7 @@ test("a scenario waiting for its second play: its reference recorded, then judge
       { type: "phase-skipped", phase: "interfaces" },
       { type: "phase-skipped", phase: "reading" },
       { type: "phase-started", phase: "evidence" },
+      { type: "roles-queued", role: "builder", count: 1 },
       {
         type: "role-skipped",
         role: "builder",
@@ -249,6 +254,7 @@ test("a scenario waiting for its second play: its reference recorded, then judge
       ...step("stop"),
       { type: "phase-finished", phase: "evidence", ok: true },
       { type: "phase-started", phase: "judgement" },
+      { type: "roles-queued", role: "judge", count: 1 },
       { type: "role-started", role: "judge", ...f },
       { type: "agent-said", role: "judge", ...f, text: answer },
       { type: "agent-ended", role: "judge", ...f, turns: 1, seconds: 1 },
@@ -278,6 +284,7 @@ test("a phase named with nothing left: its roles skipped, no session", async () 
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
       { type: "phase-started", phase: "judgement" },
+      { type: "roles-queued", role: "judge", count: 1 },
       {
         type: "role-skipped",
         role: "judge",
@@ -326,6 +333,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
         role: "common-reader",
         why: "common.yaml passes its check",
       },
+      { type: "roles-queued", role: "reader", count: 1 },
       { type: "role-started", role: "reader", ...f },
       ...[1, 2, 3, 4].flatMap((): Event[] => [
         { type: "agent-ended", role: "reader", ...f, turns: 1, seconds: 1 },

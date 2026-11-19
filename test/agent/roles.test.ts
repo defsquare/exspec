@@ -110,6 +110,7 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
   }).toEqual({
     events: [
       { type: "command-started", command: "roles-build", dir: "/d" },
+      { type: "roles-queued", role: "builder", count: 1 },
       ...step("start"),
       ...step("alive"),
       ...step("seed"),
@@ -198,6 +199,7 @@ test("a builder's gate plays a scenario whose evidence is of it as it was, and l
   }).toEqual({
     events: [
       { type: "command-started", command: "roles-build", dir: "/d" },
+      { type: "roles-queued", role: "builder", count: 1 },
       ...step("start"),
       ...step("alive"),
       ...step("seed"),
@@ -226,6 +228,7 @@ test("a scenario file no rule of the reading can own is removed, with its eviden
   expect({ events, removed: agent.removed, written: agent.written }).toEqual({
     events: [
       { type: "command-started", command: "roles-build", dir: "/d" },
+      { type: "roles-queued", role: "builder", count: 1 },
       ...step("start"),
       ...step("alive"),
       ...step("seed"),
@@ -280,6 +283,7 @@ test("roles build starts no target when every scenario has its evidence as writt
   expect({ events, lines, written: agent.written }).toEqual({
     events: [
       { type: "command-started", command: "roles-build", dir: "/d" },
+      { type: "roles-queued", role: "builder", count: 1 },
       {
         type: "role-skipped",
         ...by,

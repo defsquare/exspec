@@ -51,6 +51,7 @@ const events: readonly Event[] = [
   { type: "agent-ended", role: "common-reader", turns: 6, seconds: 30, cost: 0.4 },
   { type: "gate-checked", role: "common-reader", ok: true, findings: [] },
   { type: "role-finished", role: "common-reader", ok: true },
+  { type: "roles-queued", role: "reader", count: 4 },
   {
     type: "role-skipped",
     ...reader("list-owners"),
@@ -100,11 +101,17 @@ const events: readonly Event[] = [
   { type: "phase-finished", phase: "reading", ok: true },
 
   { type: "phase-started", phase: "evidence" },
+  { type: "roles-queued", role: "builder", count: 4 },
   { type: "target-step", step: "start", state: "started" },
   { type: "target-step", step: "alive", state: "done" },
   {
     type: "role-skipped",
     ...builder("list-owners"),
+    why: "every scenario has its evidence",
+  },
+  {
+    type: "role-skipped",
+    ...builder(long),
     why: "every scenario has its evidence",
   },
   { type: "role-started", ...builder("create-pet") },
@@ -137,9 +144,15 @@ const events: readonly Event[] = [
   { type: "phase-finished", phase: "evidence", ok: true },
 
   { type: "phase-started", phase: "judgement" },
+  { type: "roles-queued", role: "judge", count: 4 },
   {
     type: "role-skipped",
     ...judge("list-owners"),
+    why: "every reference has its judgement",
+  },
+  {
+    type: "role-skipped",
+    ...judge(long),
     why: "every reference has its judgement",
   },
   { type: "role-started", ...judge("create-pet") },
@@ -165,10 +178,9 @@ const events: readonly Event[] = [
   { type: "role-finished", ...judge("create-pet"), ok: true },
   { type: "agent-ended", ...judge("delete-pet"), turns: 1, seconds: 9, cost: 0.05 },
   {
-    type: "gate-checked",
+    type: "role-failed",
     ...judge("delete-pet"),
-    ok: false,
-    findings: ["the answer is not the JSON asked for", "no judgement of unknown-pet"],
+    message: "the agent's session ended in error (error_max_turns)",
   },
   { type: "role-finished", ...judge("delete-pet"), ok: false },
   {

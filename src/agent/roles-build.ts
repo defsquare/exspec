@@ -187,6 +187,7 @@ export async function* runBuilders(
   { target, interfaces }: RolesSetting,
 ): AsyncGenerator<Event, boolean> {
   const { dir, io, jobs, only, readFiles } = rolesRun;
+  yield { type: "roles-queued", role: "builder", count: interfaces.length };
   const skipped = leftOf({
     files: await readFiles(dir),
     interfaces,

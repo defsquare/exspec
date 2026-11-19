@@ -19,9 +19,13 @@ export type Rounds = {
   ) => AsyncGenerator<Event, readonly string[]> | Promise<readonly string[]>;
 };
 
+export class SessionEndedInError extends Error {
+  readonly type = "session-ended-in-error";
+}
+
 // One session, then its gate; a failed gate's findings are the next prompt of the same
-// session, `rounds` times at most. false: the session ended in error, or the gate still
-// fails.
+// session, `rounds` times at most. false: the gate still fails. A session that ends in
+// error is raised: whoever runs the rounds says it.
 export async function* sessionRounds({
   drive,
   session,
@@ -47,8 +51,8 @@ export async function* sessionRounds({
     }
     const ended = next.value;
     if (!ended.ok) {
-      yield { type: "command-failed", message: "the agent's session ended in error" };
-      return false;
+      const how = ended.how === undefined ? "" : ` (${ended.how})`;
+      throw new SessionEndedInError(`the agent's session ended in error${how}`);
     }
     const gated = gate(said);
     const findings = gated instanceof Promise ? await gated : yield* gated;

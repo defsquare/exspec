@@ -76,22 +76,28 @@ const written: Readonly<Record<Phase, string>> = {
   judgement: "judged",
 };
 
-// reading with {written: 3, failed: 1} and 2 sessions -> ["3 read", "2 running", "1 failed"]
-// a zero is left out
+// reading with {written: 3, failed: 1}, 2 sessions and 4 of 9 readers queued over
+//   -> ["3 read", "4 of 9 readers", "2 running", "1 failed"]
+// a zero is left out, but of the queued
 export function countsOf(phase: Phase, flow: Flow): readonly string[] {
   const counts = flow.counts?.[phase];
   const isRunning = flow.boxes.some(
     (box) => box.phase === phase && box.state === "running",
   );
+  const { queued } = flow;
+  const of =
+    queued !== undefined && phaseOfRole[queued.role] === phase
+      ? [`${queued.done} of ${queued.count} ${queued.role}s`]
+      : [];
   const lines: readonly (readonly [number, string])[] = [
-    [counts?.written ?? 0, written[phase]],
     [isRunning ? flow.sessions.length : 0, "running"],
     [counts?.failed ?? 0, "failed"],
     [counts?.unstable ?? 0, "unstable"],
     [counts?.kept ?? 0, "kept"],
     [counts?.skipped ?? 0, "skipped"],
   ];
-  return lines.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`);
+  const said = ([n, word]: readonly [number, string]) => (n > 0 ? [`${n} ${word}`] : []);
+  return [...said([counts?.written ?? 0, written[phase]]), ...of, ...lines.flatMap(said)];
 }
 
 // 0 -> "0s"; 65_000 -> "1m05"; 3_725_000 -> "1h02m"

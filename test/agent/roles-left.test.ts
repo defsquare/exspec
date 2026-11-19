@@ -122,6 +122,7 @@ test("a judge skipped while an evidence was played once says what waits", async 
   const events = await Array.fromAsync(rolesJudge(rolesRunOf(points["played once"])));
   expect(events).toEqual([
     { type: "command-started", command: "roles-judge", dir: "/d" },
+    { type: "roles-queued", role: "judge", count: 1 },
     {
       type: "role-skipped",
       role: "judge",
