@@ -1,3 +1,4 @@
+import { isAbsolute, join } from "node:path";
 import {
   type CanUseTool,
   createSdkMcpServer,
@@ -75,6 +76,24 @@ function aboutOf(input: unknown): string {
     .slice(0, 120);
 }
 
+// The folders a glob names before its first wildcard are part of the folder it runs in:
+// a search of "a/b/**/*.ts" from the root runs under a/b, not over the root.
+//   (".", "a/b/**/*.ts") -> { path: "a/b", pattern: "**/*.ts" }
+//   ("a", "*.ts")        -> { path: "a",   pattern: "*.ts" }
+export function globSearch(
+  path: string,
+  pattern: string,
+): { readonly path: string; readonly pattern: string } {
+  if (isAbsolute(pattern)) return { path, pattern };
+  const parts = pattern.split("/");
+  const wild = parts.findIndex((part) => /[*?[{]/.test(part));
+  const named = wild === -1 ? parts.length - 1 : wild;
+  return {
+    path: join(path, ...parts.slice(0, named)),
+    pattern: parts.slice(named).join("/"),
+  };
+}
+
 // Read, Glob, Grep and the writes, against the session's confinement; anything else allowed
 export function allowed(
   name: string,
@@ -87,7 +106,10 @@ export function allowed(
   const path = text("file_path");
   if (writing.has(name)) return path !== undefined && mayWrite(path);
   if (name === "Read") return path !== undefined && mayRead(path);
-  if (name === "Glob") return mayRead(text("path") ?? ".", text("pattern") ?? "");
+  if (name === "Glob") {
+    const search = globSearch(text("path") ?? ".", text("pattern") ?? "");
+    return mayRead(search.path, search.pattern);
+  }
   if (name === "Grep") return mayRead(text("path") ?? ".", text("glob") ?? "");
   return true;
 }

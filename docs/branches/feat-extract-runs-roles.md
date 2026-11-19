@@ -184,6 +184,19 @@ with the challenger's verdict; it is not merged without being asked.
   `structures.yaml` nor under `roles/` any more — the loose end the challenger sent to the
   backlog, closed there but for the shell. Not reviewed by the reviewer; not seen on a
   run.
+- **Seen: a second real `extract`, from no `specimen/`, its events kept** (run by the user,
+  the binary of `8ff2b77`; 3242 events, 9.20 USD): the five phases ran, `interfaces` with a
+  session of its own (7 turns, 19 s, 0.08 USD) — the `target` session did not touch
+  `interfaces.yaml`. 390 rules: 286 hold, 22 contradicted, 4 refused, 78 not shown. Three
+  readers' gates failed once on a `hints.yaml` that was not YAML, and passed on the next
+  round.
+  Both agent phases wrote their files through the shell (`target`: 10 Bash, 1 Edit;
+  `interfaces`: 6 Bash): what held the `target` session is its instructions, not the hook.
+  The reader of the structures did as told and was refused all the same: its one search
+  was the glob `src/main/java/**/model/*.java` with no folder, which the hook took for a
+  search from the root. It wrote 8 structures from `interfaces.yaml`, in 7 s, and said so.
+  Fixed in the thread: the folders a glob names before its first wildcard are the folder
+  it runs in. Not seen on a run.
 
 ## Backlog
 
