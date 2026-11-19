@@ -596,6 +596,32 @@ them in; each of the first five is a branch of its own.
   and the transcripts under `~/.claude/projects/` of the machine that ran them, neither in
   the repository.
 
+## The page of `view`: what an audit of it left
+
+- **Seen.** Read on Petclinic's page at 1440, 1200 and 390 px, and by the challenger in
+  the page's script:
+  - *A verdict is a colour alone on a scenario's chip*, and amber is in no legend.
+  - *The overview has no filter by verdict.*
+  - *`open-access` is drawn with an exit "none, refused with 200"*: a rule that refuses
+    nothing has no exit to draw.
+  - *Under 900 px the two lists are cut at 13rem*, nothing saying they scroll.
+  - *The row that is on has no `aria-current`*; the confidence of a judgement, a number
+    beside a verdict, has no label.
+  - *A structure's row is a `<summary>` holding a link*: a screen reader that activates it
+    folds it where a reader expects to walk into the structure; the keyboard walks in by
+    Enter.
+  - *The page of an extraction without the roles was not drawn* (`mode` other than
+    `roles`): its headings are "Rules refuted" and "Rules not verified", its measure
+    counts "not verified"; no data was at hand.
+  - *The measure of an operation is counted in the page's script*, which no test runs.
+- **Settled.** The page reads what it is given and stores nothing (ADR-0009); a verdict
+  is said by a mark and a word where the page was reworked — the gates, the overview.
+- **Next.** The page without the roles first: draw one from a target extracted that way
+  and read it. Then the counts by operation in `src/derive/`, with a test, the page only
+  drawing them. The rest each on its own.
+- **Source.** `docs/branches/worktree-ux-audit-view.md` at `5c56498`, its Journal and
+  Backlog.
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").
