@@ -213,6 +213,20 @@ with the challenger's verdict; it is not merged without being asked.
   readings pass their check with the new file and were not read again: whether the
   readers use the links is not seen. The glob fix of `13acdeb` is seen on runs 2 and 3.
   The refusal now says to give a search a folder other than `specimen/`.
+- **Seen: the readings made again, then the rest of `extract`** (by the user; the
+  structures read from the code). The reading: 37 readers, 3.67 USD, ok; `petId` sent in a
+  body is filed under the link (`field: [Visit, pet]`), an identifier in the path under
+  the identity (`[Pet, id]`). Then `evidence` failed, 15.64 USD: 28 builders of 34 could
+  not pass their gate in four rounds. The readers had named the rules anew; 82 scenario
+  files named after the former rules stayed, the check refuses a scenario of no rule, and
+  a builder writes files and removes none — 32 were emptied, which the check refuses too.
+  The main thread had told the user the next phases would take the renamed rules up: not
+  checked, and wrong.
+  Fixed in the thread: before a builder's session and at its gate, the tool removes a
+  scenario file whose name starts with no rule of the reading; its evidence follows. On
+  the target's files as they are: 82 files, in the 28 folders that failed. Not seen on a
+  run. That a second reading names the rules otherwise is the user's to take with the
+  comparison of two versions (backlog).
 
 ## Backlog
 

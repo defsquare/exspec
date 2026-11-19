@@ -8,7 +8,7 @@ import {
   roleScenarioSchema,
 } from "../shapes/roles.ts";
 import type { Interface } from "../shapes/target.ts";
-import { checkBuilt } from "./check-built.ts";
+import { checkBuilt, ownersOf } from "./check-built.ts";
 import { checkCommon, checkRulesAndHints, checkStructuresFile } from "./check-reader.ts";
 import { judgeTask } from "./judge-task.ts";
 
@@ -93,6 +93,22 @@ export function builtOf(
     actors: actors ?? actorsNamed(written),
     files: written,
   });
+}
+
+// The scenario files of an interface that no rule of its reading can own. A file is named
+// after its rule and a builder writes files, it removes none: one left from a reading whose
+// rules were named otherwise can never pass its check.
+//   rules a, b; scenarios a.yaml, a-2.yaml, c.yaml -> ["c"]
+export function unownedScenarios(
+  files: readonly SourceFile[],
+  name: string,
+): readonly string[] {
+  const { rules } = readerFilesOf(files, name);
+  if (rules === undefined) return [];
+  const owners = ownersOf(rules);
+  return slugsIn(files, `${folderOf(name)}/scenarios`)
+    .map(({ slug }) => slug)
+    .filter((slug) => !owners.some((rule) => slug.startsWith(rule)));
 }
 
 // the judgements of a folder as they are written, none when there is no file or it does

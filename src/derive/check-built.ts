@@ -19,15 +19,22 @@ function pathMatches(pattern: string, path: string): boolean {
   );
 }
 
+// the names a scenario may be of: the rules of the reading, the names under its common,
+// and "answers"
+export const ownersOf = (rules: Rules): readonly string[] => [
+  ...[...rules.requires, ...rules.effects].map(({ rule }) => rule),
+  ...rules.common,
+  "answers",
+];
+
 function checkScenario(
   { rule, steps }: RoleScenario,
   { slug, bound, rules, actors }: Checking & { readonly slug: string },
 ): readonly string[] {
-  const named = [...rules.requires, ...rules.effects].map((r) => r.rule);
   const calls = steps.filter(({ when }) => when === "call");
   const call = calls[0];
   return [
-    ...([...named, ...rules.common, "answers"].includes(rule)
+    ...(ownersOf(rules).includes(rule)
       ? []
       : [
           `"${rule}" is not a rule of rules.yaml, nor a name under its common, nor "answers"`,

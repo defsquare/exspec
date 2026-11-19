@@ -98,5 +98,9 @@ them effects written as sentences, which nothing judges. The roles wrote 336 rul
   what taught their notation.
 - The gate of the reader of the structures checks a form (ADR-0010): a file written from
   memory of a well-known target, the code not opened, would still pass.
+- A reading made again names its rules anew. A scenario file whose name starts with no
+  rule of the reading can never pass its check, and a builder writes files, it removes
+  none: the tool removes it, and its evidence with it. A rule that only changed its name
+  loses its scenario, its reference and its judgement, and costs a builder's round.
 - The cost of an extraction is the roles': a dollar a quarter per interface on the targets
   read, and three sessions an interface.

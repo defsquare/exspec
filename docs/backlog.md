@@ -335,6 +335,14 @@ them in; each of the first five is a branch of its own.
   cite; an interface added is the interfaces' list's to tell. A key added to a stored
   shape: an ADR.
 - **Source.** `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge), same entry .
+- **Since, by the user (2026-11-19): a reading made again names its rules anew.** Seen
+  on one target: its 37 interfaces read a second time, the code unchanged — the rules of
+  28 came back under other names (`location-header` -> `location-given`), and 82 scenario
+  files were left that no rule could own. The tool now removes such a file and its
+  evidence, and the builder writes the scenario again: a rule that only changed its name
+  costs a builder's round and loses its reference and its judgement. That a reading made
+  twice gives the same rules, or that two names are told to be one rule, belongs here:
+  it is what comparing two versions needs first.
 
 ## What an agent takes from the running target while it specifies
 

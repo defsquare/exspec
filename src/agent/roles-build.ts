@@ -1,5 +1,12 @@
 import { isAsWritten } from "../derive/evidence.ts";
-import { builtOf, evidenceAt, folderOf, slugsIn, textAt } from "../derive/roles-files.ts";
+import {
+  builtOf,
+  evidenceAt,
+  folderOf,
+  slugsIn,
+  textAt,
+  unownedScenarios,
+} from "../derive/roles-files.ts";
 import { type InterfaceLeft, interfaceLeft, leftOf } from "../derive/roles-left.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
@@ -44,6 +51,19 @@ const hasEvidenceAsWritten = (
   return evidence !== undefined && isAsWritten(scenario, evidence);
 };
 
+// A scenario file no rule can own is removed: the builder cannot. Its evidence follows in
+// the gate. The slugs removed.
+async function removeUnownedScenarios(
+  { dir, readFiles, removeFile }: RolesRun,
+  name: string,
+): Promise<readonly string[]> {
+  const unowned = unownedScenarios(await readFiles(dir), name);
+  for (const slug of unowned) {
+    await removeFile(dir, `${folderOf(name)}/scenarios/${slug}.yaml`);
+  }
+  return unowned;
+}
+
 // Each scenario without its evidence as written played, its evidence written by the tool;
 // an evidence whose scenario is gone, removed. A step that could not be played is a finding.
 async function* buildGate(
@@ -53,10 +73,22 @@ async function* buildGate(
   const { dir, readFiles, writeFile, removeFile } = rolesRun;
   const name = bound.interface;
   const folder = folderOf(name);
+  // a file the session has just written under a name no rule can own is removed too: left
+  // there it could never pass, whatever the builder wrote in it. The builder is told, with
+  // what the check then finds.
+  const removed = await removeUnownedScenarios(rolesRun, name);
   const files = await readFiles(dir);
   const built = builtOf(files, bound, Object.keys(credentials));
   if (built === undefined) return ["rules.yaml or hints.yaml no longer pass their check"];
-  if (built.findings.length > 0) return built.findings;
+  if (built.findings.length > 0) {
+    return [
+      ...removed.map(
+        (slug) =>
+          `scenarios/${slug}.yaml: its name starts with no rule of rules.yaml — removed`,
+      ),
+      ...built.findings,
+    ];
+  }
   const findings: string[] = [];
   const toPlay = built.scenarios.filter((one) => !hasEvidenceAsWritten(files, name, one));
   for (const { slug, scenario } of toPlay) {
@@ -111,6 +143,7 @@ async function* builder(
   const { interface: name, method, pattern } = bound;
   const skip = builderSkip(interfaceLeft(await readFiles(dir), bound), only);
   if (skip !== undefined) return yield* roleSkipped("builder", name, skip);
+  await removeUnownedScenarios(rolesRun, name);
   const actors = Object.keys(credentials);
   const folder = folderOf(name);
   const own = (path: string) =>
