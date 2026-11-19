@@ -227,6 +227,26 @@ with the challenger's verdict; it is not merged without being asked.
   the target's files as they are: 82 files, in the 28 folders that failed. Not seen on a
   run. That a second reading names the rules otherwise is the user's to take with the
   comparison of two versions (backlog).
+- **Seen: a whole `extract` from no `specimen/`, the binary of `183b78f`** (by the user;
+  3426 events, 8.99 USD): the five phases ok, no role failed. 411 rules judged: 297 hold,
+  18 contradicted, 2 refused, 94 not shown. `interfaces` ran a session of its own; the
+  reader of the structures opened 11 files of the code; `petId` in a body is filed under
+  `[Visit, pet]`. The interfaces themselves came back under other names than the same
+  morning's (`add-visit` -> `create-visit`): two extractions of one code do not compare
+  name to name. The removal of unowned scenarios was not exercised.
+- **Reviewer (sonnet) on the four commits made in the thread** (`2a7d094`, `13acdeb`,
+  `e41650c`, `183b78f`): conformance four of four, quality approved, Minor only. Taken: a
+  comment put back above its function, the names a scenario may be of said once
+  (`ownersOf`), two tests of what is unowned. Left, for the challenger:
+  - a scenario a builder writes under a name that starts with no rule is removed at the
+    gate before the check can tell the builder "is not a rule": the round's finding is
+    "no scenario for the rule" instead;
+  - a removal (of a scenario, of an evidence) yields no event;
+  - the sentence on searches is written three times in `roles-read.ts`; the readers'
+    instructions still say a search from the root is refused, which a glob naming its
+    folders no longer is;
+  - `phase-interfaces.md` does not say it is the second session, which `system.md` says
+    the task tells.
 
 ## Backlog
 

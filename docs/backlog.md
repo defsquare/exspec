@@ -605,7 +605,8 @@ them in; each of the first five is a branch of its own.
   in this run (read, references, judged) — the `interfaces` box counts nothing any more.
   The commands of `roles` still print one line per event, the sessions of several
   interfaces interleaved under a `[interface]` prefix. The flow of `extract` has been
-  watched on hand-written events only, not on a real extraction.
+  watched by the user on real extractions of one target; what it showed was not reported
+  back, the runs read afterwards from their events.
 - **Settled.** A drawing is a reading of the event stream: a pure fold into a state, an Ink
   component that draws it, chosen when the output is a terminal; no event is added for it.
 - **Next.** Watch a real extraction through the flow and adjust the drawing. Then the same
