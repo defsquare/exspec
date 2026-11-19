@@ -603,20 +603,14 @@ them in; each of the first five is a branch of its own.
 - The decision on a refuted claim — the claim was wrong, or the target has a bug — and how
   a wanted deviation is named.
 
-## The roles drawn as a flow
+## What the flow cannot say from the stream
 
-- **Seen.** `exspec extract` on a terminal draws its five phases as a flow of boxes with
-  a panel for the running phase; the roles' sessions of a phase add their turns and cost
-  to its box, a role's failed gate shows in the panel, and a box counts what the phase did
-  in this run (read, references, judged) — the `interfaces` box counts nothing any more.
-  The commands of `roles` still print one line per event, the sessions of several
-  interfaces interleaved under a `[interface]` prefix. The flow of `extract` has been
-  watched by the user on real extractions of one target; what it showed was not reported
-  back, the runs read afterwards from their events.
-- **Settled.** A drawing is a reading of the event stream: a pure fold into a state, an Ink
-  component that draws it, chosen when the output is a terminal; no event is added for it.
-- **Next.** Watch a real extraction through the flow and adjust the drawing. Then the same
-  for the roles: the roles as columns (reader, builder, judge), one row per interface, the
-  sessions running side by side — a fold of the events that carry `role` and `interface`.
-- **Source.** `docs/branches/feat-extract-flow.md` at `b8300ed`; `src/cli/flow.ts`,
-  `src/cli/render-flow.tsx`.
+- **Seen.** Read in the code, not on a run. The sessions of a roles' phase are started as
+  the others end (`src/agent/pool.ts`): nothing in the stream says how many interfaces a
+  phase has to read, build or judge, so a box can count what is done and what runs, never
+  "12 of 56". And `command-failed` names no role and no interface: when one role fails
+  alone while the others go on, its message cannot be put beside its session.
+- **Settled.** Nothing. Each changes an event's shape or adds one: an ADR.
+- **Next.** Decide whether a phase says its size when it starts (a key of `phase-started`,
+  or an event of its own), and whether what fails a role is told by `role-finished`.
+- **Source.** `src/cli/flow.ts`, `src/agent/roles.ts` (`roleJob`), `src/agent/rounds.ts`.
