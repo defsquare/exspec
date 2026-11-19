@@ -9,7 +9,8 @@
     "test": "bun test",
     "live": "bun test ./live/conduit.live.ts",
     "check": "tsc --noEmit && biome check .",
-    "build": "bun scripts/build.ts"
+    "build": "bun scripts/build.ts",
+    "demo:flow": "bun scripts/demo-flow.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.323",

@@ -45,6 +45,9 @@ a roles' phase, several sessions interleaved, drawn on a terminal and read by th
   Seen there and fixed: an interface longer than its column ran into the time — the
   column is as wide as the longest interface drawn. Not seen: a real extraction, a window
   under 100 columns.
+- The stream written by hand is kept, on the user's request: `bun run demo:flow` draws a
+  whole extraction — an agent phase with a round, the three phases of the roles, a
+  judgement that fails — with no target and no agent. `scripts/` is type-checked now.
 - Seen, left: `flow.failed`, the message of the last `command-failed`, stays drawn under
   the panel in the phases that follow — as before this branch.
 

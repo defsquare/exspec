@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "test", "live"]
+  "include": ["src", "test", "live", "scripts"]
 }

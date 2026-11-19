@@ -1,0 +1,191 @@
+// The flow of `extract` drawn from events written by hand: no target, no agent. Run it in a
+// terminal: `bun run demo:flow`, or `bun run demo:flow 21` to stop after 21 events and
+// read the frame they leave.
+import { renderFlow } from "../src/cli/render-flow.tsx";
+import type { Event } from "../src/shapes/event.ts";
+
+const pause = 400;
+
+const reader = (name: string) => ({ role: "reader" as const, interface: name });
+const builder = (name: string) => ({ role: "builder" as const, interface: name });
+const judge = (name: string) => ({ role: "judge" as const, interface: name });
+
+const long = "update-visit-of-a-pet-of-an-owner";
+
+const events: readonly Event[] = [
+  { type: "command-started", command: "extract", dir: "/abs/petclinic" },
+  { type: "phase-skipped", phase: "target" },
+  { type: "phase-started", phase: "interfaces" },
+  { type: "agent-said", phase: "interfaces", text: "Reading the controllers." },
+  { type: "agent-used", phase: "interfaces", tool: "Grep", about: "@RequestMapping" },
+  { type: "agent-ended", phase: "interfaces", turns: 9, seconds: 40, cost: 0.31 },
+  {
+    type: "gate-checked",
+    phase: "interfaces",
+    ok: false,
+    findings: ["interfaces.yaml 2.pattern: a pattern starts with /"],
+  },
+  {
+    type: "agent-used",
+    phase: "interfaces",
+    tool: "Edit",
+    about: "exspec/interfaces.yaml",
+  },
+  { type: "agent-ended", phase: "interfaces", turns: 2, seconds: 6, cost: 0.05 },
+  { type: "gate-checked", phase: "interfaces", ok: true, findings: [] },
+  { type: "phase-finished", phase: "interfaces", ok: true },
+
+  { type: "phase-started", phase: "reading" },
+  {
+    type: "role-skipped",
+    role: "structures-reader",
+    why: "structures.yaml passes its check",
+  },
+  { type: "role-started", role: "common-reader" },
+  {
+    type: "agent-used",
+    role: "common-reader",
+    tool: "Read",
+    about: "src/security/Config.java",
+  },
+  { type: "agent-ended", role: "common-reader", turns: 6, seconds: 30, cost: 0.4 },
+  { type: "gate-checked", role: "common-reader", ok: true, findings: [] },
+  { type: "role-finished", role: "common-reader", ok: true },
+  {
+    type: "role-skipped",
+    ...reader("list-owners"),
+    why: "its rules and hints pass their check",
+  },
+  { type: "role-started", ...reader("create-pet") },
+  { type: "role-started", ...reader("delete-pet") },
+  { type: "role-started", ...reader(long) },
+  {
+    type: "agent-used",
+    ...reader("create-pet"),
+    tool: "Read",
+    about: "src/pet/PetController.java",
+  },
+  { type: "agent-used", ...reader("delete-pet"), tool: "Grep", about: "deletePet" },
+  {
+    type: "agent-used",
+    ...reader(long),
+    tool: "Read",
+    about: "src/visit/VisitController.java",
+  },
+  { type: "agent-ended", ...reader("delete-pet"), turns: 12, seconds: 50, cost: 0.6 },
+  {
+    type: "gate-checked",
+    ...reader("delete-pet"),
+    ok: false,
+    findings: [
+      "rules.yaml: requires.0.otherwise: a refusal has a status",
+      "hints.yaml: missing",
+    ],
+  },
+  { type: "agent-ended", ...reader("create-pet"), turns: 14, seconds: 55, cost: 0.7 },
+  { type: "gate-checked", ...reader("create-pet"), ok: true, findings: [] },
+  { type: "role-finished", ...reader("create-pet"), ok: true },
+  {
+    type: "agent-used",
+    ...reader("delete-pet"),
+    tool: "Edit",
+    about: "exspec/roles/delete-pet/rules.yaml",
+  },
+  { type: "agent-ended", ...reader(long), turns: 11, seconds: 60, cost: 0.65 },
+  { type: "gate-checked", ...reader(long), ok: true, findings: [] },
+  { type: "role-finished", ...reader(long), ok: true },
+  { type: "agent-ended", ...reader("delete-pet"), turns: 3, seconds: 10, cost: 0.1 },
+  { type: "gate-checked", ...reader("delete-pet"), ok: true, findings: [] },
+  { type: "role-finished", ...reader("delete-pet"), ok: true },
+  { type: "phase-finished", phase: "reading", ok: true },
+
+  { type: "phase-started", phase: "evidence" },
+  { type: "target-step", step: "start", state: "started" },
+  { type: "target-step", step: "alive", state: "done" },
+  {
+    type: "role-skipped",
+    ...builder("list-owners"),
+    why: "every scenario has its evidence",
+  },
+  { type: "role-started", ...builder("create-pet") },
+  { type: "role-started", ...builder("delete-pet") },
+  { type: "agent-used", ...builder("create-pet"), tool: "play", about: "2 steps" },
+  {
+    type: "agent-used",
+    ...builder("delete-pet"),
+    tool: "Write",
+    about: "scenarios/unknown-pet.yaml",
+  },
+  { type: "agent-ended", ...builder("delete-pet"), turns: 8, seconds: 35, cost: 0.3 },
+  {
+    type: "gate-checked",
+    ...builder("delete-pet"),
+    ok: false,
+    findings: ["scenarios/unknown-pet.yaml: a when step cannot be played: no actor vet"],
+  },
+  { type: "agent-ended", ...builder("create-pet"), turns: 10, seconds: 45, cost: 0.35 },
+  { type: "gate-checked", ...builder("create-pet"), ok: true, findings: [] },
+  { type: "role-finished", ...builder("create-pet"), ok: true },
+  { type: "agent-ended", ...builder("delete-pet"), turns: 2, seconds: 8, cost: 0.06 },
+  { type: "gate-checked", ...builder("delete-pet"), ok: true, findings: [] },
+  { type: "role-finished", ...builder("delete-pet"), ok: true },
+  { type: "target-step", step: "stop", state: "done" },
+  { type: "reference-kept", path: "list-owners/all" },
+  { type: "reference-written", path: "create-pet/accepted", noise: 1 },
+  { type: "reference-written", path: "create-pet/name-missing", noise: 0 },
+  { type: "reference-written", path: "delete-pet/unknown-pet", noise: 0 },
+  { type: "phase-finished", phase: "evidence", ok: true },
+
+  { type: "phase-started", phase: "judgement" },
+  {
+    type: "role-skipped",
+    ...judge("list-owners"),
+    why: "every reference has its judgement",
+  },
+  { type: "role-started", ...judge("create-pet") },
+  { type: "role-started", ...judge("delete-pet") },
+  { type: "agent-ended", ...judge("create-pet"), turns: 1, seconds: 12, cost: 0.08 },
+  {
+    type: "judgement-written",
+    interface: "create-pet",
+    scenario: "accepted",
+    rule: "answers",
+    verdict: "holds",
+    confidence: 0.9,
+  },
+  {
+    type: "judgement-written",
+    interface: "create-pet",
+    scenario: "name-missing",
+    rule: "name-present",
+    verdict: "contradicted",
+    confidence: 0.8,
+  },
+  { type: "gate-checked", ...judge("create-pet"), ok: true, findings: [] },
+  { type: "role-finished", ...judge("create-pet"), ok: true },
+  { type: "agent-ended", ...judge("delete-pet"), turns: 1, seconds: 9, cost: 0.05 },
+  {
+    type: "gate-checked",
+    ...judge("delete-pet"),
+    ok: false,
+    findings: ["the answer is not the JSON asked for", "no judgement of unknown-pet"],
+  },
+  { type: "role-finished", ...judge("delete-pet"), ok: false },
+  {
+    type: "roles-counted",
+    verdicts: { holds: 1, contradicted: 1, "refused-unexpectedly": 0, "not-shown": 0 },
+  },
+  { type: "phase-finished", phase: "judgement", ok: false },
+  { type: "command-finished", command: "extract", ok: false },
+];
+
+const shown = events.slice(0, Number(process.argv[2] ?? events.length));
+
+await renderFlow(
+  (async function* () {
+    for (const event of shown) {
+      yield event;
+      await Bun.sleep(pause);
+    }
+  })(),
+);
