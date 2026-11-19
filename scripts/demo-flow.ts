@@ -10,6 +10,12 @@ const reader = (name: string) => ({ role: "reader" as const, interface: name });
 const builder = (name: string) => ({ role: "builder" as const, interface: name });
 const judge = (name: string) => ({ role: "judge" as const, interface: name });
 
+const evidence = {
+  rule: "answers",
+  run: { target: "petclinic", version: "1", at: "2026-01-01T00:00:00Z", clock: null },
+  exchanges: [],
+};
+
 const long = "update-visit-of-a-pet-of-an-owner";
 
 const events: readonly Event[] = [
@@ -137,6 +143,8 @@ const events: readonly Event[] = [
   { type: "gate-checked", ...builder("delete-pet"), ok: true, findings: [] },
   { type: "role-finished", ...builder("delete-pet"), ok: true },
   { type: "target-step", step: "stop", state: "done" },
+  { type: "steps-played", interface: "create-pet", scenario: "accepted", evidence },
+  { type: "steps-played", interface: "delete-pet", scenario: "unknown-pet", evidence },
   { type: "reference-kept", path: "list-owners/all" },
   { type: "reference-written", path: "create-pet/accepted", noise: 1 },
   { type: "reference-written", path: "create-pet/name-missing", noise: 0 },

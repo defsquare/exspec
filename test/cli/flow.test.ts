@@ -120,7 +120,8 @@ test("a roles' phase keeps its sessions that run and what is wrong by session", 
     ],
     [11, { type: "role-finished", role: "reader", interface: "g", ok: true }],
     [12, { type: "role-started", role: "reader", interface: "h" }],
-    [13, { type: "role-finished", role: "reader", interface: "h", ok: false }],
+    [13, { type: "role-failed", role: "reader", interface: "h", message: "m" }],
+    [14, { type: "role-finished", role: "reader", interface: "h", ok: false }],
   ];
   const flow = events.reduce(
     (folded, [at, event]) => flowAfter(folded, event, at),
@@ -145,11 +146,11 @@ test("a roles' phase keeps its sessions that run and what is wrong by session", 
     ],
     troubles: [
       { by: "f", lines: ["x", "y"] },
-      { by: "h", lines: ["ended in error"] },
+      { by: "h", lines: ["m"] },
     ],
     gate: undefined,
     said: undefined,
-    counts: ["1 read", "1 running", "1 failed", "1 skipped"],
+    counts: ["1 read", "1 running", "1 failed"],
     panel: {
       kind: "roles",
       phase: "reading",
@@ -163,7 +164,7 @@ test("a roles' phase keeps its sessions that run and what is wrong by session", 
           used: { tool: "Read", about: "a" },
         },
       ],
-      troubles: [{ by: "h", lines: ["ended in error"] }],
+      troubles: [{ by: "h", lines: ["m"] }],
       more: 1,
     },
   });
@@ -215,8 +216,8 @@ test("the evidence phase counts what it wrote, kept and found unstable", () => {
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
   expect({ counts: countsOf("evidence", flow), troubles: flow.troubles }).toEqual({
-    counts: ["1 references", "1 unstable", "1 kept"],
-    troubles: [{ by: "r", lines: ["unstable: 2 differences"] }],
+    counts: ["1 reference", "1 unstable", "1 kept"],
+    troubles: [{ by: "r", lines: ["unstable", "a: 1, then 2", "b: 1, then 2"] }],
   });
 });
 
@@ -288,8 +289,8 @@ test("a roles' step queued counts its sessions over, not the readers before it",
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
   expect({ queued: flow.queued, counts: countsOf("reading", flow) }).toEqual({
-    queued: { role: "reader", count: 2, done: 1 },
-    counts: ["1 of 2 readers", "2 skipped"],
+    queued: { phase: "reading", role: "reader", count: 2, done: 1 },
+    counts: ["1 of 2 readers", "1 skipped"],
   });
 });
 
@@ -311,10 +312,89 @@ test("a role's event outside any running phase changes nothing", () => {
     { type: "gate-checked", role: "reader", interface: "f", ok: false, findings: ["x"] },
     { type: "agent-said", role: "reader", text: "t" },
     { type: "agent-used", role: "reader", tool: "Read", about: "a" },
+    { type: "role-skipped", role: "reader", interface: "f", why: "w" },
+    { type: "role-finished", role: "reader", interface: "f", ok: true },
+    { type: "role-finished", role: "builder", interface: "f", ok: false },
+    { type: "reference-written", path: "p", noise: 0 },
+    {
+      type: "judgement-written",
+      interface: "f",
+      scenario: "a",
+      rule: "r",
+      verdict: "holds",
+      confidence: 1,
+    },
   ];
   expect(
     events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow),
   ).toEqual(emptyFlow);
+});
+
+const evidence = {
+  rule: "r",
+  run: { target: "t", version: "v", at: "a", clock: null },
+  exchanges: [],
+};
+
+test("the recording of the references shows while no session runs, until the next phase", () => {
+  const fold = (events: readonly Event[]) =>
+    events.reduce((flow, event) => flowAfter(flow, event, 1), emptyFlow);
+  const recording: readonly Event[] = [
+    { type: "phase-started", phase: "evidence" },
+    { type: "steps-played", interface: "f", scenario: "a", evidence },
+  ];
+  const withSession = fold([
+    ...recording,
+    { type: "role-started", role: "builder", interface: "g" },
+  ]);
+  expect({
+    recording: panelOf(fold(recording), 3),
+    withSession: panelOf(withSession, 3),
+    next: fold([...recording, { type: "phase-started", phase: "judgement" }]).played,
+  }).toEqual({
+    recording: {
+      kind: "roles",
+      phase: "evidence",
+      running: true,
+      played: "f/a",
+      sessions: [],
+      troubles: [],
+      more: 0,
+    },
+    withSession: {
+      kind: "roles",
+      phase: "evidence",
+      running: true,
+      sessions: [{ role: "builder", interface: "g", startedAt: 1, round: 1 }],
+      troubles: [],
+      more: 0,
+    },
+    next: undefined,
+  });
+});
+
+test("a box says what it counts: the scenarios, then the sessions", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "evidence" },
+    { type: "roles-queued", role: "builder", count: 9 },
+    { type: "role-skipped", role: "builder", interface: "f", why: "w" },
+    { type: "role-started", role: "builder", interface: "g" },
+    { type: "role-started", role: "builder", interface: "h" },
+    { type: "role-finished", role: "builder", interface: "h", ok: false },
+    { type: "reference-written", path: "p", noise: 0 },
+    { type: "reference-kept", path: "q" },
+    { type: "scenario-unstable", path: "r", differences: [] },
+  ];
+  const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect(countsOf("evidence", flow)).toEqual([
+    "1 reference",
+    "1 unstable",
+    "1 kept",
+    "2 of 9 builders",
+    "1 running",
+    "1 failed",
+    "1 skipped",
+  ]);
 });
 
 test("duration writes a time short", () => {

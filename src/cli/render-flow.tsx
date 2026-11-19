@@ -159,12 +159,19 @@ function Panel({ flow, now }: { flow: Flow; now: number }) {
   if (panel === undefined) return null;
   const { target, said, used } = flow;
   if (panel.kind === "roles") {
-    const { phase, running, sessions, troubles, more } = panel;
+    const { phase, running, played, sessions, troubles, more } = panel;
     const wide = Math.max(0, ...sessions.map((one) => one.interface?.length ?? 0));
+    // "" while the references are recorded: the phase runs and no session does
+    const state = !running
+      ? " · failed"
+      : sessions.length > 0
+        ? ` · ${sessions.length} running`
+        : "";
     return (
       <Box flexDirection="column" borderStyle="single" paddingX={1}>
         <Text bold>
-          {phase} · {running ? `${sessions.length} running` : "failed"}
+          {phase}
+          {state}
         </Text>
         {sessions.map((session) => (
           <SessionLine
@@ -182,6 +189,12 @@ function Panel({ flow, now }: { flow: Flow; now: number }) {
           ),
         )}
         {more > 0 ? <Text>…{more} more</Text> : null}
+        {played === undefined ? null : (
+          <Text wrap="truncate-end">
+            {column("played")}
+            {played}
+          </Text>
+        )}
         {running && target !== undefined ? (
           <Text wrap="truncate-end">
             {column("target")}

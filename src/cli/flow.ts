@@ -45,8 +45,11 @@ export type Flow = {
   readonly target?: { readonly step: string; readonly state: string };
   readonly sessions: readonly RoleSession[];
   readonly troubles: readonly Trouble[];
+  // the last scenario played in the running phase: {interface: f, scenario: a} -> "f/a"
+  readonly played?: string;
   // the sessions a roles' step was given, and how many of them are over: skipped or finished
   readonly queued?: {
+    readonly phase: Phase;
     readonly role: Role;
     readonly count: number;
     readonly done: number;
@@ -73,14 +76,6 @@ const inBox = (
 const runningPhase = (flow: Flow): Phase | undefined =>
   flow.boxes.find(({ state }) => state === "running")?.phase;
 
-export const phaseOfRole: Readonly<Record<Role, Phase>> = {
-  "structures-reader": "reading",
-  "common-reader": "reading",
-  reader: "reading",
-  builder: "evidence",
-  judge: "judgement",
-};
-
 type By = { readonly role: Role; readonly interface?: string | undefined };
 
 // {role: a, interface: f} -> "f"; {role: a} -> "a"
@@ -88,13 +83,22 @@ const byOf = ({ role, interface: of }: By) => of ?? role;
 
 const sameSession = (a: By, b: By) => a.role === b.role && a.interface === b.interface;
 
-const counting = (flow: Flow, phase: Phase, what: Counted): Flow => ({
-  ...flow,
-  counts: {
-    ...flow.counts,
-    [phase]: { ...flow.counts?.[phase], [what]: (flow.counts?.[phase]?.[what] ?? 0) + 1 },
-  },
-});
+// the count goes to the phase that runs; with none running, nothing changes
+const counting = (flow: Flow, what: Counted): Flow => {
+  const phase = runningPhase(flow);
+  return phase === undefined
+    ? flow
+    : {
+        ...flow,
+        counts: {
+          ...flow.counts,
+          [phase]: {
+            ...flow.counts?.[phase],
+            [what]: (flow.counts?.[phase]?.[what] ?? 0) + 1,
+          },
+        },
+      };
+};
 
 // {by: a, lines: m} on [{by: a, lines: l}, {by: b, ...}] -> [{by: a, lines: m}, {by: b, ...}]
 const troubled = (flow: Flow, trouble: Trouble): Flow => ({
@@ -121,6 +125,24 @@ const withSession = (
   ),
 });
 
+// a: running, round 1, its panel emptied
+const startedPhase = (flow: Flow, phase: Phase, at: number): Flow => {
+  const { gate, said, used, target, queued, played, ...kept } = flow;
+  return inBox({ ...kept, sessions: [], troubles: [] }, phase, (box) => ({
+    ...box,
+    state: "running",
+    round: 1,
+    startedAt: at,
+  }));
+};
+
+const finishedPhase = (flow: Flow, phase: Phase, ok: boolean, at: number): Flow =>
+  inBox(flow, phase, (box) => ({
+    ...box,
+    state: ok ? "done" : "failed",
+    endedAt: at,
+  }));
+
 // f(flow, {phase-started: a}) -> flow with a running, round 1, and its panel emptied
 export function flowAfter(flow: Flow, event: Event, at: number): Flow {
   switch (event.type) {
@@ -132,23 +154,12 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
       return { ...flow, failed: event.message };
     case "target-step":
       return { ...flow, target: { step: event.step, state: event.state } };
-    case "phase-started": {
-      const { gate, said, used, target, queued, ...kept } = flow;
-      return inBox({ ...kept, sessions: [], troubles: [] }, event.phase, (box) => ({
-        ...box,
-        state: "running",
-        round: 1,
-        startedAt: at,
-      }));
-    }
+    case "phase-started":
+      return startedPhase(flow, event.phase, at);
     case "phase-skipped":
       return inBox(flow, event.phase, (box) => ({ ...box, state: "skipped" }));
     case "phase-finished":
-      return inBox(flow, event.phase, (box) => ({
-        ...box,
-        state: event.ok ? "done" : "failed",
-        endedAt: at,
-      }));
+      return finishedPhase(flow, event.phase, event.ok, at);
     case "gate-checked": {
       if ("phase" in event) {
         if (event.ok) return flow;
@@ -201,46 +212,59 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
               },
             ],
           };
-    case "roles-queued":
+    case "roles-queued": {
+      const phase = runningPhase(flow);
+      return phase === undefined
+        ? flow
+        : { ...flow, queued: { phase, role: event.role, count: event.count, done: 0 } };
+    }
+    case "steps-played":
       return runningPhase(flow) === undefined
         ? flow
-        : { ...flow, queued: { role: event.role, count: event.count, done: 0 } };
+        : { ...flow, played: `${event.interface}/${event.scenario}` };
     case "role-skipped":
-      return counting(queuedOver(flow, event.role), phaseOfRole[event.role], "skipped");
+      return runningPhase(flow) === undefined
+        ? flow
+        : // the reader of the structures and of what is common are no interface passed over
+          event.interface === undefined
+          ? flow
+          : counting(queuedOver(flow, event.role), "skipped");
     case "role-failed":
       return runningPhase(flow) === undefined
         ? flow
         : troubled(flow, { by: byOf(event), lines: [event.message] });
     case "role-finished": {
+      if (runningPhase(flow) === undefined) return flow;
       const left: Flow = {
         ...queuedOver(flow, event.role),
         sessions: flow.sessions.filter((session) => !sameSession(session, event)),
       };
       if (event.ok) {
-        return event.role === "reader" ? counting(left, "reading", "written") : left;
+        return event.role === "reader" ? counting(left, "written") : left;
       }
-      const by = byOf(event);
-      const failed = counting(left, phaseOfRole[event.role], "failed");
-      return runningPhase(flow) === undefined ||
-        flow.troubles.some((one) => one.by === by)
-        ? failed
-        : troubled(failed, { by, lines: ["ended in error"] });
+      return counting(left, "failed");
     }
     case "reference-written":
-      return counting(flow, "evidence", "written");
+      return counting(flow, "written");
     case "reference-kept":
-      return counting(flow, "evidence", "kept");
+      return counting(flow, "kept");
     case "scenario-unstable": {
-      const counted = counting(flow, "evidence", "unstable");
+      const counted = counting(flow, "unstable");
       return runningPhase(flow) === undefined
         ? counted
         : troubled(counted, {
             by: event.path,
-            lines: [`unstable: ${event.differences.length} differences`],
+            lines: [
+              "unstable",
+              ...event.differences.map(
+                ({ at, first, second }) =>
+                  `${at.join(".")}: ${JSON.stringify(first)}, then ${JSON.stringify(second)}`,
+              ),
+            ],
           });
     }
     case "judgement-written":
-      return counting(flow, "judgement", "written");
+      return counting(flow, "written");
     case "roles-counted":
       return { ...flow, verdicts: event.verdicts };
     case "extraction-not-found":
@@ -257,7 +281,6 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
     case "extraction-judged":
     case "fact-blocks":
     case "not-observed":
-    case "steps-played":
       return flow;
     default: {
       const unreachable: never = event;

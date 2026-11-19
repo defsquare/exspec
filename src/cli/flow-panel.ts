@@ -1,5 +1,6 @@
+import type { AgentPhase } from "../derive/phases.ts";
 import type { Phase } from "../shapes/event.ts";
-import { type Flow, phaseOfRole, type RoleSession, type Trouble } from "./flow.ts";
+import type { Flow, RoleSession, Trouble } from "./flow.ts";
 
 export type Panel =
   | {
@@ -15,13 +16,17 @@ export type Panel =
       readonly kind: "roles";
       readonly phase: Phase;
       readonly running: boolean;
+      // the last scenario played, while the phase runs and no session does
+      readonly played?: string;
       readonly sessions: readonly RoleSession[];
       readonly troubles: readonly Trouble[];
       // the troubles left out
       readonly more: number;
     };
 
-const rolesPhases: readonly Phase[] = Object.values(phaseOfRole);
+const agentPhases: readonly AgentPhase[] = ["target", "interfaces"];
+
+const isRoles = (phase: Phase) => !agentPhases.some((one) => one === phase);
 
 // A running agent phase: its last failed gate cut to `most` findings. A running roles' phase:
 // its sessions, and the last `most` troubles. Once the extraction has failed, every finding
@@ -29,11 +34,14 @@ const rolesPhases: readonly Phase[] = Object.values(phaseOfRole);
 export function panelOf(flow: Flow, most: number): Panel | undefined {
   const running = flow.boxes.find(({ state }) => state === "running");
   if (running !== undefined) {
-    if (rolesPhases.includes(running.phase)) {
+    if (isRoles(running.phase)) {
       return {
         kind: "roles",
         phase: running.phase,
         running: true,
+        ...(flow.sessions.length === 0 && flow.played !== undefined
+          ? { played: flow.played }
+          : {}),
         sessions: flow.sessions,
         troubles: flow.troubles.slice(-most),
         more: Math.max(0, flow.troubles.length - most),
@@ -50,7 +58,7 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
   }
   const failed = flow.boxes.find(({ state }) => state === "failed");
   if (flow.ok !== false || failed === undefined) return undefined;
-  if (rolesPhases.includes(failed.phase)) {
+  if (isRoles(failed.phase)) {
     return flow.troubles.length === 0
       ? undefined
       : {
@@ -68,17 +76,19 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
     : undefined;
 }
 
-const written: Readonly<Record<Phase, string>> = {
-  target: "",
-  interfaces: "",
-  reading: "read",
-  evidence: "references",
-  judgement: "judged",
+// what a phase writes, one of it and several
+const written: Readonly<Record<Phase, readonly [string, string]>> = {
+  target: ["", ""],
+  interfaces: ["", ""],
+  reading: ["read", "read"],
+  evidence: ["reference", "references"],
+  judgement: ["judgement", "judgements"],
 };
 
-// reading with {written: 3, failed: 1}, 2 sessions and 4 of 9 readers queued over
-//   -> ["3 read", "4 of 9 readers", "2 running", "1 failed"]
-// a zero is left out, but of the queued
+// evidence with {written: 3, kept: 2, failed: 1}, 2 sessions and 4 of 9 builders queued over
+//   -> ["3 references", "2 kept", "4 of 9 builders", "2 running", "1 failed"]
+// what counts scenarios first, then what counts sessions; a zero is left out, except in
+// "0 of 9 builders", said for as long as the phase runs
 export function countsOf(phase: Phase, flow: Flow): readonly string[] {
   const counts = flow.counts?.[phase];
   const isRunning = flow.boxes.some(
@@ -86,18 +96,21 @@ export function countsOf(phase: Phase, flow: Flow): readonly string[] {
   );
   const { queued } = flow;
   const of =
-    queued !== undefined && phaseOfRole[queued.role] === phase
-      ? [`${queued.done} of ${queued.count} ${queued.role}s`]
+    queued?.phase === phase && isRunning
+      ? [
+          `${queued.done} of ${queued.count} ${queued.role}${queued.count === 1 ? "" : "s"}`,
+        ]
       : [];
-  const lines: readonly (readonly [number, string])[] = [
-    [isRunning ? flow.sessions.length : 0, "running"],
-    [counts?.failed ?? 0, "failed"],
-    [counts?.unstable ?? 0, "unstable"],
-    [counts?.kept ?? 0, "kept"],
-    [counts?.skipped ?? 0, "skipped"],
-  ];
   const said = ([n, word]: readonly [number, string]) => (n > 0 ? [`${n} ${word}`] : []);
-  return [...said([counts?.written ?? 0, written[phase]]), ...of, ...lines.flatMap(said)];
+  return [
+    ...said([counts?.written ?? 0, written[phase][counts?.written === 1 ? 0 : 1]]),
+    ...said([counts?.unstable ?? 0, "unstable"]),
+    ...said([counts?.kept ?? 0, "kept"]),
+    ...of,
+    ...said([isRunning ? flow.sessions.length : 0, "running"]),
+    ...said([counts?.failed ?? 0, "failed"]),
+    ...said([counts?.skipped ?? 0, "skipped"]),
+  ];
 }
 
 // 0 -> "0s"; 65_000 -> "1m05"; 3_725_000 -> "1h02m"
