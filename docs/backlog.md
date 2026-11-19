@@ -512,6 +512,12 @@ them in; each of the first five is a branch of its own.
   - *The readings were not read again with the structures read from the code* (one
     target): whether a reader files an input under a link (`owner`) when the interface
     shows an identifier (`ownerId`) is not seen.
+  - *A file the tool removes is told by no event.* The evidence of a scenario that is
+    gone, and a scenario file whose name starts with no rule of the reading, are removed
+    by the builder's gate without a trace in the stream: on one target, 82 scenario files
+    would go unseen. Nothing settled. Next: an event that says which file was removed and
+    why — a new event, so an ADR. Source: `docs/branches/feat-extract-runs-roles.md` at
+    `0162c06`, "the readings made again"; `src/agent/roles-build.ts`.
   - *A structure nothing is filed under.* A structure no operation takes or answers has
     no operation in `view`; nothing says a structure is shown, where the terms had a
     projection. Derivable: shown when an operation that answers it has `answers` judged
