@@ -20,3 +20,4 @@ a concept removed from the code is marked `Deprecated`.
 | [0013](0013-a-roles-evidence-is-a-reference.md) | A roles' evidence is a reference: its noise beside it, made by `roles record`, replayed with no agent; a judgement stands as long as its stored copy does | Accepted |
 | [0014](0014-extract-runs-the-roles.md) | `extract` runs the three roles, in five phases named for what they produce — target, interfaces, reading, evidence, judgement — each doing only what is left of it | Accepted |
 | [0015](0015-the-tool-is-named-exspec.md) | The tool is named `exspec`, an extraction is `<dir>/exspec/`, the mark is `ex[spec]`; the records written before keep the old name, `specimen` | Accepted |
+| [0016](0016-a-role-says-what-failed-it-a-step-how-many-it-runs.md) | A role says what failed it (`role-failed`), not `command-failed`; a roles' step says how many interfaces it was given (`roles-queued`) | Accepted |
