@@ -27,7 +27,8 @@ a { color: var(--primary); text-decoration: none; cursor: pointer; transition: c
 a:hover { color: var(--accent-300); }
 a:focus-visible, summary:focus-visible { outline: 2px solid var(--primary-700); outline-offset: 2px; }
 header { background: var(--navy); color: var(--gray-300); padding: 0.5rem 1.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; align-items: baseline; font-size: 0.9rem; }
-header .mark { font-family: var(--title); font-size: 1.5rem; color: #fff; }
+header .mark { font-weight: 700; font-size: 1.35rem; color: #fff; }
+header .mark b { font-weight: 400; color: var(--accent); }
 header a { color: var(--gray-300); }
 header a:hover, header a[aria-current] { color: #fff; }
 header .warn { margin-left: auto; font-size: 0.8rem; }
@@ -516,7 +517,7 @@ function render() {
   cols.dataset.operation = o?.operation ?? "";
   if (o && was.of === o.operation) cols.querySelector(".sheet").scrollTop = was.sheet;
   document.getElementById("header").replaceChildren(
-    h("a", { class: "mark", href: "#/" }, "exspec"), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
+    h("a", { class: "mark", href: "#/" }, "ex", h("b", null, "["), "spec", h("b", null, "]")), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
     ...(roles ? [h("a", { href: "#/common", "aria-current": concept === "common" ? "page" : null }, "The common reading")] : []),
     h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Problems and gaps ${data.problems.length + data.gaps.length}`),
     h("span", { class: "warn" }, "This page holds what the target answered, tokens included: mind who it is sent to."));
