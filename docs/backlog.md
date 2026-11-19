@@ -497,6 +497,13 @@ them in; each of the first five is a branch of its own.
   - *"Not shown" on Kadai: 135 of 1 255.* 99 scenarios say their situation was not
     reached; the rest is not read: a setting no interface shows, or a rule no caller can
     reach.
+  - *The structures can still be written from memory.* The reader of the structures has
+    the code alone, and its gate checks the file's form: on a target the model knows, a
+    file written without opening the code would pass. Not seen. A `source` per structure,
+    as a rule has, would show it; that is a key added to a shape.
+  - *The readings were not read again with the structures read from the code* (one
+    target): whether a reader files an input under a link (`owner`) when the interface
+    shows an identifier (`ownerId`) is not seen.
   - *A structure nothing is filed under.* A structure no operation takes or answers has
     no operation in `view`; nothing says a structure is shown, where the terms had a
     projection. Derivable: shown when an operation that answers it has `answers` judged

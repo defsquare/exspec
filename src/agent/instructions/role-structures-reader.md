@@ -9,17 +9,21 @@ call it.
 
 ## What you read
 
-The system's checkout: your working directory. Modify nothing there. Of its `specimen/`
-folder you may read only `interfaces.yaml`: the list of its HTTP interfaces and the shape of
-what each accepts and answers.
+The system's checkout: your working directory. Modify nothing there. Its `specimen/`
+folder is not yours to read, but for the file you write.
 
 A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
 instance), never from the root of your working directory: from the root it is refused. A
 search that is refused is narrowed to those folders and run again. What you write comes
-from the code you read, never from the description of the interfaces alone.
+from the code you read.
 
 Read the model the code is built on — its entities, what identifies each, what each is made
-of, what refers to what — and how the interfaces show them.
+of, what refers to what. How the system's interfaces show them is not yours to say: the
+reader of each operation says which of your fields its inputs and answers are.
+
+Open the file of each class the model is made of, and of each class one of them inherits
+from or embeds: a search finds the files, it does not read them. Write no field you have
+not seen declared; one you could not find is left out, and said in your final message.
 
 ## What you write
 
@@ -58,7 +62,7 @@ One file, `specimen/structures.yaml`: a list of structures.
   true` for a list.
 - Write no bound on a field — no minimum, maximum or length: a bound is a rule of the
   operation that checks it, and the readers of the operations will write it.
-- Field names as the interfaces show them, so that a reader finds them.
+- Field names as the code names them.
 - An unknown key is an error. Quote every string that YAML would read as something else.
 
 The tool checks the file when you end. If it finds a problem it tells you: fix it, end

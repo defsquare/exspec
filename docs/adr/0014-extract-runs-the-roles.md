@@ -38,6 +38,14 @@ them effects written as sentences, which nothing judges. The roles wrote 336 rul
   asked for by name plays what is left of it — it forces nothing. Reading an interface
   again on purpose is `roles read --only`. `target` and `interfaces` asked for by name
   run their one session, done or not: nothing else writes those two files again.
+- **The reader of the structures reads the code alone** — an amendment to ADR-0010, by
+  the user. Of `specimen/` it reads its own file only, and it names the fields as the code
+  names them. Given the interfaces' description, it wrote the structures from it without
+  opening the code, three runs out of three; without it, an identifier the interface
+  shows bare is read as the link it is (`ownerId: int` -> `owner: {structure: Owner, by:
+  identity}`). How an interface shows a structure is the operation's reader's to say —
+  each input the field it carries, whatever the interface calls it, the answer the
+  structure it shows.
 - **One definition of "left"**, in one pure module: the roles' own skips, the phases of
   `extract` and what `status` shows of them read it. It is told without the target: the
   check of a scenario's actors against the credentials is the builder's gate, at run time.
@@ -88,8 +96,7 @@ them effects written as sentences, which nothing judges. The roles wrote 336 rul
   the step can no longer be played.
 - The agent's instructions lose the phases of the specification and of the scenarios, and
   what taught their notation.
-- The reader of the structures can write a file that passes its gate without having read
-  the code: a gate checks a form (ADR-0010). Seen once; its instructions say where to
-  search.
+- The gate of the reader of the structures checks a form (ADR-0010): a file written from
+  memory of a well-known target, the code not opened, would still pass.
 - The cost of an extraction is the roles': a dollar a quarter per interface on the targets
   read, and three sessions an interface.

@@ -3,6 +3,8 @@
 Status: Accepted (2026-11-15) — by the user, after three whole targets were run through the
 roles. Amended 2026-11-18: the evidence is no longer played once — it becomes a
 reference, its noise beside it (ADR-0013); the consequence on it below is as it was written.
+Amended 2026-11-19 by ADR-0014: the reader of the structures reads the code alone, not the
+interfaces' description; the decision on the structures below is as it was written.
 
 ## Context
 

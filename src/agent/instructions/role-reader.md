@@ -103,7 +103,9 @@ Rules of writing:
   what depends on the thing changed.
 - Leave out purely technical checks that no caller could trigger through this interface.
 - A `field` and the `structure` of `answers` name only what `structures.yaml` declares. An
-  input that is a field of no structure there has no `field`; do not bend one to fit.
+  input is the field it carries, whatever the interface calls it: `first_name` sent for a
+  field declared `firstName` has that `field`. An input that carries no field of a
+  structure there has no `field`; do not bend one to fit.
 - A rule's name is lower-case words joined by dashes, unique in the file. `source` is
   `path/to/File.ext:line` or `:from-to`, relative to the checkout. Quote every string that
   YAML would read as something else or that holds `: `.

@@ -197,6 +197,22 @@ with the challenger's verdict; it is not merged without being asked.
   search from the root. It wrote 8 structures from `interfaces.yaml`, in 7 s, and said so.
   Fixed in the thread: the folders a glob names before its first wildcard are the folder
   it runs in. Not seen on a run.
+- **The reader of the structures reads the code alone** (the user's word on what the role
+  is; challenger (opus): go with changes — drop the gate that would look at what a session
+  read and the glob allowed from the root, take away the fallback instead). Tried on the
+  real target before the commit, three runs of the reading with `structures.yaml` set
+  aside:
+  1. the binary of `13acdeb`, the interfaces still given: one glob, `**/model/*.java`,
+     refused; written from `interfaces.yaml`, 7 s;
+  2. the interfaces taken away: a glob with its folders and one grep, both accepted, no
+     file opened, two fields supposed and said so, 7 s;
+  3. and told to open each class and write no field it has not seen declared: 11 files
+     read, 16 turns, 14 s, 0.09 USD.
+  Against the file written from the interfaces: `Pet.ownerId: int` is `owner`, a link to
+  `Owner` by identity; `Visit.petId` is `pet`; `Role` is identified by `id`. The 37
+  readings pass their check with the new file and were not read again: whether the
+  readers use the links is not seen. The glob fix of `13acdeb` is seen on runs 2 and 3.
+  The refusal now says to give a search a folder other than `specimen/`.
 
 ## Backlog
 

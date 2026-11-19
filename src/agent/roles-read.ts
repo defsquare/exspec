@@ -18,6 +18,11 @@ const tools = ["Read", "Glob", "Grep", "Write", "Edit"];
 
 const rounds = 3;
 
+// The reader of the structures reads the code and, of specimen/, its own file alone: the
+// interfaces' description would let it write the structures without the code.
+export const structuresReads = (dir: string) =>
+  readsOf(dir, { checkout: true, allowed: (path) => path === "structures.yaml" });
+
 function structuresReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
   const { dir, readFiles } = rolesRun;
   const own = "structures.yaml";
@@ -31,13 +36,10 @@ function structuresReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
         prompt:
           "Read the business concepts of the system checked out in your working directory, and write specimen/structures.yaml.",
         tools,
-        mayRead: readsOf(dir, {
-          checkout: true,
-          allowed: (path) => ["interfaces.yaml", own].includes(path),
-        }),
+        mayRead: structuresReads(dir),
         mayWrite: writesOf(dir, (path) => path === own),
         confinement:
-          "Of specimen/ this session reads only interfaces.yaml and structures.yaml, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/structures.yaml.",
+          "Of specimen/ this session reads only structures.yaml, and a search is given a folder of the checkout other than specimen/ as its path (src, for instance), never the root; it writes only specimen/structures.yaml.",
       },
       gate: async () => {
         return checkStructuresFile(textAt(await readFiles(dir), own)).findings;
@@ -67,7 +69,7 @@ function commonReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
         }),
         mayWrite: writesOf(dir, (path) => path === own),
         confinement:
-          "Of specimen/ this session reads only target.yaml, interfaces.yaml, target/ and roles/common.yaml, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/roles/common.yaml.",
+          "Of specimen/ this session reads only target.yaml, interfaces.yaml, target/ and roles/common.yaml, and a search is given a folder of the checkout other than specimen/ as its path (src, for instance), never the root; it writes only specimen/roles/common.yaml.",
       },
       gate: async () => {
         return checkCommon(textAt(await readFiles(dir), own)).findings;
@@ -106,7 +108,7 @@ async function* reader(
             ["roles/common.yaml", "structures.yaml", ...own].includes(path),
         }),
         mayWrite: writesOf(dir, (path) => own.includes(path)),
-        confinement: `Of specimen/ this session reads only roles/common.yaml, structures.yaml and the two files of its folder, and a search runs in a folder that holds nothing else of specimen/; it writes only specimen/${folder}/rules.yaml and hints.yaml.`,
+        confinement: `Of specimen/ this session reads only roles/common.yaml, structures.yaml and the two files of its folder, and a search is given a folder of the checkout other than specimen/ as its path (src, for instance), never the root; it writes only specimen/${folder}/rules.yaml and hints.yaml.`,
       },
       gate: async () => {
         return readerFilesOf(await readFiles(dir), name).findings;
