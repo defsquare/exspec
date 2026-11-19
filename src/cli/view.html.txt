@@ -32,20 +32,32 @@ header .mark b { font-weight: 400; color: var(--accent); }
 header a { color: var(--gray-300); }
 header a:hover, header a[aria-current] { color: #fff; }
 header .warn { margin-left: auto; font-size: 0.8rem; }
-/* the columns: each one narrows as the next opens, so the sheet keeps its room */
-.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 13rem 19rem minmax(0, 1fr); }
-.cols.paneled { grid-template-columns: 9.5rem 14rem minmax(0, 1fr) minmax(0, 37rem); }
+/* the columns: the list narrows as a panel opens, so the sheet keeps the room its gates are drawn at */
+.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 17rem minmax(0, 1fr); }
+.cols.paneled { grid-template-columns: 14rem minmax(0, 1fr) minmax(28rem, 40%); }
 .panel { border-left: 1px solid var(--border); padding: 1rem 1.5rem 4rem; box-shadow: -10px 0 15px -3px rgba(0, 0, 0, 0.08); background: var(--bg); }
 .panel h2 { margin-top: 0.25rem; overflow-wrap: anywhere; }
 .panel h3 { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); margin: 1.25rem 0 0.35rem; }
 .panel .close { float: right; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.05rem 0.6rem; font-size: 0.9rem; }
 .cols > * { overflow: auto; min-width: 0; }
-.col { padding: 0.75rem 0.5rem; border-right: 1px solid var(--border); }
+/* a scenario's panel on its rule's: the rule's edge stays in view above and to the left, and leads back */
+.panel.stacked { padding: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--bg-muted); }
+.panel .under { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.5rem; color: var(--fg); }
+.panel .under:hover { background: var(--primary-50); }
+.panel .top { flex: 1; min-height: 0; overflow: auto; margin-left: 1rem; padding: 1rem 1.5rem 4rem; background: var(--bg); border-top: 1px solid var(--border); border-left: 1px solid var(--border); border-top-left-radius: 0.6rem; box-shadow: -6px -4px 12px -4px rgba(0, 0, 0, 0.12); }
+.col { display: flex; flex-direction: column; padding: 0.75rem 0.5rem 0; border-right: 1px solid var(--border); }
 .col .row { display: flex; align-items: baseline; gap: 0.4rem; padding: 0.25rem 0.5rem; border-radius: var(--radius); color: var(--fg); font-size: 0.95rem; }
 .col .row .n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .col .row.on { background: var(--ink); color: #fff; }
 .col .row:not(.on):hover { background: var(--primary-50); color: var(--ink); }
 .col .row.on .word, .col .row.on .also { color: var(--gray-300); }
+.col summary { cursor: pointer; list-style: none; }
+.col summary::-webkit-details-marker { display: none; }
+.col summary::before { content: "▸"; flex: none; width: 0.8rem; opacity: 0.6; }
+.col details[open] > summary::before { content: "▾"; }
+.col .row a { color: inherit; }
+.col details > a.row { margin-left: 1.2rem; }
+.col div.row { padding-left: 1.7rem; }
 .also { color: var(--fg-muted); font-size: 0.78rem; margin-left: 0.4rem; }
 .sheet { padding: 1.25rem 2rem 4rem; }
 h1 { font-family: var(--title); font-weight: 400; font-size: 2.6rem; line-height: 1.1; color: var(--ink); margin: 0 0 0.5rem; overflow-wrap: anywhere; }
@@ -53,11 +65,23 @@ h1 b { font-weight: 400; background: var(--heat); -webkit-background-clip: text;
 h2 { font-family: var(--title); font-weight: 400; font-size: 1.6rem; color: var(--ink); margin: 1.75rem 0 0.5rem; }
 .eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 0.25rem; padding: 0 0.5rem; }
 .sheet .eyebrow { padding: 0; }
+/* the keys the page answers to, said where they act; none where nothing hovers, a keyboard being unlikely there */
+kbd { font-family: var(--mono); font-size: 0.7rem; font-weight: 400; letter-spacing: 0; color: var(--fg-muted); background: var(--bg-muted); border: 1px solid var(--border); border-radius: 0.25rem; padding: 0 0.3rem; }
+.keys { font-size: 0.75rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--fg-muted); }
+.keys kbd { margin: 0 0.25rem 0 0.6rem; }
+.keys kbd:first-child { margin-left: 0; }
+.eyebrow kbd, .panel h3 .keys { float: right; }
+/* the list's keys stay at the foot of the column, the list scrolling above them */
+.col p.keys { position: sticky; bottom: 0; margin: auto 0 0; padding: 0.6rem 0.5rem; background: var(--bg); }
+.close kbd { margin-left: 0.3rem; }
+@media (hover: none) { kbd, .keys { display: none; } }
 p { margin: 0 0 0.6rem; max-width: 72ch; }
 .muted { color: var(--fg-muted); }
 code { font-family: var(--mono); font-size: 0.84em; background: var(--bg-muted); border: 1px solid var(--border-soft); border-radius: 0.25rem; padding: 0.05em 0.3em; }
 pre { font-family: var(--mono); font-size: 0.78rem; line-height: 1.55; background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); padding: 0.6rem 0.9rem; margin: 0.25rem 0 0.75rem; overflow: auto; max-height: 20rem; }
 .dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--gray-300); flex: none; margin-right: 0.35rem; }
+/* a name in a cell breaks at its hyphens, not inside a word */
+.unbroken { overflow-wrap: normal; }
 .word { font-size: 0.8rem; color: var(--fg-muted); white-space: nowrap; }
 table { border-collapse: collapse; width: 100%; margin: 0 0 1rem; }
 th { text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); padding: 0.35rem 0.75rem 0.35rem 0; border-bottom: 1px solid var(--border); }
@@ -67,30 +91,40 @@ td { padding: 0.4rem 0.75rem 0.4rem 0; border-bottom: 1px solid var(--border-sof
 .chip:hover { border-color: var(--primary); color: var(--primary); }
 .chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; overflow-x: auto; }
+a.card { display: block; color: var(--fg); }
+a.card:hover { color: var(--fg); border-color: var(--primary); background: var(--primary-50); }
+a.card > p > b:first-child { color: var(--primary); margin-right: 0.5rem; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; border-top: 1px solid var(--border-soft); margin-top: 0.5rem; padding-top: 0.6rem; font-size: 0.8rem; color: var(--fg-muted); }
 .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
 .legend i { display: inline-block; width: 1.1rem; height: 0.7rem; border: 2.5px solid; border-radius: 3px; }
-.legend i.path { height: 0; border: 0; border-top: 3px solid var(--accent); border-radius: 0; }
+.legend i.path { height: 0; border: 0; border-top: 4px solid #2563eb; border-radius: 0; }
 .legend .otherwise { color: var(--accent-300); font-weight: 600; }
 .bar { display: flex; height: 0.6rem; border-radius: 9999px; overflow: hidden; background: var(--border); max-width: 36rem; margin: 0.25rem 0 0.5rem; }
 .bar i { display: block; }
+.measure { display: inline-flex; align-items: center; gap: 0.3rem; flex: none; align-self: center; }
+.measure .bar { width: 2.6rem; height: 0.45rem; margin: 0; }
+.measure .bar i { min-width: 2px; }
+.measure b { width: 1.3rem; text-align: right; font-size: 0.78rem; font-weight: 600; color: var(--accent-300); }
+.row.on .measure b { color: var(--accent); }
 details.body > summary { cursor: pointer; color: var(--primary); font-size: 0.9rem; }
 svg { max-width: 100%; height: auto; font-family: var(--body); }
 svg text { fill: var(--fg); font-size: 14px; }
 svg .m { font-family: var(--mono); font-size: 12px; }
 svg .small { font-size: 12px; fill: var(--fg-muted); }
+/* the gates scroll in their card rather than shrink: their text is drawn at 12px */
+.sheet .card > svg { max-width: none; }
 svg .click { cursor: pointer; }
-svg .click:hover rect { stroke: var(--primary); }
+svg .click:hover rect, svg .click:focus-visible rect { stroke: var(--primary); }
 @media (max-width: 1350px) {
-  .cols.paneled { grid-template-columns: 9.5rem 14rem minmax(0, 1fr); }
-  .panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(37rem, 94vw); z-index: 5; }
+  .cols.paneled { grid-template-columns: minmax(0, 1fr) minmax(28rem, 40%); }
+  .cols.paneled > .col { display: none; }
 }
 @media (max-width: 900px) {
   html, body { height: auto; }
   .cols, .cols.paneled { display: block; }
   .col { border-right: 0; border-bottom: 1px solid var(--border); max-height: 13rem; }
   .sheet { padding: 1rem 16px 3rem; }
-  .panel { width: 100%; }
+  .panel { position: fixed; inset: 0; z-index: 5; }
   header .warn { margin-left: 0; }
 }
 </style>
@@ -110,7 +144,7 @@ function h(tag, attrs, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs ?? {})) {
     if (v == null || v === false) continue;
-    if (k === "onclick") el.addEventListener("click", v); else el.setAttribute(k, v === true ? "" : v);
+    el.setAttribute(k, v === true ? "" : v);
   }
   el.append(...children.flat(Infinity).filter((c) => c != null && c !== false));
   return el;
@@ -119,7 +153,7 @@ function s(tag, attrs, ...children) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
   for (const [k, v] of Object.entries(attrs ?? {})) {
     if (v == null || v === false) continue;
-    if (k === "onclick") el.addEventListener("click", v); else el.setAttribute(k, v);
+    el.setAttribute(k, v);
   }
   el.append(...children.flat(Infinity).filter((c) => c != null && c !== false));
   return el;
@@ -132,7 +166,12 @@ const code = (v) => h("code", null, typeof v === "string" ? v : JSON.stringify(v
 const json = (v) => h("pre", null, JSON.stringify(v, null, 2));
 const commas = (nodes) => nodes.flatMap((n, i) => (i === 0 ? [n] : [", ", n]));
 const toStructure = (name) => h("a", { href: route("structure", name) }, name);
+// keys(["a", "does this"], ["b", "does that"]) -> a hint: each key, then what it does
+const keys = (...pairs) => pairs.map(([key, does]) => [h("kbd", null, key), does]);
 const toOperation = (name) => h("a", { href: route("operation", name) }, name);
+// a scenario in a rule's panel is a card that opens it whole: its name first, the arrow saying a panel comes over this one
+const scenarioCard = (path, ...children) => h("a", { class: "card", href: route("scenario", path), "data-scenario": path }, children);
+const scenarioName = (path) => h("b", null, `${path.split("/")[1]} →`);
 const table = (heads, rows) => rows.length === 0 ? h("p", { class: "muted" }, "None.") : h("table", null, h("thead", null, h("tr", null, heads.map((t) => h("th", null, t)))), h("tbody", null, rows.map((r) => h("tr", null, r.map((c) => h("td", null, c))))));
 
 // ---- what the page reads from the data
@@ -178,7 +217,16 @@ function lines(o) {
       say: [whenSay(e.when), thenSay(e.then)], short: typeof e.then === "string" ? "nothing changes" : "says" in e.then ? e.then.says : "changes what is kept" })),
   ];
 }
-const operationColor = (o) => blend(lines(o).map((l) => provenanceOf(o.operation, l.rule)));
+// the rules of an operation as a small bar — held, wrong, neither — and the count of the wrong ones
+//   [holds, holds, contradicted, not-shown]  ->  ██▌░ 1   titled "2 hold · 1 contradicted · 1 not shown"
+function measure(o) {
+  const words = lines(o).map((l) => provenanceOf(o.operation, l.rule));
+  const held = words.filter(good).length, wrong = words.filter(bad).length, neither = words.length - held - wrong;
+  const title = `${held} ${roles ? "hold" : "verified"} · ${wrong} ${roles ? "contradicted" : "refuted"} · ${neither} ${roles ? "not shown" : "not verified"}`;
+  const part = (n, color) => n === 0 ? null : h("i", { style: `background:${color};width:${(100 * n) / words.length}%` });
+  return h("span", { class: "measure", role: "img", "aria-label": title, title },
+    h("span", { class: "bar" }, part(held, colors.holds), part(wrong, colors.refuted), part(neither, roles ? colors["not-shown"] : colors.none)), h("b", null, wrong === 0 ? "" : String(wrong)));
+}
 // what the references say of one scenario: its rules' verdicts, then its trigger's
 const verdictsOf = (path) => { const e = scenarioAt(path), name = e && operationOfScenario(e); return [
   ...data.rules.filter((r) => r.operation === name).flatMap((r) => r.by.filter((b) => b.scenario === path).map((b) => ({ claim: r.rule, ...b }))),
@@ -187,6 +235,8 @@ const verdictsOf = (path) => { const e = scenarioAt(path), name = e && operation
 const scenarioColor = (path) => blend(verdictsOf(path).filter((v) => !v.binding).map((v) => v.verdict));
 
 // ---- diagrams
+// What a scenario takes is drawn in blue: red is a verdict's, and a scenario that holds takes a path too.
+const pathColor = "#2563eb";
 // One scenario as a sequence: who calls the target, what it answers, what is read around the judged call.
 function sequence(path) {
   const sc = x.scenarios.find((e) => e.path === path).scenario, ref = referenceOf(path);
@@ -207,7 +257,7 @@ function sequence(path) {
       y += height + 34;
       continue;
     }
-    const ax = left + actors.indexOf(who(step.call)) * col, color = step.act ? "#f65e5e" : "#1e416e", given = JSON.stringify(step.call.with ?? {});
+    const ax = left + actors.indexOf(who(step.call)) * col, color = step.act ? pathColor : "#1e416e", given = JSON.stringify(step.call.with ?? {});
     els.push(s("line", { x1: ax, y1: y, x2: targetX - 6, y2: y, stroke: color, "stroke-width": step.act ? 2.5 : 1.5, "marker-end": `url(#q-${step.act ? "act" : "call"})` }),
       s("text", { x: ax + 8, y: y - 7, "font-weight": step.act ? 700 : 400 }, step.call.operation),
       given === "{}" ? null : s("text", { x: ax + 8, y: y + 15, class: "m small" }, given.length > 60 ? `${given.slice(0, 59)}…` : given),
@@ -218,11 +268,11 @@ function sequence(path) {
   const lifeline = (at, label) => [s("text", { x: at, y: 24, "text-anchor": "middle", "font-weight": 600 }, label), s("line", { x1: at, y1: 34, x2: at, y2: y, stroke: "#d1d5db" })];
   const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
   return s("svg", { viewBox: `0 0 ${width} ${y + 10}`, width, role: "img", "aria-label": `Sequence of ${path}` },
-    s("defs", null, marker("q-call", "#1e416e"), marker("q-act", "#f65e5e"), marker("q-back", "#4b5563")),
+    s("defs", null, marker("q-call", "#1e416e"), marker("q-act", pathColor), marker("q-back", "#4b5563")),
     actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"), els);
 }
 
-// The steps of a scenario of the roles as one sequence: arrange, before, the call (red), after.
+// The steps of a scenario of the roles as one sequence: arrange, before, the call (heavier), after.
 function steps(e) {
   const who = (st) => st.as ?? "nobody";
   const actors = [...new Set(e.steps.map(who))];
@@ -230,7 +280,7 @@ function steps(e) {
   let y = 64, was;
   for (const st of e.steps) {
     if (st.when !== was) { els.push(s("text", { x: 8, y: y - 16, class: "small", "font-weight": 600 }, st.when)); was = st.when; }
-    const ax = left + actors.indexOf(who(st)) * col, call = st.when === "call", color = call ? "#f65e5e" : "#1e416e";
+    const ax = left + actors.indexOf(who(st)) * col, call = st.when === "call", color = call ? pathColor : "#1e416e";
     const said = st.unplayable ? `unplayable: ${st.unplayable}` : `${st.method.toUpperCase()} ${st.path}`;
     els.push(s("line", { x1: ax, y1: y, x2: targetX - 6, y2: y, stroke: color, "stroke-width": call ? 2.5 : 1.5, "marker-end": `url(#r-${call ? "act" : "call"})` }),
       s("text", { x: ax + 8, y: y - 7, class: "m", "font-weight": call ? 700 : 400 }, said.length > 46 ? `${said.slice(0, 45)}…` : said),
@@ -241,13 +291,14 @@ function steps(e) {
   const lifeline = (at, label) => [s("text", { x: at, y: 24, "text-anchor": "middle", "font-weight": 600 }, label), s("line", { x1: at, y1: 34, x2: at, y2: y, stroke: "#d1d5db" })];
   const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
   return s("svg", { viewBox: `0 0 ${width} ${y}`, width, role: "img", "aria-label": `Steps of ${e.path}` },
-    s("defs", null, marker("r-call", "#1e416e"), marker("r-act", "#f65e5e"), marker("r-back", "#4b5563")),
+    s("defs", null, marker("r-call", "#1e416e"), marker("r-act", pathColor), marker("r-back", "#4b5563")),
     actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"), els);
 }
 
 // An operation as a column of gates: each rule that can refuse is an exit to the right, the effects are
-// below. With a scenario, the path it was written to take is red, and a status the target answered
-// otherwise is written beside the exit.
+// below, a mark in the corner of each saying its verdict. With a scenario, the path it was written to take
+// flows down the spine and round the rules it goes through, and a status the target answered otherwise is
+// written beside the exit, in red.
 function gates(o, path, picked) {
   const all = lines(o), gate = all.filter((l) => l.kind === "input" || l.kind === "requires"), effects = all.filter((l) => !gate.includes(l));
   const e = path ? scenarioAt(path) : null, sc = e ? (e.scenario ?? { proves: [e.rule] }) : null;
@@ -262,15 +313,17 @@ function gates(o, path, picked) {
   const cx = 150, bw = 260, els = [];
   let y = 20;
   const stroke = (rule) => colors[provenanceOf(o.operation, rule)] ?? colors.none;
+  const mark = (rule, x, y) => s("circle", { cx: x, cy: y, r: 5, fill: stroke(rule) }, s("title", null, provenanceOf(o.operation, rule)));
+  const edge = (on) => ({ stroke: on ? pathPaint : "#d1d5db", "stroke-width": on ? 3 : 1.5 });
   const taken = (n) => sc && (exitAt === -1 || n <= exitAt), through = sc && exitAt === -1;
-  const spine = (y1, y2, on) => s("line", { x1: cx, y1, x2: cx, y2, stroke: on ? "#f65e5e" : "#d1d5db", "stroke-width": on ? 3 : 1.5 });
-  const open = (rule) => () => { location.hash = ruleRoute(o.operation, rule); };
+  const pathPaint = "url(#g-flow)";
+  const spine = (y1, y2, on) => s("line", { x1: cx, y1, x2: cx, y2, stroke: on ? pathPaint : "#d1d5db", "stroke-width": on ? 4 : 1.5 });
   const clip = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
   const inputs = `${o.operation}(${Object.keys(o.takes ?? {}).join(", ")})`;
   els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#172741" }), s("text", { x: cx, y: y + 25, "text-anchor": "middle", style: "fill:#fff", "font-weight": 600 }, inputs.length > 34 ? `${clip(o.operation, 30)}(…)` : inputs));
   y += 40;
   const exit = (y, h, out, refusal, status, answeredElse) => [
-    s("line", { x1: cx + bw / 2, y1: y + h / 2, x2: cx + bw / 2 + 60, y2: y + h / 2, stroke: out ? "#f65e5e" : "#d1d5db", "stroke-width": out ? 3 : 1.5, "marker-end": `url(#g-${out ? "on" : "off"})` }),
+    s("line", { x1: cx + bw / 2, y1: y + h / 2, x2: cx + bw / 2 + 60, y2: y + h / 2, stroke: out ? pathPaint : "#d1d5db", "stroke-width": out ? 4 : 1.5, "marker-end": `url(#g-${out ? "on" : "off"})` }),
     s("text", { x: cx + bw / 2 + 68, y: y + h / 2 - 3, class: "m" }, refusal),
     s("text", { x: cx + bw / 2 + 68, y: y + h / 2 + 13, class: "small" }, status),
     answeredElse ? s("text", { x: cx + bw / 2 + 180, y: y + h / 2 + 13, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null];
@@ -281,9 +334,9 @@ function gates(o, path, picked) {
     const out = sc && exitAt === n;
     if (st.gate) {
       const g = st.gate;
-      els.push(s("g", { class: "click", onclick: open(g.rule) },
-        s("rect", { x: cx - bw / 2, y, width: bw, height: 44, rx: 6, fill: picked === g.rule ? "#d9e3f1" : "#fff", stroke: stroke(g.rule), "stroke-width": 2.5 }),
-        s("text", { x: cx, y: y + 19, "text-anchor": "middle", class: "m" }, clip(g.rule, 34)),
+      els.push(s("a", { class: "click", href: ruleRoute(o.operation, g.rule) },
+        s("rect", { x: cx - bw / 2, y, width: bw, height: 44, rx: 6, fill: picked === g.rule ? "#d9e3f1" : "#fff", ...edge(taken(n)) }), mark(g.rule, cx + bw / 2 - 14, y + 14),
+        s("text", { x: cx, y: y + 19, "text-anchor": "middle", class: "m" }, clip(g.rule, 30)),
         s("text", { x: cx, y: y + 36, "text-anchor": "middle", class: "small" }, clip(g.short, 38))),
         exit(y, 44, out, g.otherwise, g.status === undefined ? "no status declared" : `refused with ${g.status}`, out && answered !== undefined && answered !== g.status));
       y += 44;
@@ -297,38 +350,42 @@ function gates(o, path, picked) {
       return Array.from({ length: Math.ceil(marks.length / perRow) }, (_, r) => ({ input: r === 0 ? input : "", marks: marks.slice(r * perRow, (r + 1) * perRow) }));
     });
     const height = 34 + rows.length * 22 + 6, status = (g) => g.status === undefined ? "no status declared" : `${g.status}`;
-    els.push(s("rect", { x: left, y, width: wide, height, rx: 6, fill: "#fff", stroke: blend(words), "stroke-width": 2.5 }),
+    els.push(s("rect", { x: left, y, width: wide, height, rx: 6, fill: "#fff", ...edge(taken(n)) }),
       s("text", { x: left + 12, y: y + 21, class: "m" }, "inputs"),
       s("text", { x: left + 70, y: y + 21, class: "small" }, `${words.filter(good).length} of ${words.length} hold`),
       s("text", { x: left + wide - 12, y: y + 21, "text-anchor": "end", class: "small" }, `otherwise ${one(st.inputs.map((g) => g.otherwise), "refusals")} · ${one(st.inputs.map(status), "statuses")}`),
       rows.map((row, r) => [
         s("text", { x: left + 12, y: y + 34 + r * 22 + 14, class: "small", "font-weight": 600 }, clip(row.input, 13)),
-        row.marks.map((g, m) => s("g", { class: "click", onclick: open(g.rule) },
+        row.marks.map((g, m) => s("a", { class: "click", href: ruleRoute(o.operation, g.rule) },
           s("title", null, `${g.rule} — ${g.short}`),
-          picked === g.rule || g === exited ? s("rect", { x: left + 100 + m * 88, y: y + 34 + r * 22, width: 86, height: 20, rx: 10, fill: g === exited ? "#fde3e3" : "#d9e3f1" }) : null,
+          picked === g.rule || g === exited ? s("rect", { x: left + 100 + m * 88, y: y + 34 + r * 22, width: 86, height: 20, rx: 10, fill: "#d9e3f1" }) : null,
           s("circle", { cx: left + 110 + m * 88, cy: y + 34 + r * 22 + 10, r: 5, fill: stroke(g.rule) }),
           s("text", { x: left + 120 + m * 88, y: y + 34 + r * 22 + 14, class: "small" }, clip(wordOf(g), 11))))]),
-      exited ? [s("line", { x1: left + wide, y1: y + height / 2, x2: left + wide + 40, y2: y + height / 2, stroke: "#f65e5e", "stroke-width": 3, "marker-end": "url(#g-on)" }),
+      exited ? [s("line", { x1: left + wide, y1: y + height / 2, x2: left + wide + 40, y2: y + height / 2, stroke: pathPaint, "stroke-width": 4, "marker-end": "url(#g-on)" }),
         s("text", { x: left + wide + 46, y: y + height / 2 + 4, class: "small", style: answered !== undefined && answered !== exited.status ? "fill:#a62949;font-weight:600" : "" }, answered !== undefined && answered !== exited.status ? `answered ${answered}` : status(exited))] : null);
     y += height;
   });
   effects.forEach((e) => {
     els.push(spine(y, y + 20, through));
     y += 20;
-    els.push(s("g", { class: "click", onclick: open(e.rule) },
-      s("rect", { x: cx - bw / 2, y, width: bw + 200, height: 44, rx: 6, fill: picked === e.rule ? "#d9e3f1" : "#f7f7f8", stroke: stroke(e.rule), "stroke-width": 2.5 }),
-      s("text", { x: cx - bw / 2 + 12, y: y + 19, class: "m" }, clip(e.rule, 60)),
+    els.push(s("a", { class: "click", href: ruleRoute(o.operation, e.rule) },
+      s("rect", { x: cx - bw / 2, y, width: bw + 200, height: 44, rx: 6, fill: picked === e.rule ? "#d9e3f1" : "#f7f7f8", ...edge(through) }), mark(e.rule, cx + bw / 2 + 200 - 14, y + 14),
+      s("text", { x: cx - bw / 2 + 12, y: y + 19, class: "m" }, clip(e.rule, 56)),
       s("text", { x: cx - bw / 2 + 12, y: y + 36, class: "small" }, clip(e.short, 66))));
     y += 44;
   });
   els.push(spine(y, y + 20, through));
   y += 20;
   const t = triggerOf(o.operation), accepted = t?.answers.status, answers = typeof o.answers === "string" ? o.answers : o.answers?.structure;
-  els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#fff", stroke: through ? "#f65e5e" : "#172741", "stroke-width": through ? 3 : 1.5 }),
+  els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#fff", stroke: through ? pathPaint : "#172741", "stroke-width": through ? 4 : 1.5 }),
     s("text", { x: cx, y: y + 25, "text-anchor": "middle" }, `accepted${t ? ` · ${accepted}` : ""}${answers ? ` · answers ${answers}` : ""}`),
     through && answered !== undefined && accepted !== undefined && answered !== accepted ? s("text", { x: cx + bw / 2 + 12, y: y + 25, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
-  const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
-  return s("svg", { viewBox: `0 0 640 ${y + 60}`, width: 640, role: "img", "aria-label": `Gates of ${o.operation}` }, s("defs", null, marker("g-on", "#f65e5e"), marker("g-off", "#d1d5db")), els);
+  const marker = (id, color, size) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerUnits: "userSpaceOnUse", markerWidth: size, markerHeight: size, orient: "auto" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
+  return s("svg", { viewBox: `0 0 640 ${y + 60}`, width: 640, role: "group", "aria-label": `Gates of ${o.operation}` }, s("defs", null, marker("g-on", pathColor, 16), marker("g-off", "#d1d5db", 10),
+    // a band from blue to violet to cyan, repeated down the page and sliding: a line is too thin to carry a gradient of its own
+    s("linearGradient", { id: "g-flow", gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: 0, y2: 120, spreadMethod: "repeat" },
+      s("stop", { offset: 0, "stop-color": pathColor }), s("stop", { offset: 0.4, "stop-color": "#a855f7" }), s("stop", { offset: 0.7, "stop-color": "#22d3ee" }), s("stop", { offset: 1, "stop-color": pathColor }),
+      matchMedia("(prefers-reduced-motion: reduce)").matches ? null : s("animateTransform", { attributeName: "gradientTransform", type: "translate", from: "0 0", to: "0 120", dur: "1.6s", repeatCount: "indefinite" }))), els);
 }
 
 // ---- the sheets
@@ -358,16 +415,16 @@ function rulePanel(o, line) {
   if (roles) return roleRulePanel(o, line);
   const j = judged(o.operation, line.rule), f = line.fact ? x.facts.find((e) => e.fact === line.fact) : null;
   return [
-    h("a", { class: "close", href: route("operation", o.operation) }, "Close"),
+    h("a", { class: "close", href: route("operation", o.operation) }, "Close", h("kbd", null, "esc")),
     h("p", { class: "eyebrow" }, `Rule of ${o.operation}`), h("h2", null, code(line.rule)), h("p", null, line.say),
     h("p", null, provenanceDot(j?.provenance ?? "declared-only"), h("b", null, j?.provenance ?? "declared-only"), j?.reason ? ` — ${j.reason}` : ""),
     line.otherwise ? h("p", { class: "muted" }, code(line.otherwise), line.status === undefined ? " has no status declared." : [" is answered ", code(line.status), " on the wire."]) : null,
     f ? [h("h3", null, "The fact"), h("p", null, f.condition.length === 0 ? "Declared without a condition: nothing can read it." : commas(f.condition.map((t) => "caller" in t ? ["the caller is ", code(t.caller)]
       : [toStructure(t.structure), " where ", Object.entries(t.where).map(([k, v]) => `${k} is the call's ${v[1]}`).join(", "), t.field ? `, ${t.field.join(".")}` : "", " must be ", code(t["must-be"].join(" "))])))] : null,
-    h("h3", null, "The scenarios"),
-    (j?.by ?? []).length === 0 ? h("p", { class: "muted" }, "None judges it.") : j.by.map((b) => [
-      h("p", null, provenanceDot(b.verdict), h("a", { href: route("scenario", b.scenario) }, h("b", null, b.scenario.split("/")[1])), ` — ${b.verdict}`, b.reason ? `: ${b.reason}` : ""),
-      sequence(b.scenario)]),
+    h("h3", null, "The scenarios", h("span", { class: "keys" }, keys(["↑↓", "draw its path"], ["⏎", "open"]))),
+    (j?.by ?? []).length === 0 ? h("p", { class: "muted" }, "None judges it.") : j.by.map((b) => scenarioCard(b.scenario,
+      h("p", null, scenarioName(b.scenario), provenanceDot(b.verdict), b.verdict, b.reason ? `: ${b.reason}` : ""),
+      sequence(b.scenario))),
   ];
 }
 function operationHead(o) {
@@ -381,32 +438,35 @@ function operationHead(o) {
   ];
 }
 function operationSheet(o, path, picked) {
+  // a rule's panel lists its scenarios: only the ones no rule lists are left to list here
+  const listed = new Set(lines(o).flatMap((l) => (judged(o.operation, l.rule)?.by ?? []).map((b) => b.scenario)));
+  const unlisted = scenariosOf(o.operation).filter((e) => !listed.has(e.path));
   return [
     h("p", { class: "eyebrow" }, "Operation"), h("h1", null, o.operation), operationHead(o),
     h("div", { class: "card" }, gates(o, path, picked), h("div", { class: "legend" },
-      (roles ? [["holds", "holds"], ["contradicted", "contradicted or refused unexpectedly"], ["not-shown", "not shown"], ["none", "unjudged"]] : [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]]).map(([key, word]) => h("span", null, h("i", { style: `border-color:${colors[key]}` }), word)),
-      path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof; a scenario draws its path. Under inputs, a mark is a requirement on that input alone."))),
-    h("p", { class: "eyebrow" }, "Scenarios"),
-    scenariosOf(o.operation).length === 0 ? h("p", { class: "muted" }, "None.") : h("div", { class: "chips" }, scenariosOf(o.operation).map((e) =>
-      h("a", { class: `chip ${e.path === path ? "on" : ""}`, href: e.path === path ? route("operation", o.operation) : route("scenario", e.path) }, dot(scenarioColor(e.path)), e.path.split("/")[1]))),
+      (roles ? [["holds", "holds"], ["contradicted", "contradicted or refused unexpectedly"], ["not-shown", "not shown"], ["none", "unjudged"]] : [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]]).map(([key, word]) => h("span", null, dot(colors[key]), word)),
+      path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof and its scenarios; a scenario draws its path. Under inputs, a mark is a requirement on that input alone."),
+      h("span", { class: "keys" }, keys(["↑↓", "rule"], ["←→", "mark of an input"], ["⏎", "its proof"])))),
+    unlisted.length === 0 ? null : [h("p", { class: "eyebrow" }, "Scenarios no rule lists"), h("div", { class: "chips" }, unlisted.map((e) =>
+      h("a", { class: `chip ${e.path === path ? "on" : ""}`, href: e.path === path ? route("operation", o.operation) : route("scenario", e.path) }, dot(scenarioColor(e.path)), e.path.split("/")[1])))],
   ];
 }
 // the panel of one scenario: what it proves, what the references say of it, and what happened
-function scenarioPanel({ path, scenario: sc }) {
+function scenarioPanel({ path, scenario: sc }, back) {
   const name = sc.act.call.operation, ref = referenceOf(path);
   const call = (written, played, label) => h("div", { class: "card" },
     h("p", null, h("span", { class: "word" }, `${label}  `), toOperation(written.call.operation), written.call.caller ? ` as ${written.call.caller}` : " as nobody", played ? [" — answered ", code(played.response.status)] : ""),
     Object.keys(written.call.with ?? {}).length ? json(written.call.with) : null,
     played ? h("details", { class: "body" }, h("summary", null, "What the target answered"), json(played.response.body)) : null);
   return [
-    h("a", { class: "close", href: route("operation", name) }, "Close"),
+    h("a", { class: "close", href: back }, "Close", h("kbd", null, "esc")),
     h("p", { class: "eyebrow" }, `Scenario of ${name}`), h("h2", null, sc.scenario), h("p", null, sc.says),
     h("p", null, "Proves ", commas(sc.proves.map((rule) => h("a", { href: ruleRoute(name, rule) }, code(rule)))), "."),
     ref ? [h("h3", null, "Verdicts"), table(["Claim", "Verdict", "Reason"], verdictsOf(path).map((v) => [code(v.claim), [provenanceDot(v.verdict), v.verdict], v.reason ?? ""])),
       h("p", { class: "muted" }, `Recorded on ${ref.run.target} at ${ref.run.version}, ${ref.run.at}. ${ref.noise.length} place(s) differ between two executions.`)]
       : h("p", { class: "muted" }, "No reference yet: nothing is judged."),
     h("h3", null, "What happens"), sequence(path),
-    h("h3", null, "The calls"), sc.arrange.map((a, n) => call(a, ref?.arrange[n], "ARRANGE")), call(sc.act, ref?.act, "ACT"),
+    h("h3", null, "The calls", h("span", { class: "keys" }, keys(["↑↓", "body"], ["←→", "fold"]))), sc.arrange.map((a, n) => call(a, ref?.arrange[n], "ARRANGE")), call(sc.act, ref?.act, "ACT"),
   ];
 }
 // ---- the roles' reading
@@ -423,31 +483,31 @@ function roleOperationHead(o) {
 function roleRulePanel(o, line) {
   const j = judged(o.operation, line.rule);
   return [
-    h("a", { class: "close", href: route("operation", o.operation) }, "Close"),
+    h("a", { class: "close", href: route("operation", o.operation) }, "Close", h("kbd", null, "esc")),
     h("p", { class: "eyebrow" }, `${line.shared ? "Shared rule" : "Rule"} of ${o.operation}`), h("h2", null, code(line.rule)), h("p", null, line.say),
     line.body ? h("p", { class: "muted" }, "The answer's body: ", line.body) : null,
     h("p", null, provenanceDot(j?.provenance ?? unproven), h("b", null, j?.provenance ?? unproven), j?.reason ? ` — ${j.reason}` : ""),
     line.source ? h("p", { class: "muted" }, "Read in ", code(line.source)) : null,
     line.doubts.map((d) => h("p", { class: "otherwise" }, `The reader's doubt: ${d}`)),
-    h("h3", null, "The scenarios"),
-    (j?.by ?? []).length === 0 ? h("p", { class: "muted" }, "None exercises it.") : j.by.map((b) => [
-      h("p", null, h("a", { href: route("scenario", b.scenario) }, h("b", null, b.scenario.split("/")[1])), " — ", judgementOf(b)),
+    h("h3", null, "The scenarios", h("span", { class: "keys" }, keys(["↑↓", "draw its path"], ["⏎", "open"]))),
+    (j?.by ?? []).length === 0 ? h("p", { class: "muted" }, "None exercises it.") : j.by.map((b) => scenarioCard(b.scenario,
+      h("p", null, scenarioName(b.scenario), judgementOf(b)),
       b.says ? h("p", { class: "muted" }, b.says) : null,
-      steps(scenarioAt(b.scenario))]),
+      steps(scenarioAt(b.scenario)))),
   ];
 }
-function roleScenarioPanel(e) {
+function roleScenarioPanel(e, back) {
   const j = e.judgement, line = (st) => st.unplayable ? `${st.when} as ${st.as ?? "nobody"}: unplayable, ${st.unplayable}`
     : `${st.when}  ${st.method.toUpperCase()} ${st.path}${st.query ? `?${new URLSearchParams(Object.entries(st.query).map(([k, v]) => [k, typeof v === "string" ? v : JSON.stringify(v)]))}` : ""}  as ${st.as ?? "nobody"}${st.status === undefined ? "" : `  → ${st.status}`}`;
   return [
-    h("a", { class: "close", href: route("operation", e.operation) }, "Close"),
+    h("a", { class: "close", href: back }, "Close", h("kbd", null, "esc")),
     h("p", { class: "eyebrow" }, `Scenario of ${e.operation}`), h("h2", null, e.path.split("/")[1]),
     h("p", null, "Exercises ", h("a", { href: ruleRoute(e.operation, e.rule) }, code(e.rule)), "."),
     e.situation ? h("p", null, e.situation, h("span", { class: "muted" }, ` — reached: ${e.reached}`)) : null,
     h("h3", null, "The judgement"),
     j ? [h("p", null, judgementOf(j)), h("p", null, j.says)] : h("p", { class: "muted" }, e.steps.some((st) => st.status !== undefined) ? "Not judged yet." : "Not played yet: nothing is judged."),
     h("h3", null, "What happens"), steps(e),
-    h("h3", null, "The exchanges"), e.steps.map((st) => h("div", { class: "card" }, h("p", null, code(line(st))),
+    h("h3", null, "The exchanges", h("span", { class: "keys" }, keys(["↑↓", "body"], ["←→", "fold"]))), e.steps.map((st) => h("div", { class: "card" }, h("p", null, code(line(st))),
       st.body === undefined ? null : h("details", { class: "body" }, h("summary", null, "What was sent"), json(st.body)),
       st.answer === undefined || st.answer === null ? null : h("details", { class: "body" }, h("summary", null, "What the target answered"), json(st.answer)))),
   ];
@@ -470,24 +530,39 @@ function overview() {
   const bar = (title, counts) => { const total = Object.values(counts).reduce((a, b) => a + b, 0);
     return [h("p", { class: "eyebrow" }, title), h("div", { class: "bar" }, Object.entries(counts).map(([word, n]) => h("i", { style: `background:${colors[word] ?? colors.none};width:${total ? (100 * n) / total : 0}%` }))),
       h("p", null, Object.entries(counts).map(([word, n]) => [provenanceDot(word), `${n} ${word}   `]))]; };
+  const why = (r) => r.reason ?? [...r.by.filter((b) => b.verdict === r.provenance), ...r.by].map((b) => b.reason ?? b.says).filter(Boolean)[0] ?? "";
+  const notHeld = data.rules.filter((r) => !good(r.provenance));
+  // what is not held without being wrong: a shared rule is one line per word, its operations beside it; a rule of
+  // one operation is a line of its own, two operations naming a rule alike not making it one rule
+  //   shared r:  [{operation: "a", rule: "r"}, {operation: "b", rule: "r"}]  ->  r | a, b
+  const shared = new Set((data.common?.rules ?? []).map((r) => r.rule));
+  const notShownByRule = [...notHeld.filter((r) => !bad(r.provenance)).reduce((byRule, r) => {
+    const key = shared.has(r.rule) ? `${r.rule} ${r.provenance}` : `${r.operation} ${r.rule}`;
+    return byRule.set(key, [...(byRule.get(key) ?? []), r]);
+  }, new Map()).values()];
+  const whys = (rs) => { const all = [...new Set(rs.map(why))].filter(Boolean);
+    return all.length < 2 ? all : [all[0], h("span", { class: "muted" }, ` · ${all.length - 1} other ${all.length === 2 ? "reason" : "reasons"}, under each operation`)]; };
   return [
     h("h1", null, "The specification of ", h("b", null, x.target?.target ?? data.name), "."),
     h("p", { class: "muted" }, roles ? ["Walk it from a structure to its operations, then to the scenarios that exercise them. Each rule carries the judge's word on its evidence. ", h("a", { href: "#/common" }, "What holds for every operation"), "."]
       : "Walk it from a structure to its operations, then to the scenarios that prove them. Every verdict is computed from the references, each time this page is made."),
     h("h2", null, "What holds"), bar("Rules", data.counts.rules), data.counts.bindings ? bar("Bindings", data.counts.bindings) : null,
-    h("h2", null, roles ? "Rules that do not hold" : "Rules not verified"),
-    table(["Operation", "Rule", "Provenance", "Why"], data.rules.filter((r) => !good(r.provenance)).map((r) => [toOperation(r.operation), code(r.rule), [provenanceDot(r.provenance), r.provenance], r.reason ?? [...r.by.filter((b) => b.verdict === r.provenance), ...r.by].map((b) => b.reason ?? b.says).filter(Boolean)[0] ?? ""])),
+    h("h2", null, roles ? "Rules that do not hold" : "Rules refuted"),
+    table(["Operation", "Rule", "Provenance", "Why"], notHeld.filter((r) => bad(r.provenance)).map((r) => [h("span", { class: "unbroken" }, toOperation(r.operation)), h("a", { class: "unbroken", href: ruleRoute(r.operation, r.rule) }, code(r.rule)), h("span", { class: "unbroken" }, provenanceDot(r.provenance), r.provenance), why(r)])),
+    h("h2", null, roles ? "Rules not shown" : "Rules not verified"),
+    table(["Rule", "Provenance", "Operations", "Why"], notShownByRule.map((rs) => [h("span", { class: "unbroken" }, code(rs[0].rule)), h("span", { class: "unbroken" }, provenanceDot(rs[0].provenance), rs[0].provenance), commas(rs.map((r) => h("a", { href: ruleRoute(r.operation, r.rule) }, r.operation))), whys(rs)])),
   ];
 }
 function findings() {
   return [
-    h("h1", null, "Problems and gaps"),
+    h("h1", null, "Extraction checks"),
     h("h2", null, "Problems"), h("p", { class: "muted" }, roles ? "What the roles wrote does not pass its check." : "The extraction is wrong."), table(["File", "At", "Message"], data.problems.map((p) => [code(p.file), p.at ? code(p.at) : "", p.message])),
     h("h2", null, "Gaps"), h("p", { class: "muted" }, roles ? "What the roles have not done yet." : "The extraction is incomplete."), table(["Kind", "Name", "Message"], data.gaps.map((g) => [g.kind, code(g.name), g.message])),
   ];
 }
 
-// ---- the page: structures, the operations of one, a sheet, and a panel for a rule or a scenario
+// ---- the page: the structures with their operations folded under each, a sheet, and a panel for a rule or a scenario
+const unfolded = new Set();
 function render() {
   const [, concept, ...rest] = location.hash.split("/");
   const name = rest.length === 0 ? undefined : rest.map(decoded).join("/");
@@ -497,34 +572,101 @@ function render() {
   const line = o && ruleOf ? lines(o).find((l) => l.rule === ruleOf.rule) : undefined;
   const groups = [...x.structures.map((st) => st.structure), transverse].filter((g) => g !== transverse || operationsOf(g).length > 0);
   const group = o ? groupOf(o.operation) : concept === "structure" && groups.includes(name) ? name : undefined;
+  const cols = document.getElementById("cols"), was = { sheet: cols.querySelector(".sheet")?.scrollTop ?? 0, of: cols.dataset.operation };
+  const previousRoute = cols.dataset.route, inList = Boolean(document.activeElement?.closest("nav"));
+  // a rule that does not hold is drawn twice, a mark under inputs and a gate: which one the reader left is kept
+  const gateLeft = [...cols.querySelectorAll(".sheet svg a.click")].indexOf(document.activeElement);
+  if (gateLeft !== -1) cols.dataset.gate = gateLeft;
+  // walking into a structure unfolds its operations; after that only the reader folds them
+  if (group !== undefined && group !== cols.dataset.group) unfolded.add(group);
   const row = (href, on, ...children) => h("a", { class: `row ${on ? "on" : ""}`, href }, children);
-  const columns = [
-    h("nav", { class: "col", "aria-label": "Structures" }, h("p", { class: "eyebrow" }, "Structures"),
-      groups.map((g) => row(route("structure", g), g === group, null, h("span", { class: "n" }, g === transverse ? h("i", null, "Transverse") : g), h("span", { class: "word" }, String(operationsOf(g).length))))),
-    h("nav", { class: "col", "aria-label": "Operations" }, h("p", { class: "eyebrow" }, "Operations"),
-      group === undefined ? h("p", { class: "eyebrow muted" }, "Pick a structure") : operationsOf(group).length === 0 ? h("p", { class: "eyebrow muted" }, "None") : operationsOf(group).map((e) => row(route("operation", e.operation), e.operation === o?.operation,
-        dot(operationColor(e)), h("span", { class: "n" }, e.operation, others(e.operation).length ? h("span", { class: "also" }, `→ ${others(e.operation).map((t) => t.structure).join(", ")}`) : null)))),
-  ];
-  const panel = sc ? (roles ? roleScenarioPanel(sc) : scenarioPanel(sc)) : line ? rulePanel(o, line) : null;
-  const sheet = o ? operationSheet(o, sc?.path, line?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet()
+  const structureEntry = (g) => {
+    const head = [h("a", { class: "n", href: route("structure", g), tabindex: operationsOf(g).length === 0 ? null : -1 }, g === transverse ? h("i", null, "Transverse") : g), h("span", { class: "word" }, String(operationsOf(g).length))];
+    const on = g === group && !o ? "on" : "";
+    if (operationsOf(g).length === 0) return h("div", { class: `row ${on}` }, head);
+    const d = h("details", { open: unfolded.has(g) }, h("summary", { class: `row ${on}` }, head),
+      operationsOf(g).map((e) => row(route("operation", e.operation), e.operation === o?.operation,
+        h("span", { class: "n" }, e.operation, others(e.operation).length ? h("span", { class: "also" }, `→ ${others(e.operation).map((t) => t.structure).join(", ")}`) : null), measure(e))));
+    d.addEventListener("toggle", () => (d.open ? unfolded.add(g) : unfolded.delete(g)));
+    return d;
+  };
+  const list = h("nav", { class: "col", "aria-label": "Structures and their operations" }, h("p", { class: "eyebrow" }, "Structures", h("kbd", { title: "Press & to come back to this list" }, "&")), groups.map(structureEntry),
+    h("p", { class: "keys" }, keys(["↑↓", "move"], ["←→", "fold"], ["⏎", "open"])));
+  // a scenario sits on the rule it was reached from, or on the first it proves: closing it leads back there
+  const proves = sc ? (sc.scenario?.proves ?? [sc.rule]) : [];
+  const under = sc && o ? lines(o).find((l) => l.rule === (proves.includes(cols.dataset.rule) ? cols.dataset.rule : proves[0])) : undefined;
+  const back = sc ? (under ? ruleRoute(o.operation, under.rule) : route("operation", operationOfScenario(sc))) : undefined;
+  const panel = sc ? (roles ? roleScenarioPanel(sc, back) : scenarioPanel(sc, back)) : line ? rulePanel(o, line) : null;
+  const sheet = o ? operationSheet(o, sc?.path, line?.rule ?? under?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet()
     : group === transverse ? [h("p", { class: "eyebrow" }, "Operations"), h("h1", null, "Transverse"), h("p", null, "They answer no structure, and name several in what they take, or none.")]
     : group ? structureSheet(group) : overview();
-  const cols = document.getElementById("cols"), was = { sheet: cols.querySelector(".sheet")?.scrollTop ?? 0, of: cols.dataset.operation };
   cols.className = `cols ${o && panel ? "paneled" : ""}`;
   // a scenario of an operation the files do not hold has no sheet to sit beside
-  cols.replaceChildren(...[...columns, h("main", { class: "sheet" }, o || !panel ? sheet : panel), o && panel ? h("aside", { class: "panel" }, panel) : null].filter(Boolean));
+  cols.replaceChildren(...[list, h("main", { class: "sheet" }, o || !panel ? sheet : panel), o && panel ? h("aside", { class: `panel ${under ? "stacked" : ""}` }, !under ? panel : [
+    h("a", { class: "under", href: back }, h("span", { class: "word" }, "Rule"), provenanceDot(provenanceOf(o.operation, under.rule)), code(under.rule)), h("div", { class: "top" }, panel)]) : null].filter(Boolean));
+  // a scenario of a rule's panel, once it has the focus, draws its path through the gates before it is opened
+  if (o && line) for (const card of cols.querySelectorAll(".panel a.card")) {
+    const draw = (path) => () => cols.querySelector(".sheet .card > svg")?.replaceWith(gates(o, path, line.rule));
+    card.addEventListener("focus", draw(card.dataset.scenario));
+    card.addEventListener("blur", draw(undefined));
+  }
   // picking a rule or a scenario leaves the operation's sheet where the reader was
   cols.dataset.operation = o?.operation ?? "";
+  cols.dataset.group = group ?? "";
+  cols.dataset.rule = line?.rule ?? under?.rule ?? "";
+  cols.dataset.route = location.hash;
   if (o && was.of === o.operation) cols.querySelector(".sheet").scrollTop = was.sheet;
   document.getElementById("header").replaceChildren(
     h("a", { class: "mark", href: "#/" }, "ex", h("b", null, "["), "spec", h("b", null, "]")), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
     ...(roles ? [h("a", { href: "#/common", "aria-current": concept === "common" ? "page" : null }, "The common reading")] : []),
-    h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Problems and gaps ${data.problems.length + data.gaps.length}`),
+    h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Extraction checks${data.problems.length + data.gaps.length ? ` ${data.problems.length + data.gaps.length}` : ""}`),
     h("span", { class: "warn" }, "This page holds what the target answered, tokens included: mind who it is sent to."));
   for (const on of cols.querySelectorAll(".row.on")) on.scrollIntoView({ block: "nearest" });
+  // the focus follows a walk by the keyboard: into an operation, its first rule; into a rule, its first scenario;
+  // out of a scenario or a rule, where the reader was. A pointer moves no focus: it would draw a path nobody asked
+  const linkBack = (links) => [...links].find((a) => a.getAttribute("href") === previousRoute) ?? links[0];
+  const toFocus = sc ? cols.querySelector(".panel .close")
+    : line ? (linkBack(cols.querySelectorAll(".panel a.card")) ?? cols.querySelector(".panel .close"))
+    : o ? ([...cols.querySelectorAll(".sheet svg a.click")].find((a, n) => n === Number(cols.dataset.gate) && a.getAttribute("href") === previousRoute) ?? linkBack(cols.querySelectorAll(".sheet svg a.click")))
+    : inList ? focusOf(cols.querySelector("nav .row.on")) : null;
+  if (byKeyboard) toFocus?.focus();
   document.title = `exspec — ${name ?? x.target?.target ?? data.name}`;
 }
 window.addEventListener("hashchange", render);
+// ---- the keyboard: & goes to the list; in it the arrows move and fold, Enter opens; among the gates the arrows
+// move from row to row and along a row, among the scenarios of a rule from one to the next, in a scenario from
+// Close to each body sent or answered, which they fold; Escape closes the panel on top
+let byKeyboard = false;
+window.addEventListener("pointerdown", () => { byKeyboard = false; }, true);
+const rowsShown = () => [...document.querySelectorAll("nav .row")].filter((r) => !r.matches("a") || r.parentElement.open);
+const focusOf = (row) => (row?.matches("div") ? row.querySelector("a") : row);
+window.addEventListener("keydown", (e) => {
+  const row = document.activeElement?.closest("nav .row"), gate = document.activeElement?.closest("svg a.click");
+  const stopsOf = ".panel .close, .panel a.card, .panel details.body > summary", stop = document.activeElement?.closest(stopsOf);
+  byKeyboard = true;
+  const step = { ArrowDown: 1, ArrowUp: -1 }[e.key], side = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+  if (e.key === "Escape") document.querySelector(".close")?.click();
+  else if (e.key === "&" || e.key === "1") { e.preventDefault(); focusOf(rowsShown()[0])?.focus(); }
+  else if (row) {
+    const rows = rowsShown(), fold = row.matches("summary") ? row.parentElement : null;
+    if (step) { e.preventDefault(); focusOf(rows[rows.indexOf(row) + step])?.focus(); }
+    else if (side && fold) { e.preventDefault(); fold.open = side === 1; }
+    else if (side === -1 && row.matches("a")) { e.preventDefault(); row.parentElement.querySelector("summary").focus(); }
+    else if (e.key === "Enter" && fold) { e.preventDefault(); location.hash = row.querySelector("a").getAttribute("href"); }
+  } else if (stop && (step || (side && stop.matches("summary")))) {
+    e.preventDefault();
+    const stops = [...document.querySelectorAll(stopsOf)];
+    if (step) stops[stops.indexOf(stop) + step]?.focus(); else stop.parentElement.open = side === 1;
+  } else if (gate && (step || side)) {
+    e.preventDefault();
+    // the marks of one input are a row: a mark picked is a little taller, so two tops within 12px are one row
+    const gates = [...gate.ownerSVGElement.querySelectorAll("a.click")], n = gates.indexOf(gate), top = (g) => g.getBoundingClientRect().top;
+    const beside = (a, b) => Math.abs(top(a) - top(b)) < 12, above = gates.slice(0, n).reverse().find((g) => !beside(g, gate));
+    const to = side ? (gates[n + side] && beside(gates[n + side], gate) ? gates[n + side] : null)
+      : step === 1 ? gates.slice(n + 1).find((g) => !beside(g, gate)) : above && gates.find((g) => beside(g, above));
+    to?.focus();
+  }
+});
 render();
 </script>
 </body>
