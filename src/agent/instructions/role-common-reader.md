@@ -9,7 +9,7 @@ You never run the system and you never call it.
 
 ## What you read
 
-The system's checkout: your working directory. Modify nothing there. Of its `specimen/`
+The system's checkout: your working directory. Modify nothing there. Of its `exspec/`
 folder you may read only `target.yaml`, `interfaces.yaml` and what is under `target/` — how
 the system under trial is built and started, and the list of its HTTP interfaces.
 
@@ -36,7 +36,7 @@ Read what no single operation owns:
 
 ## What you write
 
-One file, `specimen/roles/common.yaml`:
+One file, `exspec/roles/common.yaml`:
 
 ```yaml
 target: <its name>

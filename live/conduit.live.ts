@@ -26,7 +26,7 @@ const scenarios = [
   "unfavorite-article/unknown-article",
 ];
 
-const dir = await mkdtemp(join(tmpdir(), "specimen-conduit-"));
+const dir = await mkdtemp(join(tmpdir(), "exspec-conduit-"));
 await cp(join(import.meta.dir, "../test/fixtures/conduit"), dir, { recursive: true });
 
 const io: Io = {
@@ -50,7 +50,7 @@ async function timed(
 }
 
 afterAll(async () => {
-  await runLines(["docker compose -f specimen/target/compose.yaml down -v"], dir);
+  await runLines(["docker compose -f exspec/target/compose.yaml down -v"], dir);
   await rm(dir, { recursive: true, force: true });
 });
 

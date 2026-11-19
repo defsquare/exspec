@@ -2,7 +2,7 @@
 // bundler resolves the import all the same. It is given an empty module.
 const result = await Bun.build({
   entrypoints: ["src/cli/main.ts"],
-  compile: { outfile: "dist/specimen" },
+  compile: { outfile: "dist/exspec" },
   plugins: [
     {
       name: "no-react-devtools",

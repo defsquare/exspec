@@ -4,7 +4,7 @@ description: Implements one item of a branch from a brief file — code, tests, 
 model: sonnet
 ---
 
-You implement one item of the specimen project. The dispatch gives you a brief file and a
+You implement one item of the exspec project. The dispatch gives you a brief file and a
 report file. Read the brief first: it is your requirements, with the exact values to use
 verbatim. Do this item, nothing beside it.
 

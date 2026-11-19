@@ -1,6 +1,6 @@
 # This phase: the interfaces
 
-Write `specimen/interfaces.yaml`: every interface the target exposes to its callers, each
+Write `exspec/interfaces.yaml`: every interface the target exposes to its callers, each
 with the shape of what it accepts and of what it answers.
 
 - Take them from the target's contract if it has one (an OpenAPI document), otherwise
@@ -9,7 +9,7 @@ with the shape of what it accepts and of what it answers.
   running target will show.
 - All of them: reads and writes, and the ones that authenticate. Leave out what is not
   the application's own (health, metrics, documentation pages).
-- `pattern` is relative to the `base-url` of `specimen/target.yaml`.
+- `pattern` is relative to the `base-url` of `exspec/target.yaml`.
 - One entry per status the interface is declared to answer, with its body's shape; a
   status with no body is `{body: null}`. Do not guess a status the contract or the code
   does not show.
@@ -17,5 +17,5 @@ with the shape of what it accepts and of what it answers.
 - An interface's name is a verb and what it is about, in the target's own words
   (`get-item`, `create-item-comment`).
 
-Done when `{{specimen}} check .` reports no problem in `interfaces.yaml`. End with one line: how many
+Done when `{{exspec}} check .` reports no problem in `interfaces.yaml`. End with one line: how many
 interfaces, and where you read them.

@@ -9,7 +9,7 @@ call it.
 
 ## What you read
 
-The system's checkout: your working directory. Modify nothing there. Its `specimen/`
+The system's checkout: your working directory. Modify nothing there. Its `exspec/`
 folder is not yours to read, but for the file you write.
 
 A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
@@ -27,7 +27,7 @@ not seen declared; one you could not find is left out, and said in your final me
 
 ## What you write
 
-One file, `specimen/structures.yaml`: a list of structures.
+One file, `exspec/structures.yaml`: a list of structures.
 
 ```yaml
 - structure: Maker

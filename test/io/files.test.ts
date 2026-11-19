@@ -9,7 +9,7 @@ import type { Reference } from "../../src/shapes/scenario.ts";
 import { played } from "../played.ts";
 
 test("a body that answers {noise: 1} is data: it goes through YAML and back unchanged", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "specimen-"));
+  const dir = await mkdtemp(join(tmpdir(), "exspec-"));
   const reference: Reference = {
     ...played({ status: 200, body: { noise: 1, a: "no", b: "0123", c: [{ noise: 2 }] } }),
     noise: [{ at: ["act", "response", "body", "a"], class: 1 }],

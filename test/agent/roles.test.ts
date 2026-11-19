@@ -44,9 +44,9 @@ function fakeAgent(sessions: readonly Files[], more: Files = {}) {
       prompt,
       ...(resume === undefined ? {} : { resume }),
       mayWrite: [
-        "specimen/roles/f/scenarios/exists.yaml",
-        "specimen/roles/f/evidence/exists.yaml",
-        "specimen/roles/f/rules.yaml",
+        "exspec/roles/f/scenarios/exists.yaml",
+        "exspec/roles/f/evidence/exists.yaml",
+        "exspec/roles/f/rules.yaml",
       ].map(mayWrite),
     });
     if (writes === undefined) throw new Error("no session left");
@@ -132,7 +132,7 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
       {
         prompt: [
           "The operation: f, GET /f/{a}.",
-          "Your folder: specimen/roles/f/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
+          "Your folder: exspec/roles/f/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
           "The actors: u; null for a call by nobody.",
         ].join("\n"),
         mayWrite: [true, false, false],

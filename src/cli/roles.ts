@@ -7,8 +7,8 @@ import { rolesRecord } from "../agent/roles-record.ts";
 import { rolesReplay } from "../agent/roles-replay.ts";
 import {
   readExtractionFiles,
-  removeSpecimenFile,
-  writeSpecimenFile,
+  removeExtractionFile,
+  writeExtractionFile,
 } from "../io/files.ts";
 import type { Io } from "../run/io.ts";
 import type { Event } from "../shapes/event.ts";
@@ -52,8 +52,8 @@ export function rolesEvents({
       driveAgent(executable === undefined ? session : { ...session, executable }),
     io,
     readFiles: readExtractionFiles,
-    writeFile: writeSpecimenFile,
-    removeFile: removeSpecimenFile,
+    writeFile: writeExtractionFile,
+    removeFile: removeExtractionFile,
   });
   switch (command) {
     case "roles-read":

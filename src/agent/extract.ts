@@ -33,9 +33,9 @@ export type Extracting = {
   readonly instructions: Instructions;
   readonly drive: Drive;
   readonly io: Io;
-  // the files under <dir>/specimen, read again before every gate: the agent changes them
+  // the files under <dir>/exspec, read again before every gate: the agent changes them
   readonly readFiles: (dir: string) => Promise<readonly SourceFile[]>;
-  // path relative to <dir>/specimen: what the tool writes itself, never the agent
+  // path relative to <dir>/exspec: what the tool writes itself, never the agent
   readonly writeFile: (dir: string, path: string, text: string) => Promise<void>;
   readonly removeFile: (dir: string, path: string) => Promise<void>;
 };
@@ -96,7 +96,7 @@ async function* gate(
   return yield* lifecycleGate(target, extracting);
 }
 
-// What each of the two agent phases may write under specimen/: its own files, never the
+// What each of the two agent phases may write under exspec/: its own files, never the
 // other's — a list of interfaces written by the session of the target would have its own
 // phase found done and never run.
 //   target      target.yaml, .gitignore, target/…
@@ -109,9 +109,9 @@ const owned: Readonly<Record<AgentPhase, (path: string) => boolean>> = {
 
 const confinement: Readonly<Record<AgentPhase, string>> = {
   target:
-    "This phase writes only specimen/target.yaml, specimen/.gitignore and under specimen/target/: the list of interfaces is written by the session after this one.",
+    "This phase writes only exspec/target.yaml, exspec/.gitignore and under exspec/target/: the list of interfaces is written by the session after this one.",
   interfaces:
-    "This phase writes only specimen/interfaces.yaml: how the target starts is settled, and the rest is written after this session.",
+    "This phase writes only exspec/interfaces.yaml: how the target starts is settled, and the rest is written after this session.",
 };
 
 export const phaseWrites = (dir: string, phase: AgentPhase) =>

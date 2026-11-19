@@ -21,7 +21,7 @@ test("status of a directory with no extraction", async () => {
     ),
   ).toEqual([
     { type: "command-started", command: "status", dir: "/abs/dir" },
-    { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/specimen" },
+    { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/exspec" },
     { type: "command-finished", command: "status", ok: false },
   ]);
 });

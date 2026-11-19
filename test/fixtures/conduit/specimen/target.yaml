@@ -1,8 +1,0 @@
-target: conduit
-start: ["docker compose -f specimen/target/compose.yaml up -d"]
-alive: { method: get, path: /tags, status: 200 }
-seed: ["./specimen/target/seed.sh"]
-reset: ["./specimen/target/reset.sh"]
-stop: ["docker compose -f specimen/target/compose.yaml down -v"]
-api: { base-url: "http://localhost:8085/api" }
-credentials: specimen/target/credentials.json

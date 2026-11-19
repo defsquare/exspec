@@ -11,7 +11,7 @@ export async function* againstTarget(
   { dir, exists, readFiles }: Examination,
   run: (extraction: Extraction) => AsyncIterable<Event>,
 ): AsyncIterable<Event> {
-  const expected = join(dir, "specimen");
+  const expected = join(dir, "exspec");
   if (!(await exists(expected))) {
     yield { type: "command-started", command, dir };
     yield { type: "extraction-not-found", dir, expected };

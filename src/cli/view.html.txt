@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>specimen</title>
+<title>exspec</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Fira+Code:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap">
 <style>
@@ -516,12 +516,12 @@ function render() {
   cols.dataset.operation = o?.operation ?? "";
   if (o && was.of === o.operation) cols.querySelector(".sheet").scrollTop = was.sheet;
   document.getElementById("header").replaceChildren(
-    h("a", { class: "mark", href: "#/" }, "specimen"), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
+    h("a", { class: "mark", href: "#/" }, "exspec"), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
     ...(roles ? [h("a", { href: "#/common", "aria-current": concept === "common" ? "page" : null }, "The common reading")] : []),
     h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Problems and gaps ${data.problems.length + data.gaps.length}`),
     h("span", { class: "warn" }, "This page holds what the target answered, tokens included: mind who it is sent to."));
   for (const on of cols.querySelectorAll(".row.on")) on.scrollIntoView({ block: "nearest" });
-  document.title = `specimen — ${name ?? x.target?.target ?? data.name}`;
+  document.title = `exspec — ${name ?? x.target?.target ?? data.name}`;
 }
 window.addEventListener("hashchange", render);
 render();

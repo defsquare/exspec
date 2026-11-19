@@ -5,7 +5,7 @@ import type { Event } from "../../src/shapes/event.ts";
 test("describeEvent words each event", () => {
   const events: readonly Event[] = [
     { type: "command-started", command: "status", dir: "/abs/dir" },
-    { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/specimen" },
+    { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/exspec" },
     {
       type: "extraction-counted",
       counts: {
@@ -80,7 +80,7 @@ test("describeEvent words each event", () => {
   ];
   expect(events.map(describeEvent)).toEqual([
     "status /abs/dir",
-    "no extraction in /abs/dir: /abs/dir/specimen is missing",
+    "no extraction in /abs/dir: /abs/dir/exspec is missing",
     "9 interfaces, 3 structures, 5 facts, 5 operations, 20 rules, 4 projections, 5 triggers, 4 scenarios, 0 references",
     "phases   target done, interfaces done, reading to-do, evidence to-do, judgement to-do",
     "problem  f.yaml a.0: m",

@@ -16,9 +16,9 @@ export type Instructions = {
   readonly phases: Readonly<Record<AgentPhase, string>>;
 };
 
-// specimen: the command line that runs this CLI, "bun /abs/src/cli/main.ts"
-export function instructionsFor(specimen: string): Instructions {
-  const fill = (text: string) => text.replaceAll("{{specimen}}", specimen);
+// commandLine: "bun '/abs/src/cli/main.ts'" from the sources, "'/abs/exspec'" compiled
+export function instructionsFor(commandLine: string): Instructions {
+  const fill = (text: string) => text.replaceAll("{{exspec}}", commandLine);
   return {
     system: fill(system),
     phases: {

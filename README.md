@@ -1,11 +1,12 @@
-# specimen
+# exspec
 
 The behavioural contract of a software, extracted from what the software is seen to do.
 
-A specimen is an example taken from the real thing to characterize it. Here it is a
-**scenario**: a few calls to a running system, and what the system answered. specimen
-records scenarios against an existing system, hangs a specification on them — operations,
-rules, facts, structures — and says, for every claim of that specification, what holds it.
+exspec is the spec, extracted: read from the code of an existing system and from what the
+running system answers. Its evidence is the **scenario**: a few calls to the system, and
+what it answered. exspec records scenarios against the system, hangs a specification on
+them — operations, rules, facts, structures — and says, for every claim of that
+specification, what holds it.
 
 ## What it claims
 
@@ -18,16 +19,16 @@ rules, facts, structures — and says, for every claim of that specification, wh
 
 ## Status
 
-`specimen extract <dir>` runs five phases, each named for what it leaves in the files:
+`exspec extract <dir>` runs five phases, each named for what it leaves in the files:
 `target` (how the target starts, its starting state, its reset) and `interfaces`, one agent
 session each, closed by a check the tool runs itself; then what the roles run — `reading`
 (the structures, what holds for every operation, the rules), `evidence` (the scenarios,
 played and recorded as references) and `judgement` (the judge's word on each rule). A phase
-does only what the files say is left of it, and is skipped when nothing is. `specimen
+does only what the files say is left of it, and is skipped when nothing is. `exspec
 status <dir>` says where an extraction stands: its counts, its phases, how many rules and bindings are
 verified, refuted or only declared, each claim that is not verified with its reason, and
 the facts that block the most rules. The extraction is a directory of YAML files,
-`<dir>/specimen/`, and nothing else is stored.
+`<dir>/exspec/`, and nothing else is stored.
 
 It has run end to end on two targets, a Conduit and a Petclinic. What it does not do yet
 is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
@@ -60,7 +61,7 @@ once per clone: `git config core.hooksPath .githooks`.
 bun install
 bun test
 bun run check
-bun run build                               # dist/specimen, one executable; extract then needs `claude` on the PATH
+bun run build                               # dist/exspec, one executable; extract then needs `claude` on the PATH
 bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
 bun src/cli/main.ts check <dir>
 bun src/cli/main.ts verdicts <dir>          # every rule and trigger, judged by the references
@@ -71,7 +72,7 @@ bun src/cli/main.ts target down <dir>
 bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
 bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
 bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>]   # target, interfaces, reading, evidence, judgement: what is left of each
-bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # the structures, then a reader per interface -> specimen/roles/
+bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # the structures, then a reader per interface -> exspec/roles/
 bun src/cli/main.ts roles build <dir> [--only <interface>] [--jobs n]   # target up, a scenario builder per interface, evidence played
 bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judge per interface, no tool -> judgements.yaml
 bun src/cli/main.ts roles play <dir> <interface>/<slug>                  # on a target up: reset, play one written scenario

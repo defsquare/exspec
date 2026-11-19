@@ -12,7 +12,7 @@ import {
 } from "../../src/shapes/roles.ts";
 import { structureSchema } from "../../src/shapes/specification.ts";
 
-const { system, phases } = instructionsFor("specimen");
+const { system, phases } = instructionsFor("exspec");
 
 const examples = [
   ...system.matchAll(/^### `([^`]+)`\n[\s\S]*?^```yaml\n([\s\S]*?)^```$/gm),

@@ -57,7 +57,7 @@ them in; each of the first five is a branch of its own.
 
 - **Seen.** A reset that restores too little is invisible to the two recordings: both
   stacks accumulate the same changes in the same order, and the result is stable and wrong.
-- **Settled.** specimen holds no driver (ADR-0004); the check uses the interfaces alone.
+- **Settled.** exspec holds no driver (ADR-0004); the check uses the interfaces alone.
 - **Next.** Once a projection can be read: read every projection that takes no input, play
   a scenario that writes, reset, read again, compare. Make it the last step of `up`.
   Cheaper, and with what exists: `record` plays the second stack's scenarios in reverse
@@ -112,7 +112,7 @@ them in; each of the first five is a branch of its own.
   caller as a value (what of the caller — the actor's name is not its username), and
   absence over a list a projection shows. Then extract both targets again and count the
   facts left empty.
-- **Source.** `targets/*/specimen/facts.yaml` of the two extractions;
+- **Source.** `targets/*/exspec/facts.yaml` of the two extractions;
   `docs/branches/feat-extract.md` at `c1c9ef0`.
 - **Tried.** On a closed spike: a fact compares a value read with another value read —
   "the caller wrote it" through the instance the target shows as the caller's own. Used
@@ -154,7 +154,7 @@ them in; each of the first five is a branch of its own.
 
 ## Loose ends of `extract`
 
-- **Seen.** The gate of the target catches any error, a bug of specimen's included, and
+- **Seen.** The gate of the target catches any error, a bug of exspec's included, and
   hands it to the agent as a finding. In the scenarios phase a `stop` that fails hides the
   session's error. `extract` has not run whole from the compiled binary: the agent calling
   the binary's own path is untried, and nothing says which version of `claude` the binary
@@ -199,7 +199,7 @@ them in; each of the first five is a branch of its own.
   created — the seed writing its ids beside the credentials, a scenario citing one by
   name — against the alternative of arranging the instance in the scenario and using the
   value an earlier call answered. Then the gate below, then extract Kadai again.
-- **Source.** `specimen/` of the Kadai extraction (copied flat under `targets/kadai/`);
+- **Source.** `exspec/` of the Kadai extraction (copied flat under `targets/kadai/`);
   `scenarios/claim-task/accepted.yaml` and its reference.
 - **Tried.** On a closed spike, with no new term: the target phase asks for a starting
   state identical on every fresh start — a snapshot kept as a file where the target draws
@@ -227,8 +227,8 @@ them in; each of the first five is a branch of its own.
 ## An extraction kept apart from the target's checkout
 
 - **Seen.** The user gathered the three extractions under `targets/` of this repository,
-  and copied Kadai's there flat, without the `specimen/` level: no command reads it.
-- **Settled.** An extraction is `<dir>/specimen/`, in the target's checkout (ADR-0003).
+  and copied Kadai's there flat, without the `exspec/` level: no command reads it.
+- **Settled.** An extraction is `<dir>/exspec/`, in the target's checkout (ADR-0003, ADR-0015).
 - **Next.** If the need holds: an option naming where the extraction is read and written,
   the code still read in `<dir>`; the agent's writes confined to that place. It amends
   ADR-0003.
@@ -293,7 +293,7 @@ them in; each of the first five is a branch of its own.
   on the largest target: the count, the cost, facts duplicated under two names. For the
   user: whether an operation is named after its interface when it has one — steady names,
   but it ties the specification to the API.
-- **Since.** `specimen roles` walks the interface list — one reader, one builder, one
+- **Since.** `exspec roles` walks the interface list — one reader, one builder, one
   judge per interface (ADR-0010): 93 of 93 on Kadai, 36 of 36 and 19 of 19 on the two
   others. What is above holds for `extract` only; a rule's name still moves from a run
   to the next (see "A rule's identity from one run to the next").
@@ -310,7 +310,7 @@ them in; each of the first five is a branch of its own.
 - **Settled.** By the user: where the list of routes comes from — the OpenAPI contract
   first, then `codegraph`, then the code read ad hoc when both fail. `codegraph` gives no
   verb or path today (annotations come out empty) and crashes on one checkout's root.
-- **Next.** (1) Carry the `specimen/` of version 1 into version 2's checkout — not
+- **Next.** (1) Carry the `exspec/` of version 1 into version 2's checkout — not
   tooled. (2) See what version 2 adds: the interfaces phase is done as soon as its file
   is not empty, so a new route is never seen. A check of `interfaces.yaml` against the
   contract's `(method, path)` set — the contract's place a key of `target.yaml`, or the
@@ -387,7 +387,7 @@ them in; each of the first five is a branch of its own.
 
 ## Two specifications side by side: the extraction's terms and the roles' reading
 
-- **Seen.** `specimen roles` writes its own files under `specimen/roles/` — rules as
+- **Seen.** `exspec roles` writes its own files under `exspec/roles/` — rules as
   sentences, scenarios as raw calls, evidence, judgements — beside `operations/`, the
   facts' terms, the projections and the triggers, which serve nothing in the roles' path.
   Only `structures.yaml` is shared. `target up` and `status` refuse a checkout whose old
@@ -605,7 +605,7 @@ them in; each of the first five is a branch of its own.
 
 ## The roles drawn as a flow
 
-- **Seen.** `specimen extract` on a terminal draws its five phases as a flow of boxes with
+- **Seen.** `exspec extract` on a terminal draws its five phases as a flow of boxes with
   a panel for the running phase; the roles' sessions of a phase add their turns and cost
   to its box, a role's failed gate shows in the panel, and a box counts what the phase did
   in this run (read, references, judged) — the `interfaces` box counts nothing any more.

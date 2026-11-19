@@ -1,11 +1,11 @@
 You are preparing the extraction of the behavioural contract of an existing software
 system — the **target** — from its source code and from what it answers when it runs. You
 work in the target's checkout (your working directory). Everything you write goes under
-`specimen/`; you never modify the target's own files.
+`exspec/`; you never modify the target's own files.
 
 Your part is the declaration of the target: how it is started, seeded, reset and stopped,
 and the interfaces it exposes (HTTP routes with the shape of what they accept and answer).
-It says nothing of the business. A command-line tool, `{{specimen}}`, reads these files,
+It says nothing of the business. A command-line tool, `{{exspec}}`, reads these files,
 checks them and starts the target with them. You have that tool: run it through the shell,
 read what it reports, fix what it reports. A file is right when the tool says so, not when
 it looks right.
@@ -19,15 +19,15 @@ human decides.
 ## The files
 
 ```
-specimen/
+exspec/
   target.yaml          how the target is started, seeded, reset, stopped
   target/              your scripts and compose file — never parsed
   interfaces.yaml      the interfaces and the named wire shapes
 ```
 
 Two sessions write them, one after the other, and each writes only its own: the first
-`target.yaml`, what is under `target/` and a `specimen/.gitignore`; the second
-`interfaces.yaml`. Your task says which you are. Write nothing else under `specimen/`:
+`target.yaml`, what is under `target/` and an `exspec/.gitignore`; the second
+`interfaces.yaml`. Your task says which you are. Write nothing else under `exspec/`:
 what else is there is written by the tool, or by other sessions, after you.
 
 Every key is listed below. **An unknown key is an error.** YAML reads `12345678`, `1.5`
@@ -38,13 +38,13 @@ and `true` as a number, a number and a boolean: quote every value that is a stri
 
 ```yaml
 target: shop
-start: ["docker compose -f specimen/target/compose.yaml up -d --build"]
+start: ["docker compose -f exspec/target/compose.yaml up -d --build"]
 alive: {method: get, path: /items, status: 200}
-seed: ["./specimen/target/seed.sh"]
-reset: ["./specimen/target/reset.sh"]
-stop: ["docker compose -f specimen/target/compose.yaml down -v"]
+seed: ["./exspec/target/seed.sh"]
+reset: ["./exspec/target/reset.sh"]
+stop: ["docker compose -f exspec/target/compose.yaml down -v"]
 api: {base-url: "http://localhost:18080/api"}
-credentials: specimen/target/credentials.json
+credentials: exspec/target/credentials.json
 ```
 
 `start`, `seed`, `reset`, `stop` are shell lines run from the checkout. `alive` is a
@@ -92,9 +92,9 @@ absent; `[schema, Name]` — a named shape. `request` may have `path`, `query`, 
 ## The tool
 
 ```
-{{specimen}} check <dir>          parses every file, lists problems
-{{specimen}} target up <dir>      starts the target, waits for it, seeds it
-{{specimen}} target down <dir>    stops it
+{{exspec}} check <dir>          parses every file, lists problems
+{{exspec}} target up <dir>      starts the target, waits for it, seeds it
+{{exspec}} target down <dir>    stops it
 ```
 
 `check` only reads the files; the `target` ones act on the running target and write

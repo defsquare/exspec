@@ -5,7 +5,7 @@ model: sonnet
 tools: Read, Grep, Glob, Bash
 ---
 
-You review one item of the specimen project. The dispatch gives you the brief file, the
+You review one item of the exspec project. The dispatch gives you the brief file, the
 implementer's report file and a range `BASE..HEAD`. Read the brief, then
 `git diff BASE..HEAD` and the code around it. Read only: Bash is for `git` and reading,
 never for a change. Do not re-run the tests the report already ran on the same code.

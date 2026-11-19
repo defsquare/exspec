@@ -82,7 +82,7 @@ function readingsOf(files: readonly SourceFile[]) {
   };
 }
 
-// What the page draws: the roles' reading when specimen/roles/ holds one that parses, the
+// What the page draws: the roles' reading when exspec/roles/ holds one that parses, the
 // extraction and everything derived from it otherwise — the files, the problems and the
 // gaps, every rule and trigger judged, and each operation filed under a structure.
 export function dataOf(dir: string, files: readonly SourceFile[]) {
@@ -104,14 +104,14 @@ export function dataOf(dir: string, files: readonly SourceFile[]) {
   };
 }
 
-// The data as one page. undefined: no specimen/ in dir. Nothing is written: the page is the
+// The data as one page. undefined: no exspec/ in dir. Nothing is written: the page is the
 // command's output.
 export async function pageOf({
   dir,
   exists,
   readFiles,
 }: Examination): Promise<string | undefined> {
-  if (!(await exists(join(dir, "specimen")))) return undefined;
+  if (!(await exists(join(dir, "exspec")))) return undefined;
   // "<" escaped: a body holding "</script>" does not end the page's data
   const json = JSON.stringify(dataOf(dir, await readFiles(dir))).replaceAll(
     "<",

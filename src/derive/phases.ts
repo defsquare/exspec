@@ -13,7 +13,7 @@ export type Examined = {
   readonly problems: readonly Problem[];
 };
 
-// target.yaml and interfaces.yaml, parsed and checked: the rest of specimen/ is the roles'
+// target.yaml and interfaces.yaml, parsed and checked: the rest of exspec/ is the roles'
 // own, read by them, or a computed specification the phases leave as it is
 export function declaredIn(files: readonly SourceFile[]): Examined {
   const parsed = parseExtraction(

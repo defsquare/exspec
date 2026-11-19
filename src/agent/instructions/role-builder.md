@@ -12,8 +12,8 @@ requests of your scenarios and the system's answers.
   `effects`, and under `common` the names of the shared rules that apply to it) and
   `hints.yaml` (the reader's hints on how to reach each situation). You may not change a
   rule, drop one, or reword one.
-- `specimen/roles/common.yaml`: the shared rules, and what holds for the whole system.
-- `specimen/interfaces.yaml`: the system's HTTP interfaces, with the shape of what each
+- `exspec/roles/common.yaml`: the shared rules, and what holds for the whole system.
+- `exspec/interfaces.yaml`: the system's HTTP interfaces, with the shape of what each
   accepts and answers. It may be large: search it.
 - The actors, named in your task. You never see their credentials: a step says who sends
   it, the tool signs it.

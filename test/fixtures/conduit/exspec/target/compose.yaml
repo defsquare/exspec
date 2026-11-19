@@ -2,7 +2,7 @@
 # app's checkout at d8f34f0. No volume: every up after a down starts from Flyway's schema,
 # empty. API on 8085, Postgres on 5434. The JWT session is an int of milliseconds in the
 # app, 24 days at most: 23 days here.
-name: specimen-fixture-conduit
+name: exspec-fixture-conduit
 
 services:
   db:

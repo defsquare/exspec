@@ -29,17 +29,17 @@ import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
 import { pageOf } from "./view.ts";
 
-const usage = `usage: specimen <status|check|verdicts> <dir> [--format json]
-       specimen view <dir> > page.html
-       specimen target <up|down> <dir>
-       specimen target play <dir> [<operation>/<slug>…]
-       specimen replay <dir> [<operation>/<slug>…]
-       specimen record <dir> [<operation>/<slug>…] [--force]
-       specimen extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>] [--format json]
-       specimen roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
-       specimen roles play <dir> <interface>/<slug>
-       specimen roles record <dir> [--only <interface>] [--force]
-       specimen roles replay <dir> [--only <interface>]`;
+const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
+       exspec view <dir> > page.html
+       exspec target <up|down> <dir>
+       exspec target play <dir> [<operation>/<slug>…]
+       exspec replay <dir> [<operation>/<slug>…]
+       exspec record <dir> [<operation>/<slug>…] [--force]
+       exspec extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>] [--format json]
+       exspec roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
+       exspec roles play <dir> <interface>/<slug>
+       exspec roles record <dir> [--only <interface>] [--force]
+       exspec roles replay <dir> [--only <interface>]`;
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -57,10 +57,10 @@ const asked = askedOf(positionals, process.env[agentMark] !== undefined);
 if (asked.type === "refused-to-agent") {
   console.error(
     asked.command === "view"
-      ? "specimen view is not run from an agent's session: the page is for a person; status and verdicts say the same."
+      ? "exspec view is not run from an agent's session: the page is for a person; status and verdicts say the same."
       : asked.command.startsWith("roles-")
-        ? `specimen ${asked.command.replace("-", " ")} is not run from an agent's session: the roles are kept apart, and the tool drives each of them.`
-        : `specimen ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
+        ? `exspec ${asked.command.replace("-", " ")} is not run from an agent's session: the roles are kept apart, and the tool drives each of them.`
+        : `exspec ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
   );
   process.exit(2);
 }
@@ -86,9 +86,7 @@ if (command === "view") {
   }
   const page = await pageOf(examination);
   if (page === undefined) {
-    console.error(
-      `no extraction: ${join(examination.dir, "specimen")} is not a directory`,
-    );
+    console.error(`no extraction: ${join(examination.dir, "exspec")} is not a directory`);
     process.exit(1);
   }
   // Bun.write to a pipe stalls past 128 KB once Ink is loaded

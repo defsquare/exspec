@@ -53,7 +53,7 @@ test("check of a directory with no extraction", async () => {
     ),
   ).toEqual<Event[]>([
     { type: "command-started", command: "check", dir: "/abs/dir" },
-    { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/specimen" },
+    { type: "extraction-not-found", dir: "/abs/dir", expected: "/abs/dir/exspec" },
     { type: "command-finished", command: "check", ok: false },
   ]);
 });

@@ -1,9 +1,9 @@
 {
-  "name": "specimen",
+  "name": "exspec",
   "private": true,
   "type": "module",
   "bin": {
-    "specimen": "src/cli/main.ts"
+    "exspec": "src/cli/main.ts"
   },
   "scripts": {
     "test": "bun test",

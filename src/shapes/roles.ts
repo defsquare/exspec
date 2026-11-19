@@ -2,7 +2,7 @@ import { z } from "zod";
 import { noiseSchema, responseSchema, runSchema } from "./scenario.ts";
 import { methodSchema } from "./target.ts";
 
-// The files of a reading by three roles kept apart, under specimen/roles/:
+// The files of a reading by three roles kept apart, under exspec/roles/:
 //   common.yaml                        what holds for the whole system
 //   <interface>/rules.yaml, hints.yaml what one operation is supposed to do
 //   <interface>/scenarios/<slug>.yaml  a scenario, requests only

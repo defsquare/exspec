@@ -5,12 +5,12 @@ export const under = (folder: string) => (path: string) =>
   path === folder || path.startsWith(`${folder}/`);
 
 // What a role's session may read, relative to its checkout cwd:
-//   outside specimen/   all of it when `checkout`, nothing otherwise
-//   under specimen/     what `allowed` accepts, given the path below specimen/
+//   outside exspec/   all of it when `checkout`, nothing otherwise
+//   under exspec/     what `allowed` accepts, given the path below exspec/
 //   a search            the same of the folder it runs in, which must hold no part of
-//                       specimen/ it may not read; its glob climbs nowhere
-// ("/d", checkout, allowed "a.yaml"): "src/x.ts", "specimen/a.yaml" -> true;
-//   "specimen/b.yaml", "../x", a search over "." or "specimen" -> false
+//                       exspec/ it may not read; its glob climbs nowhere
+// ("/d", checkout, allowed "a.yaml"): "src/x.ts", "exspec/a.yaml" -> true;
+//   "exspec/b.yaml", "../x", a search over "." or "exspec" -> false
 export function readsOf(
   cwd: string,
   {
@@ -24,15 +24,15 @@ export function readsOf(
     if (pattern !== undefined && (pattern.includes("..") || isAbsolute(pattern))) {
       return false;
     }
-    if (under("specimen")(within)) {
-      return allowed(within.slice("specimen/".length));
+    if (under("exspec")(within)) {
+      return allowed(within.slice("exspec/".length));
     }
-    // a search over the checkout's root runs through specimen/ too
+    // a search over the checkout's root runs through exspec/ too
     return checkout && !(pattern !== undefined && within === "");
   };
 }
 
-// What a role's session may write: under specimen/, what `allowed` accepts
+// What a role's session may write: under exspec/, what `allowed` accepts
 export function writesOf(
   cwd: string,
   allowed: (path: string) => boolean,
@@ -40,9 +40,9 @@ export function writesOf(
   return (path) => {
     const within = relative(cwd, resolve(cwd, path));
     return (
-      under("specimen")(within) &&
-      within !== "specimen" &&
-      allowed(within.slice("specimen/".length))
+      under("exspec")(within) &&
+      within !== "exspec" &&
+      allowed(within.slice("exspec/".length))
     );
   };
 }

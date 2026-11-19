@@ -1,0 +1,8 @@
+target: conduit
+start: ["docker compose -f exspec/target/compose.yaml up -d"]
+alive: { method: get, path: /tags, status: 200 }
+seed: ["./exspec/target/seed.sh"]
+reset: ["./exspec/target/reset.sh"]
+stop: ["docker compose -f exspec/target/compose.yaml down -v"]
+api: { base-url: "http://localhost:8085/api" }
+credentials: exspec/target/credentials.json

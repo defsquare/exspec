@@ -1,15 +1,15 @@
 target: petclinic
 runs-with:
   - setting: "security is on (HTTP Basic, every request authenticated)"
-    source: "specimen/target/compose.yaml:24"
+    source: "exspec/target/compose.yaml:24"
   - setting: "the database is PostgreSQL, the repository layer is Spring Data JPA"
-    source: "specimen/target/compose.yaml:22"
+    source: "exspec/target/compose.yaml:22"
   - setting: "the shipped default is security off and an in-memory database; the run overrides both"
     source: "src/main/resources/application.properties:49"
   - setting: "the service listens on 9966 inside the container, published as 18467, under the path /petclinic/"
-    source: "specimen/target/compose.yaml:20"
+    source: "exspec/target/compose.yaml:20"
   - setting: "three accounts exist: admin (owner admin, vet admin, admin roles), ann (owner admin), bob (vet admin)"
-    source: "src/main/resources/db/postgres/data.sql; specimen/target/seed.sh:13-14"
+    source: "src/main/resources/db/postgres/data.sql; exspec/target/seed.sh:13-14"
 rules:
   - rule: signed-in
     applies-to: "every operation"

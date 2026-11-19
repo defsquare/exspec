@@ -43,7 +43,7 @@ export type Drive = (session: Session) => AsyncGenerator<AgentEvent, Ended>;
 // set in the agent's shell: the commands that record or judge a reference, and `extract`
 // itself, refuse to run where it is present, whatever its value. The file tools'
 // confinement does not cover a shell.
-export const agentMark = "SPECIMEN_AGENT";
+export const agentMark = "EXSPEC_AGENT";
 
 // a phase's tools: no web, no sub-agent, no todo list, no notebook
 export const phaseTools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
@@ -61,7 +61,7 @@ const toolInput = z
   })
   .partial();
 
-const playName = "mcp__specimen__play";
+const playName = "mcp__exspec__play";
 
 // the shell command's first line, the path or pattern a tool works on, or the call a play
 // sends (its first step's when there is none); 120 characters
@@ -116,7 +116,7 @@ export function allowed(
 
 function playServer(play: NonNullable<Session["play"]>) {
   return createSdkMcpServer({
-    name: "specimen",
+    name: "exspec",
     tools: [
       tool(
         "play",
@@ -153,7 +153,7 @@ export async function* driveAgent(session: Session): AsyncGenerator<AgentEvent, 
       tools: [...tools],
       settingSources: [],
       strictMcpConfig: true,
-      mcpServers: play === undefined ? {} : { specimen: playServer(play) },
+      mcpServers: play === undefined ? {} : { exspec: playServer(play) },
       plugins: [],
       skills: [],
       permissionMode: "default",

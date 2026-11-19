@@ -15,9 +15,9 @@ export type RolesRun = {
   readonly model: string;
   readonly drive: Drive;
   readonly io: Io;
-  // the files under <dir>/specimen, path relative to it, read again before every gate
+  // the files under <dir>/exspec, path relative to it, read again before every gate
   readonly readFiles: (dir: string) => Promise<readonly SourceFile[]>;
-  // path relative to <dir>/specimen: what the tool writes itself, never the agent
+  // path relative to <dir>/exspec: what the tool writes itself, never the agent
   readonly writeFile: (dir: string, path: string, text: string) => Promise<void>;
   readonly removeFile: (dir: string, path: string) => Promise<void>;
 };

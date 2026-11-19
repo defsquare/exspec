@@ -9,7 +9,7 @@ import {
   targetSchema,
 } from "./target.ts";
 
-// what is read: one entry per file found under <dir>/specimen, path relative to it
+// what is read: one entry per file found under <dir>/exspec, path relative to it
 export const sourceFileSchema = z
   .object({ path: z.string(), text: z.string() })
   .readonly();

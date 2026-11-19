@@ -28,7 +28,7 @@ export async function* examine(
   { dir, exists, readFiles }: Examination,
 ): AsyncIterable<Event> {
   yield { type: "command-started", command, dir };
-  const expected = join(dir, "specimen");
+  const expected = join(dir, "exspec");
   if (!(await exists(expected))) {
     yield { type: "extraction-not-found", dir, expected };
     yield { type: "command-finished", command, ok: false };

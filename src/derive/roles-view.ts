@@ -247,7 +247,7 @@ export function viewOfRoles({
   readonly target: Target | undefined;
   readonly structures: readonly Structure[];
   readonly common: Common | undefined;
-  // of structures.yaml and roles/common.yaml, each "file: message" relative to specimen/
+  // of structures.yaml and roles/common.yaml, each "file: message" relative to exspec/
   readonly findings: readonly string[];
   readonly interfaces: readonly ReadInterface[];
 }) {

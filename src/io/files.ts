@@ -5,7 +5,7 @@ import type { Reference } from "../shapes/scenario.ts";
 import { type Credentials, credentialsSchema, type Target } from "../shapes/target.ts";
 
 export async function readExtractionFiles(dir: string): Promise<readonly SourceFile[]> {
-  const root = join(dir, "specimen");
+  const root = join(dir, "exspec");
   const paths = await Array.fromAsync(new Bun.Glob("**/*.yaml").scan(root));
   return Promise.all(
     paths
@@ -36,7 +36,7 @@ export async function writeReference(
   reference: Reference,
 ): Promise<void> {
   await Bun.write(
-    join(dir, "specimen", "references", `${path}.yaml`),
+    join(dir, "exspec", "references", `${path}.yaml`),
     Bun.YAML.stringify(reference, null, 2),
   );
 }
@@ -50,15 +50,15 @@ export async function checkoutVersion(dir: string): Promise<string> {
   return exitCode === 0 ? stdout.toString().trim() : "unversioned";
 }
 
-// path: relative to <dir>/specimen
-export async function writeSpecimenFile(
+// path: relative to <dir>/exspec
+export async function writeExtractionFile(
   dir: string,
   path: string,
   text: string,
 ): Promise<void> {
-  await Bun.write(join(dir, "specimen", path), text);
+  await Bun.write(join(dir, "exspec", path), text);
 }
 
-export async function removeSpecimenFile(dir: string, path: string): Promise<void> {
-  await rm(join(dir, "specimen", path), { force: true });
+export async function removeExtractionFile(dir: string, path: string): Promise<void> {
+  await rm(join(dir, "exspec", path), { force: true });
 }

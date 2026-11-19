@@ -1,6 +1,6 @@
-# Project instructions — specimen
+# Project instructions — exspec
 
-specimen: the behavioural contract of a software, extracted from what the software is seen
+exspec: the behavioural contract of a software, extracted from what the software is seen
 to do. A CLI records scenarios against a running target, hangs a specification on them —
 operations, rules, facts, structures — and says, for every claim, what holds it.
 
@@ -146,7 +146,7 @@ fixture makes the reader read a domain instead of a shape.
 Never cite a section number of a design document from code. ADR numbers are citable: an ADR
 is an immutable record.
 
-**The agent's instructions cite nothing of specimen's** — its system prompt and briefs name
+**The agent's instructions cite nothing of exspec's** — its system prompt and briefs name
 no ADR, no doc, no backlog item: the agent runs in the target's checkout and reads none of
 them. Write what the decision says.
 

@@ -165,13 +165,13 @@ async function* builder(
       session: {
         prompt: [
           `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
-          `Your folder: specimen/${folder}/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
+          `Your folder: exspec/${folder}/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
           `The actors: ${actors.length === 0 ? "none" : actors.join(", ")}; null for a call by nobody.`,
         ].join("\n"),
         tools,
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
-        confinement: `This session reads only specimen/interfaces.yaml, specimen/roles/common.yaml and, in specimen/${folder}/, rules.yaml, hints.yaml and scenarios/; it writes only scenarios/<slug>.yaml there. The system is reached through play alone.`,
+        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml and, in exspec/${folder}/, rules.yaml, hints.yaml and scenarios/; it writes only scenarios/<slug>.yaml there. The system is reached through play alone.`,
         play: async (steps) => JSON.stringify((await play(steps)).exchanges, null, 2),
       },
       gate: () => buildGate(building, bound),
@@ -237,7 +237,7 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
       const text = textAt(await readFiles(dir), file);
       const read =
         text === undefined
-          ? { findings: [`no scenario at specimen/${file}`] }
+          ? { findings: [`no scenario at exspec/${file}`] }
           : readYaml(file, text, roleScenarioSchema);
       if (!("value" in read)) {
         for (const message of read.findings) yield { type: "command-failed", message };

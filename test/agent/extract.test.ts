@@ -342,19 +342,19 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
 
 test("each of the two agent phases writes its own files, never the other's", () => {
   const paths = [
-    "specimen/target.yaml",
-    "specimen/.gitignore",
-    "specimen/target/seed.sh",
-    "specimen/interfaces.yaml",
-    "specimen/structures.yaml",
-    "specimen/roles/f/rules.yaml",
+    "exspec/target.yaml",
+    "exspec/.gitignore",
+    "exspec/target/seed.sh",
+    "exspec/interfaces.yaml",
+    "exspec/structures.yaml",
+    "exspec/roles/f/rules.yaml",
     "src/a.ts",
   ];
   expect({
     target: paths.filter(phaseWrites("/d", "target")),
     interfaces: paths.filter(phaseWrites("/d", "interfaces")),
   }).toEqual({
-    target: ["specimen/target.yaml", "specimen/.gitignore", "specimen/target/seed.sh"],
-    interfaces: ["specimen/interfaces.yaml"],
+    target: ["exspec/target.yaml", "exspec/.gitignore", "exspec/target/seed.sh"],
+    interfaces: ["exspec/interfaces.yaml"],
   });
 });
