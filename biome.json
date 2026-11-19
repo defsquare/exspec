@@ -9,7 +9,8 @@
       "!dist",
       "!node_modules",
       "!.idea",
-      "!.claude"
+      "!.claude",
+      "!.playwright-mcp"
     ]
   },
   "linter": {
