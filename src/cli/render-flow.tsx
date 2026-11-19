@@ -1,19 +1,20 @@
 import { Box, render, Text, useApp, useWindowSize } from "ink";
 import { Fragment, useEffect, useState } from "react";
 import type { Event } from "../shapes/event.ts";
+import { verdictSchema } from "../shapes/roles.ts";
 import {
-  countsOf,
-  duration,
   emptyFlow,
   type Flow,
   flowAfter,
   type PhaseState,
-  panelOf,
+  type RoleSession,
+  type Trouble,
 } from "./flow.ts";
+import { countsOf, duration, panelOf } from "./flow-panel.ts";
 
 const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const narrow = 100;
-const findingsShown = 2;
+const shown = 3;
 
 const borders = {
   "to-do": { borderStyle: "single", dim: true },
@@ -56,15 +57,7 @@ function stateLine({ state, round, startedAt, endedAt, cost }: PhaseState, now: 
   }
 }
 
-function PhaseBox({
-  box,
-  counts,
-  now,
-}: {
-  box: PhaseState;
-  counts: Flow["counts"];
-  now: number;
-}) {
+function PhaseBox({ box, flow, now }: { box: PhaseState; flow: Flow; now: number }) {
   const { borderStyle, ...look } = borders[box.state];
   const dim = "dim" in look;
   return (
@@ -79,38 +72,127 @@ function PhaseBox({
     >
       <Text bold>{box.phase}</Text>
       <Text dimColor={dim}>{stateLine(box, now)}</Text>
-      {countsOf(box.phase, counts).map((line) => (
+      {countsOf(box.phase, flow).map((line) => (
         <Text key={line}>{line}</Text>
       ))}
     </Box>
   );
 }
 
-// a narrow window: one line per phase, "✔ 1m05 $0.31  a  2 interfaces"
-function PhaseLine({
-  box,
-  counts,
-  now,
-}: {
-  box: PhaseState;
-  counts: Flow["counts"];
-  now: number;
-}) {
+// a narrow window: one line per phase, "✔ 1m05 $0.31  2 kept"
+function PhaseLine({ box, flow, now }: { box: PhaseState; flow: Flow; now: number }) {
   const look = borders[box.state];
   return (
     <Text dimColor={"dim" in look} {...("color" in look ? { color: look.color } : {})}>
       {box.phase.padEnd(15)}
       {stateLine(box, now).padEnd(18)}
-      {countsOf(box.phase, counts).join(", ")}
+      {countsOf(box.phase, flow).join(", ")}
     </Text>
   );
 }
 
-function Panel({ flow }: { flow: Flow }) {
-  const panel = panelOf(flow, findingsShown);
+// {role: reader, interface: f, startedAt: 0, round: 2, used: {tool: Grep, about: a}} at 40s
+// -> "reader   f   0m40 round 2  Grep  a"
+function SessionLine({
+  session,
+  now,
+  wide,
+}: {
+  session: RoleSession;
+  now: number;
+  // the longest interface of the sessions drawn
+  wide: number;
+}) {
+  const { role, interface: of, startedAt, round, used } = session;
+  return (
+    <Text wrap="truncate-end">
+      {column(role)}
+      {(of ?? "").padEnd(wide + 2)}
+      {since(startedAt, now).padEnd(6)}
+      {(round > 1 ? `round ${round}` : "").padEnd(9)}
+      {used === undefined ? "" : `${used.tool.padEnd(6)}${used.about}`}
+    </Text>
+  );
+}
+
+function Verdicts({ verdicts }: { verdicts: NonNullable<Flow["verdicts"]> }) {
+  return (
+    <Text>
+      {"verdicts  "}
+      {verdictSchema.options
+        .map((verdict) => `${verdicts[verdict]} ${verdict}`)
+        .join(" · ")}
+    </Text>
+  );
+}
+
+// {by: f, lines: [a, b, c]} -> "✘ f  a  …2 more"
+function TroubleLine({ trouble: { by, lines } }: { trouble: Trouble }) {
+  return (
+    <Text color="red" wrap="truncate-end">
+      ✘ {by}
+      {"  "}
+      {lines[0] ?? ""}
+      {lines.length > 1 ? `  …${lines.length - 1} more` : ""}
+    </Text>
+  );
+}
+
+// {by: f, lines: [a, b]} -> "✘ f", then a and b, each on its line
+function TroubleWhole({ trouble: { by, lines } }: { trouble: Trouble }) {
+  return (
+    <Box flexDirection="column">
+      <Text color="red">✘ {by}</Text>
+      {lines.map((line, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: two lines may read the same
+        <Text key={index} wrap="wrap">
+          {"  "}
+          {line}
+        </Text>
+      ))}
+    </Box>
+  );
+}
+
+function Panel({ flow, now }: { flow: Flow; now: number }) {
+  const panel = panelOf(flow, shown);
   if (panel === undefined) return null;
+  const { target, said, used } = flow;
+  if (panel.kind === "roles") {
+    const { phase, running, sessions, troubles, more } = panel;
+    const wide = Math.max(0, ...sessions.map((one) => one.interface?.length ?? 0));
+    return (
+      <Box flexDirection="column" borderStyle="single" paddingX={1}>
+        <Text bold>
+          {phase} · {running ? `${sessions.length} running` : "failed"}
+        </Text>
+        {sessions.map((session) => (
+          <SessionLine
+            key={`${session.role}/${session.interface ?? ""}`}
+            session={session}
+            now={now}
+            wide={wide}
+          />
+        ))}
+        {troubles.map((trouble) =>
+          running ? (
+            <TroubleLine key={trouble.by} trouble={trouble} />
+          ) : (
+            <TroubleWhole key={trouble.by} trouble={trouble} />
+          ),
+        )}
+        {more > 0 ? <Text>…{more} more</Text> : null}
+        {running && target !== undefined ? (
+          <Text wrap="truncate-end">
+            {column("target")}
+            {target.step} {target.state}
+          </Text>
+        ) : null}
+      </Box>
+    );
+  }
   const { phase, running, findings, more } = panel;
-  const { gate, target, said, used } = flow;
+  const { gate } = flow;
   return (
     <Box flexDirection="column" borderStyle="single" paddingX={1}>
       <Text bold>
@@ -175,7 +257,7 @@ function Drawing({ flow, now, ended }: { flow: Flow; now: number; ended: boolean
       {stacked ? (
         <Box flexDirection="column" marginTop={1}>
           {flow.boxes.map((box) => (
-            <PhaseLine key={box.phase} box={box} counts={flow.counts} now={now} />
+            <PhaseLine key={box.phase} box={box} flow={flow} now={now} />
           ))}
         </Box>
       ) : (
@@ -187,12 +269,13 @@ function Drawing({ flow, now, ended }: { flow: Flow; now: number; ended: boolean
                   <Text>─▶</Text>
                 </Box>
               )}
-              <PhaseBox box={box} counts={flow.counts} now={now} />
+              <PhaseBox box={box} flow={flow} now={now} />
             </Fragment>
           ))}
         </Box>
       )}
-      <Panel flow={flow} />
+      <Panel flow={flow} now={now} />
+      {flow.verdicts === undefined ? null : <Verdicts verdicts={flow.verdicts} />}
       {flow.failed === undefined ? null : <Text color="red">{flow.failed}</Text>}
       {ended ? <Text>extract {flow.ok ? "ok" : "failed"}</Text> : null}
     </Box>
