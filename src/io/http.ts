@@ -1,19 +1,8 @@
-import { z } from "zod";
+import { recordedBody } from "../shapes/recorded-body.ts";
 import type { HttpRequest, TargetResponse } from "../shapes/scenario.ts";
 
 export class TargetUnreachable extends Error {
   readonly type = "target-unreachable";
-}
-
-// "" -> null;  '{"a":1}' -> {a: 1};  "<html>" -> "<html>"
-function bodyOf(text: string): TargetResponse["body"] {
-  if (text === "") return null;
-  try {
-    return z.json().parse(JSON.parse(text));
-  } catch {
-    // not JSON: the target answered a text, and the text is what it answered
-    return text;
-  }
 }
 
 export async function send({
@@ -21,13 +10,23 @@ export async function send({
   url,
   headers,
   body,
+  form,
 }: HttpRequest): Promise<TargetResponse> {
   const response = await fetch(url, {
     method: method.toUpperCase(),
     headers,
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    ...(form !== undefined
+      ? { body: new URLSearchParams(form).toString() }
+      : body === undefined
+        ? {}
+        : { body: JSON.stringify(body) }),
+    // a redirection is what the target answered: its status, not the page it leads to
+    redirect: "manual",
   }).catch((error: unknown) => {
     throw new TargetUnreachable(`${method} ${url}: ${String(error)}`, { cause: error });
   });
-  return { status: response.status, body: bodyOf(await response.text()) };
+  // ""  -> null;  '{"a":1}' -> {a: 1};  "<html>" -> "<html>";  a PDF -> {bytes, sha256}
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const contentType = response.headers.get("content-type");
+  return { status: response.status, body: recordedBody({ contentType, bytes }) ?? null };
 }

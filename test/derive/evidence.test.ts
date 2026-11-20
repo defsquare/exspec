@@ -5,7 +5,13 @@ import {
   isAsWritten,
   noiseBetween,
 } from "../../src/derive/evidence.ts";
-import type { Evidence, Exchange, RoleScenario, Step } from "../../src/shapes/roles.ts";
+import type {
+  Evidence,
+  Exchange,
+  RoleScenario,
+  SideEffect,
+  Step,
+} from "../../src/shapes/roles.ts";
 import type { Noise, TargetResponse } from "../../src/shapes/scenario.ts";
 import { run } from "../played.ts";
 
@@ -153,6 +159,133 @@ test("an unplayable exchange differs", () => {
   ]);
 });
 
+const effect = (extra: Partial<SideEffect> = {}): SideEffect => ({
+  observable: "s",
+  request: { method: "post", path: "/b", body: { to: "x" } },
+  response: { status: 200, body: { id: "e1" } },
+  ...extra,
+});
+
+const effecting = (
+  effects: readonly SideEffect[],
+  response: TargetResponse = { status: 200, body: null },
+): Exchange => ({ ...exchange(response), "side-effects": effects });
+
+const once = (...exchanges: readonly Exchange[]) => ({
+  ...evidenceOf(exchanges),
+  noise: [],
+});
+
+test("a request sent to a provider that differs on a replay differs", () => {
+  expect(
+    compareEvidence(
+      once(effecting([effect()])),
+      evidenceOf([
+        effecting([
+          effect({ request: { method: "post", path: "/b", body: { to: "y" } } }),
+        ]),
+      ]),
+    ),
+  ).toEqual([
+    {
+      at: ["exchanges", 0, "side-effects", 0, "request", "body", "to"],
+      expected: "x",
+      actual: "y",
+    },
+  ]);
+});
+
+test("a provider's response alone that differs on a replay differs nowhere", () => {
+  expect(
+    compareEvidence(
+      once(effecting([effect()])),
+      evidenceOf([
+        effecting([effect({ response: { status: 500, body: { id: "e2" } } })]),
+      ]),
+    ),
+  ).toEqual([]);
+});
+
+test("another number of side effects on a replay differs", () => {
+  expect(
+    compareEvidence(
+      once(effecting([effect(), effect()])),
+      evidenceOf([effecting([effect()])]),
+    ),
+  ).toEqual([{ at: ["exchanges", 0, "side-effects"], expected: 2, actual: 1 }]);
+});
+
+test("side effects not observed in the reference and observed none on a replay differ", () => {
+  expect(
+    compareEvidence(
+      once(exchange({ status: 200, body: null })),
+      evidenceOf([effecting([])]),
+    ),
+  ).toEqual([{ at: ["exchanges", 0, "side-effects"], expected: null, actual: 0 }]);
+});
+
+const served = (id: string) =>
+  effecting([effect({ response: { status: 200, body: { id } } })]);
+const repeated = (id: string) => exchange({ status: 200, body: { id } });
+const across: readonly Noise[] = [
+  { at: ["exchanges", 0, "side-effects", 0, "response", "body", "id"], class: 1 },
+  { at: ["exchanges", 1, "response", "body", "id"], class: 1 },
+];
+
+test("an id a provider gave and the target repeats is one class of noise", () => {
+  expect(
+    noiseBetween(
+      evidenceOf([served("e1"), repeated("e1")]),
+      evidenceOf([served("e2"), repeated("e2")]),
+    ),
+  ).toEqual({ stable: true, noise: across });
+});
+
+test("a request sent with another method makes two copies unstable", () => {
+  expect(
+    noiseBetween(
+      evidenceOf([effecting([effect()])]),
+      evidenceOf([
+        effecting([
+          effect({ request: { method: "put", path: "/b", body: { to: "x" } } }),
+        ]),
+      ]),
+    ),
+  ).toEqual({
+    stable: false,
+    differences: [
+      {
+        at: ["exchanges", 0, "side-effects", 0, "request", "method"],
+        first: "post",
+        second: "put",
+      },
+    ],
+  });
+});
+
+test("another number of side effects makes two copies unstable", () => {
+  expect(
+    noiseBetween(
+      evidenceOf([effecting([effect()])]),
+      evidenceOf([effecting([effect(), effect()])]),
+    ),
+  ).toEqual({
+    stable: false,
+    differences: [{ at: ["exchanges", 0, "side-effects"], first: 1, second: 2 }],
+  });
+});
+
+test("a class of noise holds across a provider's response on a replay", () => {
+  expect(
+    compareEvidence(
+      { ...evidenceOf([served("e1"), repeated("e1")]), noise: across },
+      evidenceOf([served("e3"), repeated("e4")]),
+    ),
+  ).toEqual([
+    { at: ["exchanges", 1, "response", "body", "id"], expected: "e3", actual: "e4" },
+  ]);
+});
+
 const step = (path: string, extra: Partial<Step> = {}): Step => ({
   when: "call",
   as: "a",
@@ -212,6 +345,53 @@ test("a hole not filled from the earlier answer of the evidence is not of it as 
   expect(isAsWritten(withHole, answered(8, "/items/7"))).toEqual(false);
 });
 
+const givenS = scenarioOf([
+  step("/a", { name: "m" }),
+  { when: "arrange", service: "s", is: "refuses", with: { address: "{{m.body.to}}" } },
+]);
+const gave = (is: string, address: string) =>
+  evidenceOf([
+    exchange({ status: 200, body: { to: "u@x" } }, "/a"),
+    { when: "arrange", service: "s", is, with: { address } },
+  ]);
+
+test("a service step is of it as written when its exchange gave the condition with its holes filled", () => {
+  expect(isAsWritten(givenS, gave("refuses", "u@x"))).toEqual(true);
+});
+
+test("a service step is not of it as written when its exchange gave another condition or another value", () => {
+  expect([
+    isAsWritten(givenS, gave("forgets-everything", "u@x")),
+    isAsWritten(givenS, gave("refuses", "v@x")),
+  ]).toEqual([false, false]);
+});
+
+const withGiven = (to: string) =>
+  evidenceOf([
+    exchange({ status: 200, body: { to } }, "/a"),
+    { when: "arrange", service: "s", is: "refuses", with: { address: to } },
+  ]);
+
+test("what a service step gave is in the classes of noise, and never a difference of its own", () => {
+  const marked = noiseBetween(withGiven("u1"), withGiven("u2"));
+  expect({
+    marked,
+    replayed:
+      "noise" in marked
+        ? compareEvidence({ ...withGiven("u1"), noise: marked.noise }, withGiven("u3"))
+        : undefined,
+  }).toEqual({
+    marked: {
+      stable: true,
+      noise: [
+        { at: ["exchanges", 0, "response", "body", "to"], class: 1 },
+        { at: ["exchanges", 1, "with", "address"], class: 1 },
+      ],
+    },
+    replayed: [],
+  });
+});
+
 test("an evidence ending on an unplayable exchange is not of it as written", () => {
   expect(
     isAsWritten(
@@ -219,4 +399,23 @@ test("an evidence ending on an unplayable exchange is not of it as written", () 
       evidenceOf([exchange({ status: 200, body: null }, "/a"), unplayable]),
     ),
   ).toEqual(false);
+});
+
+const formStep = (to: string): Step =>
+  step("/a", { request: { method: "post", path: "/a", form: { to } } });
+const formEvidence = (to: string) =>
+  evidenceOf([
+    {
+      when: "call",
+      as: "a",
+      request: { method: "post", path: "/a", form: { to } },
+      response: { status: 200, body: null },
+    },
+  ]);
+
+test("an exchange that sent the step's form is of it as written, another value is not", () => {
+  expect([
+    isAsWritten(scenarioOf([formStep("x")]), formEvidence("x")),
+    isAsWritten(scenarioOf([formStep("x")]), formEvidence("y")),
+  ]).toEqual([true, false]);
 });

@@ -39,17 +39,20 @@ function bindingBy({ provenance, by }: BindingJudged): string {
     .join(", ");
 }
 
-// "up" -> "target up"; "roles-read" -> "roles read"; "check" -> "check"
+// "up" -> "target up"; "roles-read" -> "roles read"; "providers-write-twin" ->
+// "providers write-twin"; "check" -> "check"
 function typedAs(command: string): string {
   if (onTarget.includes(command)) return `target ${command}`;
-  return command.startsWith("roles-") ? command.replace("-", " ") : command;
+  return command.startsWith("roles-") || command.startsWith("providers-")
+    ? command.replace("-", " ")
+    : command;
 }
 
 // the session an event comes from, when several run at once: "[i] " for a role on i;
 // "" for a phase, or a roles' step
 function from(event: Event): string {
   return "role" in event && event.type !== "roles-queued"
-    ? `[${event.interface ?? event.role}] `
+    ? `[${event.interface ?? event.provider ?? event.role}] `
     : "";
 }
 
@@ -163,7 +166,9 @@ export function describeEvent(event: Event): string {
         .map((exchange) =>
           "unplayable" in exchange
             ? `unplayable: ${exchange.unplayable}`
-            : `${exchange.when} ${exchange.response.status}`,
+            : "service" in exchange
+              ? `${exchange.when} ${exchange.service} is ${exchange.is}`
+              : `${exchange.when} ${exchange.response.status}`,
         )
         .join(", ")}`;
     case "judgement-written":

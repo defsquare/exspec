@@ -8,6 +8,8 @@
   "scripts": {
     "test": "bun test",
     "live": "bun test ./live/conduit.live.ts",
+    "live:proxy": "bun test ./live/proxy.live.ts",
+    "live:providers": "bun test ./live/providers.live.ts",
     "check": "tsc --noEmit && biome check .",
     "build": "bun scripts/build.ts",
     "demo:flow": "bun scripts/demo-flow.ts"

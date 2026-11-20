@@ -21,6 +21,7 @@ export type PhaseState = {
 export type RoleSession = {
   readonly role: Role;
   readonly interface?: string;
+  readonly provider?: string;
   readonly startedAt: number;
   // 1 at role-started; +1 at each of its gates that fails
   readonly round: number;
@@ -97,12 +98,17 @@ export const phaseOfCommand: Readonly<Partial<Record<Command, Phase>>> = {
   "roles-judge": "judgement",
 };
 
-type By = { readonly role: Role; readonly interface?: string | undefined };
+type By = {
+  readonly role: Role;
+  readonly interface?: string | undefined;
+  readonly provider?: string | undefined;
+};
 
-// {role: a, interface: f} -> "f"; {role: a} -> "a"
-const byOf = ({ role, interface: of }: By) => of ?? role;
+// {role: a, interface: f} -> "f"; {role: a, provider: p} -> "p"; {role: a} -> "a"
+const byOf = ({ role, interface: of, provider }: By) => of ?? provider ?? role;
 
-const sameSession = (a: By, b: By) => a.role === b.role && a.interface === b.interface;
+const sameSession = (a: By, b: By) =>
+  a.role === b.role && a.interface === b.interface && a.provider === b.provider;
 
 // the count goes to the phase that runs; with none running, nothing changes
 const counting = (flow: Flow, what: Counted): Flow => {
@@ -242,6 +248,7 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
               {
                 role: event.role,
                 ...(event.interface === undefined ? {} : { interface: event.interface }),
+                ...(event.provider === undefined ? {} : { provider: event.provider }),
                 startedAt: at,
                 round: 1,
               },

@@ -4,7 +4,7 @@ import type { RolesRun } from "../../src/agent/roles.ts";
 import { rolesRecord } from "../../src/agent/roles-record.ts";
 import { rolesReplay } from "../../src/agent/roles-replay.ts";
 import type { Event } from "../../src/shapes/event.ts";
-import type { Evidence } from "../../src/shapes/roles.ts";
+import type { Evidence, SideEffect } from "../../src/shapes/roles.ts";
 import type { Difference, TargetResponse } from "../../src/shapes/scenario.ts";
 import { target } from "../files.ts";
 import { at, fakeIo, step } from "../run/fake.ts";
@@ -166,6 +166,60 @@ test("roles record plays an evidence as written once more on one stack, and writ
 
 test("roles record plays a scenario with no evidence on two stacks and writes the first copy", async () => {
   expect(await recordWith({}, [response("t1"), response("t2")])).toEqual(twoStacks);
+});
+
+test("roles record plays on two stacks an evidence taken with no side effects, on an io that observes", async () => {
+  const effect: SideEffect = {
+    observable: "s",
+    request: { method: "post", path: "/b", body: { to: "x" } },
+    response: { status: 200, body: { id: "e" } },
+  };
+  const observed = (stamp: string): Evidence => {
+    const { exchanges, ...rest } = played(stamp);
+    return {
+      ...rest,
+      exchanges: exchanges.map((exchange) => ({ ...exchange, "side-effects": [effect] })),
+    };
+  };
+  const { io, lines } = fakeIo({ "http://h/f/x": [response("t1"), response("t2")] });
+  const { rolesRun, written } = rolesRunOf(
+    evidenceFile(evidenceOf({ version: "v", stamp: "t0" })),
+    { ...io, takeSideEffects: async () => [effect] },
+  );
+  const events = await Array.fromAsync(rolesRecord(rolesRun, false));
+  expect({ events, lines, written }).toEqual({
+    events: [
+      { type: "command-started", command: "roles-record", dir: "/d" },
+      ...step("stop"),
+      ...step("start"),
+      ...step("alive"),
+      ...step("seed"),
+      stepsPlayed(observed("t1")),
+      ...step("stop"),
+      ...step("start"),
+      ...step("alive"),
+      ...step("seed"),
+      stepsPlayed(observed("t2")),
+      { type: "reference-written", path: "f/exists-a", noise: 1 },
+      ...step("stop"),
+      { type: "command-finished", command: "roles-record", ok: true },
+    ],
+    lines: twoStacks.lines,
+    written: [
+      { path: "roles/f/evidence/exists-a.yaml", evidence: { ...observed("t1"), noise } },
+    ],
+  });
+});
+
+test("roles record plays on two stacks an evidence that holds side effects, on an io that observes none", async () => {
+  const { exchanges, ...rest } = evidenceOf({ version: "v", stamp: "t0" });
+  const observed: Evidence = {
+    ...rest,
+    exchanges: exchanges.map((exchange) => ({ ...exchange, "side-effects": [] })),
+  };
+  expect(
+    await recordWith(evidenceFile(observed), [response("t1"), response("t2")]),
+  ).toEqual(twoStacks);
 });
 
 test("roles record treats an evidence played once on another version as none", async () => {

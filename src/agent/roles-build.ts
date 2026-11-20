@@ -1,3 +1,4 @@
+import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
 import { isAsWritten } from "../derive/evidence.ts";
 import {
   builtOf,
@@ -92,8 +93,9 @@ async function* buildGate(
   const findings: string[] = [];
   const toPlay = built.scenarios.filter((one) => !hasEvidenceAsWritten(files, name, one));
   for (const { slug, scenario } of toPlay) {
-    const { run, exchanges } = await play(scenario.steps);
+    const { run, exchanges, notTaken } = await play(scenario.steps);
     const evidence: Evidence = { rule: scenario.rule, run, exchanges };
+    for (const why of notTaken) findings.push(`scenarios/${slug}.yaml: ${why}`);
     await writeFile(
       dir,
       `${folder}/evidence/${slug}.yaml`,
@@ -134,14 +136,41 @@ function builderSkip(left: InterfaceLeft, only: string | undefined): string | un
   }
 }
 
+// The builder's task. A service an operation rests on is told by its file; nothing of the
+// providers that render it.
+export function builderPrompt({
+  bound: { interface: name, method, pattern },
+  actors,
+  files,
+}: {
+  readonly bound: Interface;
+  readonly actors: readonly string[];
+  readonly files: readonly SourceFile[];
+}): string {
+  const folder = folderOf(name);
+  return [
+    `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
+    `Your folder: exspec/${folder}/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
+    `The actors: ${actors.length === 0 ? "none" : actors.join(", ")}; null for a call by nobody.`,
+    ...servicesIn(files).map(
+      ({ service, says }) =>
+        `A service: ${service} — ${says}. Its conditions: exspec/${serviceFileOf(service)}.`,
+    ),
+  ].join("\n");
+}
+
+// services/<name>.yaml, never a provider's file
+const serviceReading = (path: string) => /^services\/[^/]+\.yaml$/.test(path);
+
 async function* builder(
   building: Building,
   bound: Interface,
 ): AsyncGenerator<Event, boolean> {
   const { rolesRun, credentials, play } = building;
   const { dir, only, readFiles } = rolesRun;
-  const { interface: name, method, pattern } = bound;
-  const skip = builderSkip(interfaceLeft(await readFiles(dir), bound), only);
+  const { interface: name } = bound;
+  const files = await readFiles(dir);
+  const skip = builderSkip(interfaceLeft(files, bound), only);
   if (skip !== undefined) return yield* roleSkipped("builder", name, skip);
   await removeUnownedScenarios(rolesRun, name);
   const actors = Object.keys(credentials);
@@ -152,7 +181,9 @@ async function* builder(
       "roles/common.yaml",
       `${folder}/rules.yaml`,
       `${folder}/hints.yaml`,
-    ].includes(path) || under(`${folder}/scenarios`)(path);
+    ].includes(path) ||
+    under(`${folder}/scenarios`)(path) ||
+    serviceReading(path);
   const writable = (path: string) =>
     /^[^/]+\.yaml$/.test(path.slice(`${folder}/scenarios/`.length)) &&
     path.startsWith(`${folder}/scenarios/`);
@@ -163,15 +194,11 @@ async function* builder(
       name,
       rounds,
       session: {
-        prompt: [
-          `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
-          `Your folder: exspec/${folder}/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
-          `The actors: ${actors.length === 0 ? "none" : actors.join(", ")}; null for a call by nobody.`,
-        ].join("\n"),
+        prompt: builderPrompt({ bound, actors, files }),
         tools,
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
-        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml and, in exspec/${folder}/, rules.yaml, hints.yaml and scenarios/; it writes only scenarios/<slug>.yaml there. The system is reached through play alone.`,
+        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, in exspec/${folder}/, rules.yaml, hints.yaml and scenarios/, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
         play: async (steps) => JSON.stringify((await play(steps)).exchanges, null, 2),
       },
       gate: () => buildGate(building, bound),
@@ -246,7 +273,16 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
       }
       const credentials = await io.readCredentials(dir, target);
       const { steps, rule } = read.value;
-      const { run, exchanges } = await playSteps({ dir, target, io, credentials, steps });
+      const { run, exchanges, notTaken } = await playSteps({
+        dir,
+        target,
+        io,
+        credentials,
+        steps,
+      });
+      for (const message of notTaken) {
+        yield { type: "problem", file, at: "steps", message };
+      }
       yield {
         type: "steps-played",
         interface: name,

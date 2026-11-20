@@ -57,7 +57,8 @@ export function checkStructuresFile(text: string | undefined): {
   };
 }
 
-const twice = (names: readonly string[]) => [
+// ["a", "b", "a"] -> ["a"]
+export const twice = (names: readonly string[]) => [
   ...new Set(names.filter((name, i) => names.indexOf(name) !== i)),
 ];
 
@@ -70,6 +71,7 @@ export function checkRulesAndHints({
   structures,
   rules,
   hints,
+  services = [],
 }: {
   readonly operation: string;
   readonly common: Common | undefined;
@@ -77,6 +79,8 @@ export function checkRulesAndHints({
   readonly structures: readonly Structure[] | undefined;
   readonly rules: string | undefined;
   readonly hints: string | undefined;
+  // the names of the services that pass their check; none when absent
+  readonly services?: readonly string[];
 }): { readonly rules?: Rules; readonly findings: readonly string[] } {
   const readRules =
     rules === undefined
@@ -122,6 +126,12 @@ export function checkRulesAndHints({
       .map(
         ({ rule, on }) =>
           `rules.yaml: the rule "${rule}" is on "${on}", which takes does not declare`,
+      ),
+    ...[...parsed.requires, ...parsed.effects]
+      .filter(({ service }) => service !== undefined && !services.includes(service))
+      .map(
+        ({ rule, service }) =>
+          `rules.yaml: the rule "${rule}" rests on "${service}", which is not a service (${services.join(", ") || "none"})`,
       ),
     ...(answered === null || fieldsOf(answered) !== undefined
       ? []

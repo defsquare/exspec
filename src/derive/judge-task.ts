@@ -5,8 +5,14 @@ const yaml = (value: unknown) => Bun.YAML.stringify(value, null, 2).trimEnd();
 
 // {rule: a, on: x, fact: f, otherwise: o, source: s} -> {rule: a, fact: f, otherwise: o}
 // the input a requirement is on is for the reader of the page, not for the judge
-function requirementForJudge({ rule, when, fact, otherwise }: Requirement) {
-  return { rule, ...(when === undefined ? {} : { when }), fact, otherwise };
+function requirementForJudge({ rule, when, service, fact, otherwise }: Requirement) {
+  return {
+    rule,
+    ...(when === undefined ? {} : { when }),
+    ...(service === undefined ? {} : { service }),
+    fact,
+    otherwise,
+  };
 }
 
 // {rule: a, fact: f, source: s} -> {rule: a, fact: f}
@@ -34,6 +40,7 @@ function ruleEntry(rule: string, rules: Rules, common: Common | undefined) {
         effect: {
           rule,
           ...(effect.when === undefined ? {} : { when: effect.when }),
+          ...(effect.service === undefined ? {} : { service: effect.service }),
           says: effect.says,
         },
       };

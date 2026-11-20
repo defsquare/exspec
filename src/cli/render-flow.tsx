@@ -104,11 +104,11 @@ function SessionLine({
   // the longest interface of the sessions drawn
   wide: number;
 }) {
-  const { role, interface: of, startedAt, round, used } = session;
+  const { role, interface: of, provider, startedAt, round, used } = session;
   return (
     <Text wrap="truncate-end">
       {column(role)}
-      {(of ?? "").padEnd(wide + 2)}
+      {(of ?? provider ?? "").padEnd(wide + 2)}
       {since(startedAt, now).padEnd(6)}
       {(round > 1 ? `round ${round}` : "").padEnd(9)}
       {used === undefined ? "" : `${used.tool.padEnd(6)}${used.about}`}
@@ -181,7 +181,10 @@ function Panel({ flow, now }: { flow: Flow; now: number }) {
   const { target, said, used } = flow;
   if (panel.kind === "roles") {
     const { phase, running, played, sessions, troubles, more } = panel;
-    const wide = Math.max(0, ...sessions.map((one) => one.interface?.length ?? 0));
+    const wide = Math.max(
+      0,
+      ...sessions.map((one) => (one.interface ?? one.provider)?.length ?? 0),
+    );
     // "" while the references are recorded: the phase runs and no session does
     const state = !running
       ? " · failed"
@@ -196,7 +199,7 @@ function Panel({ flow, now }: { flow: Flow; now: number }) {
         </Text>
         {sessions.map((session) => (
           <SessionLine
-            key={`${session.role}/${session.interface ?? ""}`}
+            key={`${session.role}/${session.interface ?? session.provider ?? ""}`}
             session={session}
             now={now}
             wide={wide}

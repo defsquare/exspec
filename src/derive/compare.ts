@@ -1,6 +1,6 @@
 import type { Difference, Noise, PlayedScenario, Reference } from "../shapes/scenario.ts";
 import { deepEqual, differingPlaces, valueAt } from "./json.ts";
-import { type Answer, answersOf } from "./noise.ts";
+import { answerPlaces, answersOf, type Valued } from "./noise.ts";
 
 // Outside the noise, a played copy answers what its reference answered. At a noisy place
 // any value goes, but the places of one class answer one value among themselves, and two
@@ -25,39 +25,38 @@ export function compareWithReference(
   if (read !== undefined && read !== (played.readings?.length ?? 0)) {
     return [{ at: ["readings"], expected: read, actual: played.readings?.length ?? 0 }];
   }
-  return compareAnswers({
-    reference: answersOf(reference),
+  return comparePlaces({
+    reference: answerPlaces(answersOf(reference)),
     noise: reference.noise,
-    played: answersOf(played),
+    played: answerPlaces(answersOf(played)),
     root: played,
   });
 }
 
-// The same, on the answers of the two copies; root is the value the played places read in.
-export function compareAnswers({
+// The same, on the places of the two copies; root is the value the played places read in.
+export function comparePlaces({
   reference,
   noise,
   played,
   root,
 }: {
-  readonly reference: readonly Answer[];
+  readonly reference: readonly Valued[];
   readonly noise: readonly Noise[];
-  readonly played: readonly Answer[];
+  readonly played: readonly Valued[];
   readonly root: unknown;
 }): readonly Difference[] {
   const noisy = new Set(noise.map(({ at }) => JSON.stringify(at)));
   const isNoisy = (at: readonly unknown[]) => noisy.has(JSON.stringify(at));
-  const outside = reference.flatMap(({ at, response }, i) => {
-    const actual = played[i]?.response;
-    if (actual === undefined) return [];
-    return [
-      ...(response.status === actual.status
-        ? []
-        : [{ at: [...at, "status"], expected: response.status, actual: actual.status }]),
-      ...differingPlaces(response.body, actual.body, [...at, "body"], isNoisy).map(
-        ({ at, a, b }) => ({ at, expected: a, actual: b }),
-      ),
-    ];
+  const outside = reference.flatMap(({ at, value, kind }, i) => {
+    const other = played[i];
+    if (other === undefined || kind === "kept") return [];
+    const places =
+      kind === "equal"
+        ? deepEqual(value, other.value)
+          ? []
+          : [{ at, a: value, b: other.value }]
+        : differingPlaces(value, other.value, at, isNoisy);
+    return places.map(({ at, a, b }) => ({ at, expected: a, actual: b }));
   });
   const firstOfClass = new Map(noise.toReversed().map(({ at, class: c }) => [c, at]));
   const withinClasses = noise.flatMap(({ at, class: c }) => {

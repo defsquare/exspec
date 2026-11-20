@@ -1,4 +1,5 @@
 import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
+import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
 import { folderOf, readerFilesOf, textAt } from "../derive/roles-files.ts";
 import { interfaceLeft, leftOf } from "../derive/roles-left.ts";
 import type { Event } from "../shapes/event.ts";
@@ -84,12 +85,14 @@ async function* reader(
 ): AsyncGenerator<Event, boolean> {
   const { dir, only, readFiles } = rolesRun;
   const { interface: name, method, pattern } = bound;
-  const left = interfaceLeft(await readFiles(dir), bound);
+  const files = await readFiles(dir);
+  const left = interfaceLeft(files, bound);
   if (only === undefined && left.reading === "done") {
     return yield* roleSkipped("reader", name, "its rules and hints pass their check");
   }
   const folder = folderOf(name);
   const own = [`${folder}/rules.yaml`, `${folder}/hints.yaml`];
+  const services = servicesIn(files).map(({ service }) => serviceFileOf(service));
   return yield* roleJob("reader", name, () =>
     roleRounds({
       rolesRun,
@@ -100,15 +103,20 @@ async function* reader(
         prompt: [
           `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
           `Your folder: exspec/${folder}/ — write rules.yaml and hints.yaml there; in rules.yaml, \`operation\` is ${name}.`,
+          ...(services.length === 0
+            ? []
+            : [
+                `The services this system rests on: ${services.map((file) => `exspec/${file}`).join(", ")}.`,
+              ]),
         ].join("\n"),
         tools,
         mayRead: readsOf(dir, {
           checkout: true,
           allowed: (path) =>
-            ["roles/common.yaml", "structures.yaml", ...own].includes(path),
+            ["roles/common.yaml", "structures.yaml", ...own, ...services].includes(path),
         }),
         mayWrite: writesOf(dir, (path) => own.includes(path)),
-        confinement: `Of exspec/ this session reads only roles/common.yaml, structures.yaml and the two files of its folder, and a search is given a folder of the checkout other than exspec/ as its path (src, for instance), never the root; it writes only exspec/${folder}/rules.yaml and hints.yaml.`,
+        confinement: `Of exspec/ this session reads only roles/common.yaml, structures.yaml, the two files of its folder and the services named, and a search is given a folder of the checkout other than exspec/ as its path (src, for instance), never the root; it writes only exspec/${folder}/rules.yaml and hints.yaml.`,
       },
       gate: async () => {
         return readerFilesOf(await readFiles(dir), name).findings;

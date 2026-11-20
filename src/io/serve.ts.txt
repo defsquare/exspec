@@ -1,0 +1,84 @@
+// The twins of the providers a target calls, one folder beside this file each:
+//   <name>/twin.ts   export const fresh = () => ({ made: 0, refused: [] });
+//                    export const given = {
+//                      refuses: (state, { address }) => ({ ...state, refused: [...state.refused, address] }),
+//                    };
+//                    export const answer = async (state, request, path) => new Response(…);
+// served under /<name>/… on 127.0.0.1, port $TWINS_PORT (9101 when it is not set):
+//   GET /<name>/__state                    its state
+//   PUT /<name>/__state                    its state becomes fresh(), whatever the body
+//   PUT /<name>/__given {condition, with}  its state becomes given[condition](state, with ?? {}),
+//                                          answered 200 with it; an unknown condition 404,
+//                                          a condition that raises 400 with its message
+//   anything else                          answer(state, request, path), path what follows /<name>
+// An unknown name answers 404. Written by exspec, the same for every target: change it
+// there, not here.
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+
+type State = Record<string, unknown>;
+
+type Twin = {
+  readonly fresh: () => State;
+  readonly given?: Readonly<Record<string, (state: State, values: State) => State>>;
+  readonly answer: (state: State, request: Request, path: string) => Promise<Response>;
+};
+
+const twins = new Map<string, { readonly twin: Twin; state: State }>();
+const broken = new Map<string, string>();
+for (const entry of readdirSync(import.meta.dir, { withFileTypes: true })) {
+  const file = join(import.meta.dir, entry.name, "twin.ts");
+  if (!entry.isDirectory() || !existsSync(file)) continue;
+  try {
+    const twin: Twin = await import(file);
+    twins.set(entry.name, { twin, state: twin.fresh() });
+  } catch (error) {
+    // a twin that does not load fails alone: its name answers 500, the others are served
+    broken.set(entry.name, error instanceof Error ? (error.stack ?? error.message) : String(error));
+  }
+}
+
+const isRecord = (value: unknown): value is State => value !== null && typeof value === "object";
+
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+async function give(served: { readonly twin: Twin; state: State }, request: Request) {
+  const asked: unknown = await request.json().catch(() => ({}));
+  const { condition, with: values } = isRecord(asked) ? asked : {};
+  const apply = typeof condition === "string" ? served.twin.given?.[condition] : undefined;
+  if (apply === undefined) return new Response(`unknown condition ${String(condition)}`, { status: 404 });
+  try {
+    served.state = apply(served.state, isRecord(values) ? values : {});
+  } catch (error) {
+    return new Response(message(error), { status: 400 });
+  }
+  return Response.json(served.state);
+}
+
+Bun.serve({
+  hostname: "127.0.0.1",
+  port: Number(process.env.TWINS_PORT ?? 9101),
+  async fetch(request) {
+    const [, name = "", ...rest] = new URL(request.url).pathname.split("/");
+    const why = broken.get(name);
+    if (why !== undefined) return new Response(why, { status: 500 });
+    const served = twins.get(name);
+    if (served === undefined) return new Response("no such twin", { status: 404 });
+    const path = `/${rest.join("/")}`;
+    if (path === "/__state" && request.method === "PUT") {
+      await request.arrayBuffer();
+      served.state = served.twin.fresh();
+      return Response.json(served.state);
+    }
+    if (path === "/__state") return Response.json(served.state);
+    if (path === "/__given" && request.method === "PUT") return give(served, request);
+    // the body is read whole before the twin sees the request: a twin that answers
+    // without reading it would leave the connection unusable for the caller's next call
+    const body = request.body === null ? undefined : await request.arrayBuffer();
+    return served.twin.answer(
+      served.state,
+      new Request(request.url, { method: request.method, headers: request.headers, body }),
+      path,
+    );
+  },
+});

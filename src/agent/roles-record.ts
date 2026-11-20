@@ -48,10 +48,12 @@ function waitingOf(left: readonly InterfaceLeft[]) {
 }
 
 // Stack 1: a reference as written is kept, whatever version it was taken on; an evidence as
-// written, of this version, is the first copy and played once more; any other scenario is
-// played, to be played again on stack 2. Nothing waiting and not forced: no stack at all.
+// written, of this version, taken as this stack observes, is the first copy and played once
+// more; any other scenario is played, to be played again on stack 2. Nothing waiting and
+// not forced: no stack at all.
 //   {rule: r, run: {version: v}, exchanges: e}            on v, a second play
 //   -> {rule: r, run: {version: v}, exchanges: e, noise: n}
+//   e with no "side-effects", on a stack that observes    -> played on both stacks
 export async function* recordReferences(
   rolesRun: RolesRun,
   { target, interfaces }: RolesSetting,
@@ -83,7 +85,16 @@ export async function* recordReferences(
     for (const one of scenarios) {
       const { evidence, path } = one;
       const first =
-        force || !once.has(path) || evidence === undefined ? undefined : evidence;
+        force ||
+        !once.has(path) ||
+        evidence === undefined ||
+        !evidence.exchanges.every(
+          (exchange) =>
+            "service" in exchange ||
+            "side-effects" in exchange === (io.takeSideEffects !== undefined),
+        )
+          ? undefined
+          : evidence;
       if (!force && !once.has(path) && !built.has(path)) {
         yield { type: "reference-kept", path };
       } else if (first === undefined || first.run.version !== io.version) {

@@ -58,10 +58,13 @@ export type Line = {
   readonly doubts: readonly string[];
 };
 
-// one step as it was sent, with what it answered; as it was written when it was not played
+// one step as it was sent, with what it answered; as it was written when it was not played.
+// A service step: {when: arrange, as: null, service: s, is: c, body: <what it gives>}
 export type StepView = {
   readonly when: string;
   readonly as: string | null;
+  readonly service?: string;
+  readonly is?: string;
   readonly method?: string;
   readonly path?: string;
   readonly query?: unknown;
@@ -206,6 +209,12 @@ function stepsOf(
 ): readonly StepView[] {
   if (evidence !== undefined) {
     return evidence.exchanges.map((exchange): StepView => {
+      if ("service" in exchange) {
+        const { when, service, is } = exchange;
+        return "unplayable" in exchange
+          ? { when, as: null, service, is, unplayable: exchange.unplayable }
+          : { when, as: null, service, is, ...givenOf(exchange.with) };
+      }
       if ("unplayable" in exchange) {
         const { when, as, unplayable } = exchange;
         return { when, as, unplayable };
@@ -223,15 +232,25 @@ function stepsOf(
       };
     });
   }
-  return (scenario?.steps ?? []).map(({ when, as, request }) => ({
-    when,
-    as,
-    method: request.method,
-    path: request.path,
-    ...(request.query === undefined ? {} : { query: request.query }),
-    ...(request.body === undefined ? {} : { body: request.body }),
-  }));
+  return (scenario?.steps ?? []).map((step): StepView => {
+    if ("service" in step) {
+      const { when, service, is } = step;
+      return { when, as: null, service, is, ...givenOf(step.with) };
+    }
+    const { when, as, request } = step;
+    return {
+      when,
+      as,
+      method: request.method,
+      path: request.path,
+      ...(request.query === undefined ? {} : { query: request.query }),
+      ...(request.body === undefined ? {} : { body: request.body }),
+    };
+  });
 }
+
+// what a service step gives, shown as what it sent
+const givenOf = (given: unknown) => (given === undefined ? {} : { body: given });
 
 // The roles' reading, projected onto what view draws: each operation of a reading that
 // parses, its lines judged by the judge's word, its scenarios with their steps, the problems

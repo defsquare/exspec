@@ -30,9 +30,9 @@ verified, refuted or only declared, each claim that is not verified with its rea
 the facts that block the most rules. The extraction is a directory of YAML files,
 `<dir>/exspec/`, and nothing else is stored.
 
-It has run end to end on two targets, a Conduit and a Petclinic. What it does not do yet
+It has run end to end on three targets, a Conduit, a Petclinic and a trainings platform that calls providers. What it does not do yet
 is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
-No side effect is observed: only what the target's interfaces answer.
+Only what the target says outward is compared: what its interfaces answer and what it sends to a provider (ADR-0018).
 
 The project starts from a spike made in another project, whose record is in
 [`docs/brief/`](docs/brief/README.md): `framing.md` (what is kept, dropped, settled),
@@ -42,13 +42,18 @@ The project starts from a spike made in another project, whose record is in
 ## The idea in four groups
 
 ```
-proof           a scenario: written with holes, filled by an execution, kept as a reference
-specification   operations and their rules, facts, structures and their fields — declared whole
-bindings        projection, trigger, detects — what ties a target's interface to the specification
-target          what is started, the interfaces it exposes, the observables where what it did is captured
+proof           scenario, call, side effect          points at the specification
+specification   operation, rule, fact, structure, field, service, condition    points at nothing below it
+bindings        projection, trigger, detects, renders    the only shapes that know both sides
+target          target, interface, observable (a provider is one)    points at nothing above it
 ```
 
 A rewrite of the system keeps the specification and the scenarios, and rewrites the bindings.
+
+A target that calls providers (a service is what the system needs of someone else, a
+provider the system it calls to get it) is set up in this order: `proxy` and `observables`
+written by hand in `target.yaml`; `exspec providers read`; `exspec providers write-twin`;
+then `extract` or the `roles` commands. `extract` reads no provider.
 
 ## Working here
 
@@ -80,5 +85,7 @@ bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judg
 bun src/cli/main.ts roles play <dir> <interface>/<slug>                  # on a target up: reset, play one written scenario
 bun src/cli/main.ts roles record <dir> [--only <interface>] [--force]   # each evidence played again on fresh stacks, its noise beside it
 bun src/cli/main.ts roles replay <dir> [--only <interface>]              # each reference played once on a fresh stack, compared outside its noise
+bun src/cli/main.ts providers read <dir> [--only <provider>] [--jobs n]        # a reader per provider the target calls -> exspec/services/<service>.yaml, exspec/providers/<name>/interfaces.yaml, provider.yaml
+bun src/cli/main.ts providers write-twin <dir> [--only <provider>] [--jobs n]  # serve.ts, then a twin writer per provider read -> exspec/providers/<name>/twin.ts, served, its state put back, each condition given
 bun run live                                # record and replay Conduit's fixture (Docker)
 ```

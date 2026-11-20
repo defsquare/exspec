@@ -9,7 +9,7 @@ import { methodSchema } from "./target.ts";
 //   <interface>/evidence/<slug>.yaml   what the system answered to it, written by the tool
 //   <interface>/judgements.yaml        what the judge made of it, written by the tool
 
-const ruleName = z
+export const ruleName = z
   .string()
   .regex(/^[a-z][a-z0-9-]*$/, "a rule's name is lower-case words joined by dashes");
 const source = z
@@ -20,11 +20,13 @@ const refusalSchema = z
   .strictObject({ refusal: ruleName, status: z.int(), body: z.string() })
   .readonly();
 
+// service: the service of exspec/services/ the rule rests on
 export const requirementSchema = z
   .strictObject({
     rule: ruleName,
     on: z.string().optional(),
     when: z.string().optional(),
+    service: z.string().optional(),
     fact: z.string(),
     otherwise: refusalSchema,
     source,
@@ -34,7 +36,13 @@ export const requirementSchema = z
 export type Requirement = z.infer<typeof requirementSchema>;
 
 export const effectSchema = z
-  .strictObject({ rule: ruleName, when: z.string().optional(), says: z.string(), source })
+  .strictObject({
+    rule: ruleName,
+    when: z.string().optional(),
+    says: z.string(),
+    service: z.string().optional(),
+    source,
+  })
   .readonly();
 
 export const commonRuleSchema = z
@@ -137,19 +145,28 @@ export const whenSchema = z.enum(["arrange", "before", "call", "after"]);
 const scalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
 // a request as a builder writes it, holes and all: {method: get, path: "/a/{{m.body.id}}"}
+// form in place of body: {method: post, path: /a, form: {to: "x", copy: true}}
 export const stepRequestSchema = z
   .strictObject({
     method: methodSchema,
     path: z.string(),
     query: z.record(z.string(), scalarSchema).readonly().optional(),
     body: z.json().optional(),
+    form: z.record(z.string(), scalarSchema).readonly().optional(),
+  })
+  .refine(({ body, form }) => body === undefined || form === undefined, {
+    message: "a request carries a body or a form, not both",
   })
   .readonly();
 
 export type StepRequest = z.infer<typeof stepRequestSchema>;
 
-// as: an actor's name, null for a call by nobody; name: what a later hole cites
-export const stepSchema = z
+// A step is addressed to the target, or gives a service a condition:
+//   {when: call, as: a, name: n, request: {method: post, path: /x}}
+//   {when: arrange, service: s, is: refuses, with: {address: "{{n.body.to}}"}}
+// as: an actor's name, null for a call by nobody; name: what a later hole cites;
+// with: a value for each parameter the condition takes, holes filled as in a request
+const targetStepSchema = z
   .strictObject({
     when: whenSchema,
     as: z.string().nullable(),
@@ -158,7 +175,21 @@ export const stepSchema = z
   })
   .readonly();
 
+const givenSchema = z.record(z.string(), z.json()).readonly();
+
+const serviceStepSchema = z
+  .strictObject({
+    when: whenSchema,
+    service: z.string(),
+    is: z.string(),
+    with: givenSchema.optional(),
+  })
+  .readonly();
+
+export const stepSchema = z.union([targetStepSchema, serviceStepSchema]);
+
 export type Step = z.infer<typeof stepSchema>;
+export type ServiceStep = z.infer<typeof serviceStepSchema>;
 
 export const roleScenarioSchema = z
   .strictObject({
@@ -182,12 +213,29 @@ export const sentSchema = z
     path: z.string(),
     query: z.record(z.string(), z.json()).readonly().optional(),
     body: z.json().optional(),
+    form: z.record(z.string(), z.json()).readonly().optional(),
+  })
+  .refine(({ body, form }) => body === undefined || form === undefined, {
+    message: "a request carries a body or a form, not both",
   })
   .readonly();
 
 export type Sent = z.infer<typeof sentSchema>;
 
-// unplayable: why the step could not be sent; the steps after it are not sent either
+// What the target sent to a provider while a step was played, and what it was answered:
+//   {observable: p, request: {method: post, path: /b, body: {to: x}}, response: {status: 200, body: {id: e}}}
+// No header is kept. A file in a body is its length and digest: {bytes: 1234, sha256: "9f…"}.
+export const sideEffectSchema = z
+  .strictObject({ observable: z.string(), request: sentSchema, response: responseSchema })
+  .readonly();
+
+export type SideEffect = z.infer<typeof sideEffectSchema>;
+
+// A step as it was played; a service step is kept as sent, its holes filled:
+//   {when: call, as: a, request: {…}, response: {…}, side-effects: […]}
+//   {when: arrange, service: s, is: refuses, with: {address: "u@x"}}
+// unplayable: why the step could not be sent; the steps after it are not sent either.
+// side-effects absent: what the target sent is unknown; []: observed, and it sent nothing.
 export const exchangeSchema = z.union([
   z
     .strictObject({
@@ -195,10 +243,24 @@ export const exchangeSchema = z.union([
       as: z.string().nullable(),
       request: sentSchema,
       response: responseSchema,
+      "side-effects": z.array(sideEffectSchema).readonly().optional(),
     })
     .readonly(),
   z
-    .strictObject({ when: whenSchema, as: z.string().nullable(), unplayable: z.string() })
+    .strictObject({
+      when: whenSchema,
+      as: z.string().nullable(),
+      unplayable: z.string(),
+    })
+    .readonly(),
+  serviceStepSchema,
+  z
+    .strictObject({
+      when: whenSchema,
+      service: z.string(),
+      is: z.string(),
+      unplayable: z.string(),
+    })
     .readonly(),
 ]);
 

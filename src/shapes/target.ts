@@ -2,6 +2,27 @@ import { z } from "zod";
 
 export const methodSchema = z.enum(["get", "post", "put", "patch", "delete"]);
 
+// {observable: p, kind: provider}: a system the target calls, stood in for by its twin
+// exspec/providers/p/twin.ts, served by exspec on a port of its own
+export const observableSchema = z
+  .strictObject({
+    observable: z
+      .string()
+      .regex(
+        /^[a-z][a-z0-9-]*$/,
+        "an observable's name is lower-case words joined by dashes",
+      ),
+    kind: z.literal("provider"),
+  })
+  .readonly();
+
+export type Observable = z.infer<typeof observableSchema>;
+
+// quiet: the milliseconds of silence at the proxy that end a step
+export const proxySchema = z
+  .strictObject({ port: z.int(), quiet: z.int().default(150) })
+  .readonly();
+
 export const targetSchema = z
   .strictObject({
     target: z.string(),
@@ -14,7 +35,15 @@ export const targetSchema = z
     stop: z.array(z.string()).readonly(),
     api: z.strictObject({ "base-url": z.string() }).readonly(),
     credentials: z.string().optional(),
+    proxy: proxySchema.optional(),
+    observables: z.array(observableSchema).readonly().optional(),
   })
+  .refine(
+    ({ proxy, observables }) => (proxy === undefined) === (observables === undefined),
+    {
+      message: "proxy and observables go together: one is given without the other",
+    },
+  )
   .readonly();
 
 export type Target = z.infer<typeof targetSchema>;
@@ -68,14 +97,21 @@ export const interfaceSchema = z
         path: parametersSchema.optional(),
         query: parametersSchema.optional(),
         body: shapeSchema.optional(),
+        form: parametersSchema.optional(),
         auth: z.enum(["required", "optional", "none"]).optional(),
       })
       .readonly()
       .default({}),
+    // headers: the headers the caller reads, {x-a: string}
     responses: z
       .record(
         z.string().regex(/^\d{3}$/),
-        z.strictObject({ body: shapeSchema }).readonly(),
+        z
+          .strictObject({
+            body: shapeSchema,
+            headers: z.record(z.string(), shapeSchema).readonly().optional(),
+          })
+          .readonly(),
       )
       .readonly(),
   })

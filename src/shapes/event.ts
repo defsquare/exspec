@@ -23,6 +23,8 @@ const commandSchema = z.enum([
   "roles-play",
   "roles-record",
   "roles-replay",
+  "providers-read",
+  "providers-write-twin",
 ]);
 export type Command = z.infer<typeof commandSchema>;
 
@@ -42,12 +44,20 @@ export const roleSchema = z.enum([
   "reader",
   "builder",
   "judge",
+  "provider-reader",
+  "twin-writer",
 ]);
 
 export type Role = z.infer<typeof roleSchema>;
 
-// the session a role's event comes from: one per interface, but the common reader's
-const bySchema = { role: roleSchema, interface: z.string().optional() };
+// the session a role's event comes from: one per interface, but the common reader's; a
+// provider's roles name the provider in `provider` and have no `interface`:
+//   {role: builder, interface: f}   {role: twin-writer, provider: p}
+const bySchema = {
+  role: roleSchema,
+  interface: z.string().optional(),
+  provider: z.string().optional(),
+};
 
 const progressSchema = z.enum(["done", "to-do"]);
 

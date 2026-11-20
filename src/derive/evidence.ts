@@ -1,9 +1,15 @@
-import type { Evidence, RoleScenario } from "../shapes/roles.ts";
-import type { Difference, TargetResponse } from "../shapes/scenario.ts";
-import { compareAnswers } from "./compare.ts";
-import { fillHoles } from "./holes.ts";
+import type { Evidence, Exchange, RoleScenario } from "../shapes/roles.ts";
+import type { Difference, Place, TargetResponse } from "../shapes/scenario.ts";
+import { comparePlaces } from "./compare.ts";
+import { fillGiven, fillHoles } from "./holes.ts";
 import { deepEqual } from "./json.ts";
-import { type Answer, type Marked, markAnswers } from "./noise.ts";
+import {
+  type Answer,
+  answerPlaces,
+  type Marked,
+  markPlaces,
+  type Valued,
+} from "./noise.ts";
 
 // An unplayable exchange answered nothing:
 //   [{call, response: r0}, {call, unplayable: "…"}, …] -> [{at: [exchanges, 0, response], response: r0}]
@@ -15,9 +21,12 @@ export function evidenceAnswers({ exchanges }: Evidence): readonly Answer[] {
   );
 }
 
+const playedOf = ({ exchanges }: Evidence) =>
+  exchanges.filter((exchange) => !("unplayable" in exchange)).length;
+
 // Two copies are comparable when they have as many exchanges, all of them played;
 // otherwise the one place that differs is their counts — of exchanges when those differ,
-// of answers when an exchange could not be played:
+// of those played when an exchange could not be played:
 //   3 exchanges and 2 -> {first: 3, second: 2};  2 and 2, one unplayable -> {first: 2, second: 1}
 function counts(
   a: Evidence,
@@ -26,18 +35,83 @@ function counts(
   if (a.exchanges.length !== b.exchanges.length) {
     return { first: a.exchanges.length, second: b.exchanges.length };
   }
-  const first = evidenceAnswers(a).length;
-  const second = evidenceAnswers(b).length;
+  const first = playedOf(a);
+  const second = playedOf(b);
   return first === a.exchanges.length && second === first ? undefined : { first, second };
+}
+
+// side-effects absent counts null, present its length; the exchanges where they differ:
+//   [{side-effects: [e, e]}, {}]  [{side-effects: [e]}, {side-effects: []}]
+//   -> [exchanges, 0, side-effects] 2 1,  [exchanges, 1, side-effects] null 0
+function sideEffectCounts(
+  a: Evidence,
+  b: Evidence,
+): readonly {
+  readonly at: Place;
+  readonly first: number | null;
+  readonly second: number | null;
+}[] {
+  const count = (exchange: Exchange | undefined) =>
+    exchange !== undefined && "response" in exchange
+      ? (exchange["side-effects"]?.length ?? null)
+      : null;
+  return a.exchanges.flatMap((exchange, i) => {
+    const first = count(exchange);
+    const second = count(b.exchanges[i]);
+    return first === second
+      ? []
+      : [{ at: ["exchanges", i, "side-effects"], first, second }];
+  });
+}
+
+// What a target says outward is compared, what a provider answered it is kept (ADR-0018):
+//   [p, observable], [p, request, method]                  equal
+//   [p, request, path], [p, request, query], [p, request, body]   walked
+//   [p, response]                                          kept
+// p = [exchanges, i, side-effects, j]; each exchange's side effects before its answer,
+// in the order they came. What a service step gave is the scenario's, as a request is:
+//   [exchanges, i, with]                                   kept
+function evidencePlaces({ exchanges }: Evidence): readonly Valued[] {
+  return exchanges.flatMap((exchange, i): readonly Valued[] => {
+    if ("service" in exchange) {
+      return "with" in exchange
+        ? [{ at: ["exchanges", i, "with"], value: exchange.with, kind: "kept" }]
+        : [];
+    }
+    if (!("response" in exchange)) return [];
+    const effects = (exchange["side-effects"] ?? []).flatMap(
+      ({ observable, request: { method, path, query, body }, response }, j) => {
+        const at = ["exchanges", i, "side-effects", j];
+        return [
+          { at: [...at, "observable"], value: observable, kind: "equal" },
+          { at: [...at, "request", "method"], value: method, kind: "equal" },
+          { at: [...at, "request", "path"], value: path, kind: "walked" },
+          { at: [...at, "request", "query"], value: query, kind: "walked" },
+          { at: [...at, "request", "body"], value: body, kind: "walked" },
+          { at: [...at, "response"], value: response, kind: "kept" },
+        ] satisfies readonly Valued[];
+      },
+    );
+    return [
+      ...effects,
+      ...answerPlaces([
+        { at: ["exchanges", i, "response"], response: exchange.response },
+      ]),
+    ];
+  });
 }
 
 // markNoise for two copies of an evidence, its places starting at the exchange:
 //   2 exchanges and 1 -> {stable: false, differences: [{at: [exchanges], first: 2, second: 1}]}
 export function noiseBetween(first: Evidence, second: Evidence): Marked {
   const unequal = counts(first, second);
-  return unequal === undefined
-    ? markAnswers(evidenceAnswers(first), evidenceAnswers(second))
-    : { stable: false, differences: [{ at: ["exchanges"], ...unequal }] };
+  if (unequal !== undefined) {
+    return { stable: false, differences: [{ at: ["exchanges"], ...unequal }] };
+  }
+  const differences = sideEffectCounts(first, second);
+  return differences.length > 0
+    ? { stable: false, differences }
+    : markPlaces(evidencePlaces(first), evidencePlaces(second));
 }
 
 // an evidence played twice: its noise is known, even when there is none
@@ -52,14 +126,22 @@ export function compareEvidence(
   played: Evidence,
 ): readonly Difference[] {
   const unequal = counts(reference, played);
-  return unequal === undefined
-    ? compareAnswers({
-        reference: evidenceAnswers(reference),
+  if (unequal !== undefined) {
+    return [{ at: ["exchanges"], expected: unequal.first, actual: unequal.second }];
+  }
+  const differences = sideEffectCounts(reference, played);
+  return differences.length > 0
+    ? differences.map(({ at, first, second }) => ({
+        at,
+        expected: first,
+        actual: second,
+      }))
+    : comparePlaces({
+        reference: evidencePlaces(reference),
         noise: reference.noise,
-        played: evidenceAnswers(played),
+        played: evidencePlaces(played),
         root: played,
-      })
-    : [{ at: ["exchanges"], expected: unequal.first, actual: unequal.second }];
+      });
 }
 
 // An evidence is of a scenario as written when it names its rule and, step by step, sent
@@ -70,10 +152,21 @@ export function isAsWritten(scenario: RoleScenario, evidence: Evidence): boolean
   if (evidence.rule !== scenario.rule) return false;
   if (evidence.exchanges.length !== scenario.steps.length) return false;
   const answers = new Map<string, TargetResponse>();
-  return scenario.steps.every(({ when, as, name, request }, i) => {
+  return scenario.steps.every((step, i) => {
     const exchange = evidence.exchanges[i];
-    if (exchange === undefined || !("response" in exchange)) return false;
-    if (exchange.when !== when || exchange.as !== as) return false;
+    if (exchange === undefined || exchange.when !== step.when) return false;
+    if ("service" in step) {
+      if (!("service" in exchange) || "unplayable" in exchange) return false;
+      const filled = fillGiven(step.with ?? {}, answers);
+      return (
+        exchange.service === step.service &&
+        exchange.is === step.is &&
+        "given" in filled &&
+        deepEqual(filled.given, exchange.with ?? {})
+      );
+    }
+    const { as, name, request } = step;
+    if (!("response" in exchange) || exchange.as !== as) return false;
     const filled = fillHoles(request, answers);
     if ("unplayable" in filled || !deepEqual(filled.sent, exchange.request)) return false;
     if (name !== undefined) answers.set(name, exchange.response);

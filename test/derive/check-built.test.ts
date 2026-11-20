@@ -5,6 +5,7 @@ import {
   checkRulesAndHints,
   checkStructuresFile,
 } from "../../src/derive/check-reader.ts";
+import type { Service } from "../../src/shapes/service.ts";
 import type { Interface } from "../../src/shapes/target.ts";
 import { commonText, hintsText, rulesText, structuresText } from "../roles-fixture.ts";
 
@@ -52,7 +53,7 @@ test("a scenario per rule, each with one call to the operation, passes", () => {
   const built =
     rules === undefined
       ? undefined
-      : checkBuilt({ bound, rules, actors: ["ann", "bob"], files });
+      : checkBuilt({ bound, rules, actors: ["ann", "bob"], services: [], files });
   expect(built?.findings).toEqual([]);
 });
 
@@ -81,7 +82,8 @@ steps:
   expect(
     rules === undefined
       ? undefined
-      : checkBuilt({ bound, rules, actors: ["ann", "bob"], files }).findings,
+      : checkBuilt({ bound, rules, actors: ["ann", "bob"], services: [], files })
+          .findings,
   ).toEqual([
     "scenarios/pet-exists.yaml: the call is a get, the operation a delete",
     "scenarios/pet-exists.yaml: the call's path /api/pets does not match /api/pets/{petId}",
@@ -98,5 +100,64 @@ steps:
     'no scenario for the rule "pet-type-kept"',
     'no scenario for the rule "signed-in"',
     'no scenario for the rule "owner-admin-role"',
+  ]);
+});
+
+const service: Service = {
+  service: "s",
+  says: "keeps a document",
+  conditions: [
+    { condition: "forgets-everything", says: "nothing is kept" },
+    { condition: "refuses", takes: { address: "string" }, says: "refuses an address" },
+  ],
+  unsure: [],
+};
+
+const givenSteps = (steps: string) => `
+rule: pet-exists
+situation: a pet
+reached: yes
+steps:
+  - {when: arrange, as: ann, name: made, request: {method: post, path: /api/pets, body: {name: a}}}
+${steps}
+  - {when: call, as: ann, request: {method: delete, path: /api/pets/1}}
+`;
+
+const findingsOfGiven = (steps: string) =>
+  rules === undefined
+    ? undefined
+    : checkBuilt({
+        bound,
+        rules,
+        actors: ["ann"],
+        services: [service],
+        files: every.map((rule) => ({
+          slug: rule,
+          text: rule === "pet-exists" ? givenSteps(steps) : scenario(rule),
+        })),
+      }).findings;
+
+test("a step that gives a service its condition, with what the condition takes, passes", () => {
+  expect(
+    findingsOfGiven(`  - {when: arrange, service: s, is: forgets-everything}
+  - {when: arrange, service: s, is: refuses, with: {address: "{{made.body.owner}}"}}`),
+  ).toEqual([]);
+});
+
+test("a service step names a service read, one of its conditions, exactly what it takes, and arranges", () => {
+  expect(
+    findingsOfGiven(`  - {when: arrange, service: m, is: refuses}
+  - {when: arrange, service: s, is: lost}
+  - {when: arrange, service: s, is: refuses}
+  - {when: arrange, service: s, is: refuses, with: {address: a, copy: b}}
+  - {when: before, service: s, is: forgets-everything}
+  - {when: arrange, service: s, is: refuses, with: {address: "{{later.body.to}}"}}`),
+  ).toEqual([
+    'scenarios/pet-exists.yaml: step 2: "m" is not a service (s)',
+    'scenarios/pet-exists.yaml: step 3: "lost" is not a condition of "s" (forgets-everything, refuses)',
+    'scenarios/pet-exists.yaml: step 4: "refuses" of "s" takes "address", which is not given',
+    'scenarios/pet-exists.yaml: step 5: "refuses" of "s" takes no "copy"',
+    'scenarios/pet-exists.yaml: step 6: a step that gives "s" a condition is an arrange step, not before',
+    'scenarios/pet-exists.yaml: step 7: a hole cites "later", no step named before it',
   ]);
 });

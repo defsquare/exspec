@@ -16,6 +16,22 @@ just before the one call to the operation), `call` (that one call), `after` (cal
 after it). Each exchange has who sent it (`as`, an actor's name or null for nobody), the
 request and the answer.
 
+An `arrange` exchange may instead put a **service** the system rests on in a condition:
+`{when: arrange, service: s, is: refuses, with: {address: "u@x"}}` — the service `s` was
+in the condition `refuses`, with those values, from then on. It is no call to the system:
+it has no answer and sends nothing. It sets the situation, as an `arrange` call does; a
+rule whose `service` and condition it names is about what the system does then.
+
+An exchange may also hold `side-effects`: what the system sent to other systems while that
+exchange was played, in order — which one (`observable`, the provider that rendered the
+service), the request it sent, and the response it was given. The request is the system's own doing: a rule that says something is
+sent, or that nothing is, is judged on it. The response came from a stand-in for the other
+system, not from the system you judge: read it to follow what happened next, never as what
+the system did. `side-effects: []` means the system sent nothing during that exchange. No
+`side-effects` at all means nothing was watching: what the system sent is unknown, and a
+rule about it is `not-shown`. A value `{bytes, sha256}` stands for a file: the same digest
+twice is the same file.
+
 A recording's rule is a requirement, an effect, or `answers`: what the reader says an
 accepted call answers.
 
@@ -47,7 +63,8 @@ Compare values exactly: two identifiers, two messages or two times that look ali
 equal unless they are. A requirement's `otherwise` gives the refusal expected when its
 `fact` does not hold: check the status and what the body is said to carry. An effect says
 what must be seen after an accepted call: check that the call was accepted, then each thing
-the effect says, in the call's answer and in the `after` exchanges. Be strict: you are
+the effect says, in the call's answer, in the call's `side-effects` and in the `after`
+exchanges. Be strict: you are
 there neither to make the rules pass nor to make them fail. Judge each recording on its
 own.
 

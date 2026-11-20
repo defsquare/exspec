@@ -10,6 +10,7 @@ import {
 import type { Interface } from "../shapes/target.ts";
 import { checkBuilt, ownersOf } from "./check-built.ts";
 import { checkCommon, checkRulesAndHints, checkStructuresFile } from "./check-reader.ts";
+import { servicesIn } from "./check-service.ts";
 import { judgeTask } from "./judge-task.ts";
 
 // "delete-item" -> "roles/delete-item"
@@ -57,6 +58,7 @@ export function readerFilesOf(files: readonly SourceFile[], name: string) {
       structures,
       rules: textAt(files, `${folder}/rules.yaml`),
       hints: textAt(files, `${folder}/hints.yaml`),
+      services: servicesIn(files).map(({ service }) => service),
     }),
   };
 }
@@ -68,12 +70,14 @@ export function readerFilesOf(files: readonly SourceFile[], name: string) {
 // and an evidence with an unplayable exchange is never of its scenario as written.
 // An actor the credentials held when the evidence was taken, and no longer hold: the
 // evidence stands, it is what the target answered then; a replay tells the step unplayable.
-function actorsNamed(
+export function actorsNamed(
   written: readonly { readonly slug: string; readonly text: string }[],
 ): readonly string[] {
   return written.flatMap(({ slug, text }) => {
     const read = readYaml(slug, text, roleScenarioSchema);
-    return "value" in read ? read.value.steps.flatMap(({ as }) => as ?? []) : [];
+    return "value" in read
+      ? read.value.steps.flatMap((step) => ("as" in step ? (step.as ?? []) : []))
+      : [];
   });
 }
 
@@ -91,6 +95,7 @@ export function builtOf(
     bound,
     rules,
     actors: actors ?? actorsNamed(written),
+    services: servicesIn(files),
     files: written,
   });
 }

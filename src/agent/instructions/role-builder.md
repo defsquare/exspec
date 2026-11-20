@@ -53,8 +53,26 @@ steps:
 - `after`: the calls that show what the call changed or left alone.
 - `as` is an actor's name, or `null` for a call by nobody (no credentials).
 - `request`: `method` (lower case), `path` (relative to the base URL), and when needed
-  `query` (a map) and `body`. You write requests only, never an answer: the tool plays the
+  `query` (a map) and `body`. An interface whose description has `form` takes its inputs
+  as a form: write `form`, a flat map of field to scalar, never `body`, for it
+  (`request: {method: post, path: /a, form: {to: "x", copy: true}}`). You write requests only, never an answer: the tool plays the
   scenario and records what the system answered.
+- A step may give a **service** the judged system rests on one of its **conditions**: a
+  service and its file are named in your task, and the file lists its conditions, each
+  with what it says and the parameters it `takes`. Such a step is an `arrange` step, with
+  no `as`, no `name` and no `request`: `service`, the condition in `is`, and in `with` a
+  value for each parameter the condition takes — exactly those, none when it takes none.
+  A value of `with` may cite an earlier answer, as a request does.
+
+  ```yaml
+  - {when: arrange, as: ann, name: sent, request: {method: post, path: /letters, body: {to: "u@x"}}}
+  - {when: arrange, service: s, is: refuses, with: {address: "{{sent.body.to}}"}}
+  - {when: arrange, service: s, is: forgets-everything}
+  ```
+
+  Conditions are given in the order written, each on top of the ones before. Every `play`
+  starts each service with none of its conditions. What the judged system sends to the
+  systems it calls is recorded with each step; you do not write it.
 - A step may have a `name`; a later step cites a value of its answer with
   `{{name.body.key.key}}` or `{{name.body.list.0.key}}` — an identifier the system
   generated, for instance. Alone in a string, the value keeps its type (a number stays a

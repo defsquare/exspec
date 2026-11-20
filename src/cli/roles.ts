@@ -1,4 +1,5 @@
 import { driveAgent, type Session } from "../agent/drive.ts";
+import { providersRead, providersWriteTwin } from "../agent/providers.ts";
 import { type RolesCommand, rolesRunOf } from "../agent/roles.ts";
 import { rolesBuild, rolesPlay } from "../agent/roles-build.ts";
 import { rolesJudge } from "../agent/roles-judge.ts";
@@ -68,6 +69,10 @@ export function rolesEvents({
       return rolesRecord(rolesRun, force);
     case "roles-replay":
       return rolesReplay(rolesRun);
+    case "providers-read":
+      return providersRead(rolesRun);
+    case "providers-write-twin":
+      return providersWriteTwin(rolesRun);
     default: {
       const unreachable: never = command;
       return unreachable;

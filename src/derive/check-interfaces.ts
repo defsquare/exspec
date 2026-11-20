@@ -16,7 +16,10 @@ function schemasNamed(shape: Shape, at: string): readonly { at: string; name: st
   return shape[0] === "schema" ? [{ at, name: shape[1] }] : schemasNamed(shape[1], at);
 }
 
-export function checkInterfaces({ schemas, interfaces }: Extraction): readonly Problem[] {
+export function checkInterfaces({
+  schemas,
+  interfaces,
+}: Pick<Extraction, "schemas" | "interfaces">): readonly Problem[] {
   const known = new Set(schemas.map(({ schema }) => schema));
   const shapes = [
     ...schemas.map(({ schema, shape }) => ({ at: `schemas.${schema}.shape`, shape })),
@@ -31,13 +34,20 @@ export function checkInterfaces({ schemas, interfaces }: Extraction): readonly P
           at: `${at}.request.query.${key}`,
           shape,
         })),
+        ...Object.entries(request.form ?? {}).map(([key, shape]) => ({
+          at: `${at}.request.form.${key}`,
+          shape,
+        })),
         ...(request.body === undefined
           ? []
           : [{ at: `${at}.request.body`, shape: request.body }]),
-        ...Object.entries(responses).map(([status, { body }]) => ({
-          at: `${at}.responses.${status}.body`,
-          shape: body,
-        })),
+        ...Object.entries(responses).flatMap(([status, { body, headers }]) => [
+          { at: `${at}.responses.${status}.body`, shape: body },
+          ...Object.entries(headers ?? {}).map(([key, shape]) => ({
+            at: `${at}.responses.${status}.headers.${key}`,
+            shape,
+          })),
+        ]),
       ];
     }),
   ];

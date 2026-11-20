@@ -5,10 +5,12 @@ import target from "./instructions/phase-target.md" with { type: "text" };
 import builder from "./instructions/role-builder.md" with { type: "text" };
 import commonReader from "./instructions/role-common-reader.md" with { type: "text" };
 import judge from "./instructions/role-judge.md" with { type: "text" };
+import providerReader from "./instructions/role-provider-reader.md" with { type: "text" };
 import reader from "./instructions/role-reader.md" with { type: "text" };
 import structuresReader from "./instructions/role-structures-reader.md" with {
   type: "text",
 };
+import twinWriter from "./instructions/role-twin-writer.md" with { type: "text" };
 import system from "./instructions/system.md" with { type: "text" };
 
 export type Instructions = {
@@ -35,4 +37,6 @@ export const roleInstructions: Readonly<Record<Role, string>> = {
   reader,
   builder,
   judge,
+  "provider-reader": providerReader,
+  "twin-writer": twinWriter,
 };

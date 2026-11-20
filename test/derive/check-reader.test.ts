@@ -128,3 +128,23 @@ answers: {says: ok, structure: null}
     }).findings,
   ).toEqual(['rules.yaml: the rule "r-x" is on "x", which takes does not declare']);
 });
+
+test("a rule that rests on a service no file declares gives a finding", () => {
+  expect(
+    checkRulesAndHints({
+      operation: "f",
+      common: undefined,
+      structures: undefined,
+      services: ["s"],
+      rules: `operation: f
+effects:
+  - {rule: e-s, says: a, service: s, source: "F.java:1"}
+  - {rule: e-t, says: a, service: t, source: "F.java:2"}
+answers: {says: ok, structure: null}
+`,
+      hints: `- {rule: e-s, situation: s, how: h, seen-in: none, reachable: yes}
+- {rule: e-t, situation: s, how: h, seen-in: none, reachable: yes}
+`,
+    }).findings,
+  ).toEqual(['rules.yaml: the rule "e-t" rests on "t", which is not a service (s)']);
+});

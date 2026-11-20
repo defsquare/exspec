@@ -76,6 +76,8 @@ export const httpRequestSchema = z
     url: z.string(),
     headers: z.record(z.string(), z.string()).readonly(),
     body: z.unknown().optional(),
+    // the fields of a form, each as its string; sent url-encoded
+    form: z.record(z.string(), z.string()).readonly().optional(),
   })
   .readonly();
 

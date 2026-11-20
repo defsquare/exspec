@@ -71,3 +71,19 @@ test("the roles are two words, each refused to the agent", () => {
     { type: "unknown" },
   ]);
 });
+
+test("the providers' roles are two words, each refused to the agent", () => {
+  expect([
+    askedOf(["providers", "read", "d"], false),
+    askedOf(["providers", "write-twin", "d"], false),
+    askedOf(["providers", "read", "d"], true),
+    askedOf(["providers", "write-twin", "d"], true),
+    askedOf(["providers", "build", "d"], false),
+  ]).toEqual([
+    { type: "command", command: "providers-read", rest: ["d"] },
+    { type: "command", command: "providers-write-twin", rest: ["d"] },
+    { type: "refused-to-agent", command: "providers-read" },
+    { type: "refused-to-agent", command: "providers-write-twin" },
+    { type: "unknown" },
+  ]);
+});

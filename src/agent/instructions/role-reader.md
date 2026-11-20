@@ -78,6 +78,20 @@ unsure:                                 # what reading could not settle about a 
 Rules of writing:
 
 - Business words, not class or method names (except in `source`).
+- What the system sends to another system — an email, a document asked of someone, any
+  call it makes outward — is an effect of its own, one per thing sent: what is sent and
+  to whom or about what, and in which situation (`when`). Where your task names services,
+  the effect names the service, never the system that renders it. Follow the code to the
+  call itself: an effect that only says "a document is issued" hides that a file was
+  asked for and an email sent.
+- Where that other system failing, or answering something else, changes what the operation
+  does or answers, write it as an effect with its `when` ("when the document service is
+  unavailable"): what is stored anyway, what is not sent, what the call answers.
+- When your task names **services** — files that say, in the business's words, what this
+  system rests on and the conditions each can be in — a rule that rests on one names it
+  (`service: <name>`, beside `rule`) and says its condition in that file's words ("when
+  the documents are all forgotten"). A rule cites nothing of the other system's wire: no
+  path, no status, no header it answers, no vendor's name.
 - A requirement has `on: <an entry of takes>` when the request alone, with nothing
   stored, is enough to tell whether it is met, and it looks at that one input: its
   presence, its type, its length, its form, its range. A requirement that needs what

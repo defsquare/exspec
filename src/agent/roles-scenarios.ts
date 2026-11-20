@@ -1,4 +1,4 @@
-import { builtOf, evidenceAt } from "../derive/roles-files.ts";
+import { builtOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
 import { playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence, RoleScenario } from "../shapes/roles.ts";
@@ -68,13 +68,21 @@ export async function* playOnce(
   { rolesRun: { dir, io }, target, credentials }: Stack,
   { name, slug, scenario }: CheckedScenario,
 ): AsyncGenerator<Event, Evidence> {
-  const { run, exchanges } = await playSteps({
+  const { run, exchanges, notTaken } = await playSteps({
     dir,
     target,
     io,
     credentials,
     steps: scenario.steps,
   });
+  for (const message of notTaken) {
+    yield {
+      type: "problem",
+      file: `${folderOf(name)}/scenarios/${slug}.yaml`,
+      at: "steps",
+      message,
+    };
+  }
   const evidence = { rule: scenario.rule, run, exchanges };
   yield { type: "steps-played", interface: name, scenario: slug, evidence };
   return evidence;

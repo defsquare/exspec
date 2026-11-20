@@ -85,11 +85,13 @@ test("a file that is not YAML is a problem", () => {
   ]);
 });
 
-test("an unknown file is a problem, the target's own files are skipped", () => {
+test("an unknown file is a problem, the target's own files, the services and the providers are skipped", () => {
   expect(
     parseExtraction([
       { path: "a.yaml", text: "a: 1" },
       { path: "target/compose.yaml", text: "a: 1" },
+      { path: "services/s.yaml", text: "a: 1" },
+      { path: "providers/p/provider.yaml", text: "a: 1" },
       { path: "runs/r/f/a.yaml", text: "a: 1" },
     ]).problems,
   ).toEqual([

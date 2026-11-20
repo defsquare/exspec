@@ -29,15 +29,27 @@ function stringsOf(
 // {path: "/a/{{m.body.id}}", body: {x: "{{n.body.y}}", z: "b{{m.status}}"}}
 //   -> {cited: [m, n], misplaced: ["body.z"]}
 // Outside the path a hole is a whole string; inside it, any part of a segment.
-export function holesOf({ path, query, body }: StepRequest): {
-  readonly cited: readonly string[];
-  readonly misplaced: readonly string[];
-} {
-  const strings = [
+export function holesOf({ path, query, body, form }: StepRequest): Holes {
+  return holesAmong([
     { at: "path", text: path },
     ...stringsOf(query, "query"),
     ...stringsOf(body, "body"),
-  ];
+    ...stringsOf(form, "form"),
+  ]);
+}
+
+// {a: "{{m.body.id}}", b: "x{{m.status}}"} -> {cited: [m], misplaced: ["with.b"]}
+export const holesOfGiven = (given: Readonly<Record<string, Json>> | undefined): Holes =>
+  holesAmong(stringsOf(given, "with"));
+
+type Holes = {
+  readonly cited: readonly string[];
+  readonly misplaced: readonly string[];
+};
+
+function holesAmong(
+  strings: readonly { readonly at: string; readonly text: string }[],
+): Holes {
   const cited = strings.flatMap(({ text }) =>
     [...text.matchAll(anyHole)].map(([, hole = ""]) => citedBy(hole).name),
   );
@@ -84,7 +96,7 @@ function fill(value: Json, answers: ReadonlyMap<string, TargetResponse>): Json {
 //   -> {sent: {path: "/a/7", body: {n: 7}}}
 // a hole that resolves to nothing -> {unplayable: "{{m.body.x}} resolves to nothing"}
 export function fillHoles(
-  { method, path, query, body }: StepRequest,
+  { method, path, query, body, form }: StepRequest,
   answers: ReadonlyMap<string, TargetResponse>,
 ): { readonly sent: Sent } | { readonly unplayable: string } {
   try {
@@ -103,7 +115,32 @@ export function fillHoles(
               ),
             }),
         ...(body === undefined ? {} : { body: fill(body, answers) }),
+        ...(form === undefined
+          ? {}
+          : {
+              form: Object.fromEntries(
+                Object.entries(form).map(([key, v]) => [key, fill(v, answers)]),
+              ),
+            }),
       },
+    };
+  } catch (error) {
+    if (error instanceof Unresolved) return { unplayable: error.message };
+    throw error;
+  }
+}
+
+// The same for what a service step gives its condition:
+//   {a: "{{m.body.to}}"}, m answered {body: {to: "u@x"}} -> {given: {a: "u@x"}}
+export function fillGiven(
+  given: Readonly<Record<string, Json>>,
+  answers: ReadonlyMap<string, TargetResponse>,
+): { readonly given: Readonly<Record<string, Json>> } | { readonly unplayable: string } {
+  try {
+    return {
+      given: Object.fromEntries(
+        Object.entries(given).map(([key, v]) => [key, fill(v, answers)]),
+      ),
     };
   } catch (error) {
     if (error instanceof Unresolved) return { unplayable: error.message };

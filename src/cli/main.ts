@@ -11,12 +11,15 @@ import {
   writeReference,
 } from "../io/files.ts";
 import { send } from "../io/http.ts";
+import { type StoodProviders, standProviders } from "../io/providers.ts";
 import { runLines } from "../io/shell.ts";
+import { tryTwin } from "../io/twins.ts";
 import type { Io } from "../run/io.ts";
 import { record } from "../run/record.ts";
 import { replay } from "../run/replay.ts";
 import { down, play, up } from "../run/target-commands.ts";
 import { type Event, phaseSchema } from "../shapes/event.ts";
+import { parseExtraction } from "../shapes/extraction.ts";
 import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
 import { askedOf } from "./command-line.ts";
@@ -40,7 +43,8 @@ const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
        exspec roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
        exspec roles play <dir> <interface>/<slug>
        exspec roles record <dir> [--only <interface>] [--force]
-       exspec roles replay <dir> [--only <interface>]`;
+       exspec roles replay <dir> [--only <interface>]
+       exspec providers <read|write-twin> <dir> [--only <provider>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]`;
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -59,7 +63,7 @@ if (asked.type === "refused-to-agent") {
   console.error(
     asked.command === "view"
       ? "exspec view is not run from an agent's session: the page is for a person; status and verdicts say the same."
-      : asked.command.startsWith("roles-")
+      : asked.command.startsWith("roles-") || asked.command.startsWith("providers-")
         ? `exspec ${asked.command.replace("-", " ")} is not run from an agent's session: the roles are kept apart, and the tool drives each of them.`
         : `exspec ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
   );
@@ -95,13 +99,51 @@ if (command === "view") {
   await new Promise(() => {});
 }
 
-async function ioOf(): Promise<Io> {
+// the commands that play the roles' scenarios against the target
+const plays = new Set<string | undefined>([
+  "extract",
+  "roles-build",
+  "roles-play",
+  "roles-record",
+  "roles-replay",
+]);
+
+// A command that plays stands the target's providers here, before the target is started,
+// when target.yaml declares a proxy. A target.yaml that does not parse yet stands none;
+// the command reports it. A command that plays nothing stands none: it would only hold
+// the port against a command that does.
+async function standDeclaredProviders(): Promise<StoodProviders | undefined> {
+  const { dir } = examination;
+  if (!plays.has(command) || !(await directoryExists(join(dir, "exspec")))) {
+    return undefined;
+  }
+  const declared = parseExtraction(
+    (await readExtractionFiles(dir)).filter(({ path }) => path === "target.yaml"),
+  ).extraction.target;
+  return declared?.proxy === undefined
+    ? undefined
+    : standProviders({
+        dir,
+        proxy: declared.proxy,
+        observables: declared.observables ?? [],
+      });
+}
+
+async function ioOf(providers: StoodProviders | undefined): Promise<Io> {
   return {
     runLines,
     send,
     sleep: Bun.sleep,
     readCredentials,
     writeReference,
+    ...(providers === undefined
+      ? {}
+      : {
+          takeSideEffects: providers.takeSideEffects,
+          resetProviders: providers.resetProviders,
+          giveCondition: providers.giveCondition,
+        }),
+    tryTwin,
     now: () => new Date().toISOString(),
     version: await checkoutVersion(examination.dir),
   };
@@ -115,7 +157,9 @@ const jobs =
 // parsed by the commands that take it alone
 const effortOf = () => z.enum(["low", "medium", "high"]).optional().parse(values.effort);
 
-async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
+async function eventsOf(
+  providers: StoodProviders | undefined,
+): Promise<AsyncIterable<Event> | undefined> {
   const asked = { dir: examination.dir, paths };
   switch (command) {
     case "status":
@@ -129,13 +173,13 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
     case "play":
     case "replay": {
       const run = { up, down, play, replay }[command];
-      const io = await ioOf();
+      const io = await ioOf(providers);
       return againstTarget(command, examination, (extraction) =>
         run({ ...asked, extraction }, io),
       );
     }
     case "record": {
-      const io = await ioOf();
+      const io = await ioOf(providers);
       return againstTarget(command, examination, (extraction) =>
         record({ ...asked, extraction, force: values.force }, io),
       );
@@ -150,7 +194,7 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
         model: values.model,
         jobs,
         effort: effortOf(),
-        io: await ioOf(),
+        io: await ioOf(providers),
       });
     }
     case "roles-read":
@@ -158,7 +202,9 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
     case "roles-judge":
     case "roles-play":
     case "roles-record":
-    case "roles-replay": {
+    case "roles-replay":
+    case "providers-read":
+    case "providers-write-twin": {
       const [scenario] = paths;
       const misused =
         command === "roles-play"
@@ -174,7 +220,7 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
         jobs,
         model: values.model,
         effort: effortOf(),
-        io: await ioOf(),
+        io: await ioOf(providers),
       });
     }
     default:
@@ -185,20 +231,39 @@ async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
 // drawn as a flow on a terminal: extract, and a command of the roles that does a phase
 const flowed = new Set<string | undefined>(["extract", ...Object.keys(phaseOfCommand)]);
 
-const events = await eventsOf();
-if (events === undefined) {
-  console.error(usage);
-  process.exit(2);
+// 0: the command finished ok; 1: it did not; 2: it was misused
+let exit = 1;
+let providers: StoodProviders | undefined;
+// an interrupted command leaves no proxy and no twin behind it
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    void (providers?.stopProviders() ?? Promise.resolve()).finally(() =>
+      process.exit(130),
+    );
+  });
 }
 try {
-  const last =
-    values.format === "json"
-      ? await renderJson(events, (line) => console.log(line))
-      : flowed.has(command) && process.stdout.isTTY
-        ? await renderFlow(events)
-        : await renderTerminal(events);
-  process.exit(last?.type === "command-finished" && last.ok ? 0 : 1);
+  providers = await standDeclaredProviders();
+  const events = await eventsOf(providers);
+  if (events === undefined) {
+    console.error(usage);
+    exit = 2;
+  } else {
+    const last =
+      values.format === "json"
+        ? await renderJson(events, (line) => console.log(line))
+        : flowed.has(command) && process.stdout.isTTY
+          ? await renderFlow(events)
+          : await renderTerminal(events);
+    exit = last?.type === "command-finished" && last.ok ? 0 : 1;
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
+} finally {
+  try {
+    await providers?.stopProviders();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+  }
 }
+process.exit(exit);

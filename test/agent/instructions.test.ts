@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
 import { instructionsFor, roleInstructions } from "../../src/agent/instructions.ts";
+import { checkProvider } from "../../src/derive/check-provider.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
 import {
   commonSchema,
@@ -63,4 +64,20 @@ test("every example of a file in a role's instructions parses as that file", () 
       read("answer.json", text, z.array(judgedSchema)),
     ),
   ]).toEqual([[], [], [], [], [], []]);
+});
+
+test("the provider reader's examples are a service and a provider's two files, which pass their check", () => {
+  const [service = "", interfaces = "", provider = ""] = [
+    ...roleInstructions["provider-reader"].matchAll(/^```yaml\n([\s\S]*?)^```$/gm),
+  ].map(([, block = ""]) => block);
+  expect(
+    checkProvider(
+      [
+        { path: "services/documents.yaml", text: service },
+        { path: "providers/p/interfaces.yaml", text: interfaces },
+        { path: "providers/p/provider.yaml", text: provider },
+      ],
+      "p",
+    ),
+  ).toEqual({ renders: "documents", findings: [] });
 });

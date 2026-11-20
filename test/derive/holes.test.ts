@@ -49,3 +49,12 @@ test("the holes a request cites, and those inside a longer string outside the pa
     }),
   ).toEqual({ cited: ["m", "n", "p"], misplaced: ["query.q", "body.a.1"] });
 });
+
+test("a hole in a form's value is filled, its type kept as in a body", () => {
+  expect(
+    fillHoles(
+      { method: "post", path: "/a", form: { id: "{{m.body.id}}", s: "x", t: true } },
+      answers,
+    ),
+  ).toEqual({ sent: { method: "post", path: "/a", form: { id: 7, s: "x", t: true } } });
+});

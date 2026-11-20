@@ -1,9 +1,11 @@
 import { basename, join } from "node:path";
 import { checkBuilt } from "../derive/check-built.ts";
 import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
+import { servicesIn } from "../derive/check-service.ts";
 import { placeOperations } from "../derive/placing.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
 import {
+  actorsNamed,
   folderOf,
   judgementsIn,
   readerFilesOf,
@@ -12,12 +14,7 @@ import {
 } from "../derive/roles-files.ts";
 import { type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
-import {
-  evidenceSchema,
-  readYaml,
-  roleScenarioSchema,
-  rulesSchema,
-} from "../shapes/roles.ts";
+import { evidenceSchema, readYaml, rulesSchema } from "../shapes/roles.ts";
 import { checkedExtraction, type Examination } from "./examine.ts";
 // .txt: an .html import is a bundle to Bun and a document to lint for Biome
 import page from "./view.html.txt" with { type: "text" };
@@ -50,12 +47,8 @@ function readingsOf(files: readonly SourceFile[]) {
         : checkBuilt({
             bound,
             rules,
-            actors: written.flatMap(
-              ({ slug, text }) =>
-                parsedValue(readYaml(slug, text, roleScenarioSchema))?.steps.flatMap(
-                  ({ as }) => as ?? [],
-                ) ?? [],
-            ),
+            actors: actorsNamed(written),
+            services: servicesIn(files),
             files: written,
           });
     return {

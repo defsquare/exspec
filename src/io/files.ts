@@ -4,9 +4,13 @@ import type { SourceFile } from "../shapes/extraction.ts";
 import type { Reference } from "../shapes/scenario.ts";
 import { type Credentials, credentialsSchema, type Target } from "../shapes/target.ts";
 
+// the YAML files, and the twins a twin writer wrote
 export async function readExtractionFiles(dir: string): Promise<readonly SourceFile[]> {
   const root = join(dir, "exspec");
-  const paths = await Array.fromAsync(new Bun.Glob("**/*.yaml").scan(root));
+  const paths = [
+    ...(await Array.fromAsync(new Bun.Glob("**/*.yaml").scan(root))),
+    ...(await Array.fromAsync(new Bun.Glob("providers/*/twin.ts").scan(root))),
+  ];
   return Promise.all(
     paths
       .sort()

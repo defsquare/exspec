@@ -1,14 +1,18 @@
 import type { Io } from "../run/io.ts";
 import type { Command, Event, Role } from "../shapes/event.ts";
-import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
-import type { Interface, Target } from "../shapes/target.ts";
+import {
+  type Extraction,
+  parseExtraction,
+  type SourceFile,
+} from "../shapes/extraction.ts";
+import type { Interface, Observable, Target } from "../shapes/target.ts";
 import type { Drive, Session } from "./drive.ts";
 import { roleInstructions } from "./instructions.ts";
 import { type Rounds, sessionRounds } from "./rounds.ts";
 
 export type RolesRun = {
   readonly dir: string;
-  // the one interface to work on, done or not; none: every interface not done yet
+  // the one interface, or provider, to work on, done or not; none: every one not done yet
   readonly only?: string;
   // the most sessions at once
   readonly jobs: number;
@@ -28,7 +32,8 @@ export type RolesSetting = {
   readonly interfaces: readonly Interface[];
 };
 
-// The run of the roles' sessions: one drive, given the roles' effort when there is one.
+// The run of the roles' sessions: one drive, given the roles' effort when there is one and
+// the session sets none of its own.
 export function rolesRunOf({
   drive,
   effort,
@@ -39,54 +44,114 @@ export function rolesRunOf({
 }): RolesRun {
   return {
     ...run,
-    drive: effort === undefined ? drive : (session) => drive({ ...session, effort }),
+    drive: effort === undefined ? drive : (session) => drive({ effort, ...session }),
   };
 }
 
-export type RolesCommand = Extract<Command, `roles-${string}`>;
+export type RolesCommand = Extract<Command, `roles-${string}` | `providers-${string}`>;
 
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-// The frame of a roles command. It needs target.yaml and interfaces.yaml to parse, nothing
-// else of the extraction; `only` names one of the interfaces.
-export async function* rolesCommand(
+// The frame of a roles command. It parses the files it is given, nothing else of the
+// extraction; `only` names one of what it works on, the interfaces or the providers
+async function* commandFrame<T>(
   command: RolesCommand,
   { dir, only, readFiles }: RolesRun,
-  body: (setting: RolesSetting) => AsyncGenerator<Event, boolean>,
+  {
+    parsed,
+    noun,
+    of,
+  }: {
+    readonly parsed: readonly string[];
+    // "interface", "provider"
+    readonly noun: string;
+    // what the command works on, by name
+    readonly of: (extraction: Extraction) => readonly { name: string; one: T }[];
+  },
+  body: (target: Target, selected: readonly T[]) => AsyncGenerator<Event, boolean>,
 ): AsyncGenerator<Event> {
   yield { type: "command-started", command, dir };
   const finished = (ok: boolean): Event => ({ type: "command-finished", command, ok });
   try {
     const files = await readFiles(dir);
     const { extraction, problems } = parseExtraction(
-      files.filter(({ path }) => path === "target.yaml" || path === "interfaces.yaml"),
+      files.filter(({ path }) => parsed.includes(path)),
     );
     for (const problem of problems) yield { type: "problem", ...problem };
-    const { target, interfaces } = extraction;
-    const selected = interfaces.filter((i) => only === undefined || i.interface === only);
+    const { target } = extraction;
+    const selected = of(extraction)
+      .filter(({ name }) => only === undefined || name === only)
+      .map(({ one }) => one);
     const failure =
       target === undefined
         ? "no target is declared"
         : selected.length === 0
           ? only === undefined
-            ? "no interface is declared"
-            : `no interface "${only}"`
+            ? `no ${noun} is declared`
+            : `no ${noun} "${only}"`
           : undefined;
     if (failure !== undefined) yield { type: "command-failed", message: failure };
     if (problems.length > 0 || target === undefined || failure !== undefined) {
       yield finished(false);
       return;
     }
-    yield finished(yield* body({ target, interfaces: selected }));
+    yield finished(yield* body(target, selected));
   } catch (error) {
     yield { type: "command-failed", message: messageOf(error) };
     yield finished(false);
   }
 }
 
+// The frame of a command of the operations' roles: target.yaml and interfaces.yaml parse;
+// `only` names one of the interfaces.
+export function rolesCommand(
+  command: RolesCommand,
+  rolesRun: RolesRun,
+  body: (setting: RolesSetting) => AsyncGenerator<Event, boolean>,
+): AsyncGenerator<Event> {
+  return commandFrame(
+    command,
+    rolesRun,
+    {
+      parsed: ["target.yaml", "interfaces.yaml"],
+      noun: "interface",
+      of: ({ interfaces }) => interfaces.map((one) => ({ name: one.interface, one })),
+    },
+    (target, interfaces) => body({ target, interfaces }),
+  );
+}
+
+// The frame of a command of the providers' roles: target.yaml parses; `only` names one of
+// its observables.
+export function providersCommand(
+  command: RolesCommand,
+  rolesRun: RolesRun,
+  body: (providers: readonly Observable[]) => AsyncGenerator<Event, boolean>,
+): AsyncGenerator<Event> {
+  return commandFrame(
+    command,
+    rolesRun,
+    {
+      parsed: ["target.yaml"],
+      noun: "provider",
+      of: ({ target }) =>
+        (target?.observables ?? []).map((one) => ({ name: one.observable, one })),
+    },
+    (_target, providers) => body(providers),
+  );
+}
+
+const providerRoles: readonly Role[] = ["provider-reader", "twin-writer"];
+
+// {role: builder} on f -> {role: builder, interface: f}; {role: twin-writer} on p -> {role:
+// twin-writer, provider: p}
 const byOf = (role: Role, name: string | undefined) =>
-  name === undefined ? { role } : { role, interface: name };
+  name === undefined
+    ? { role }
+    : providerRoles.includes(role)
+      ? { role, provider: name }
+      : { role, interface: name };
 
 export async function* roleSkipped(
   role: Role,

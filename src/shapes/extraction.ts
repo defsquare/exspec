@@ -113,6 +113,9 @@ function readSourceFile(file: SourceFile): Outcome {
   if (path.startsWith("target/")) return nothing;
   // roles/ is a reading of its own, by roles kept apart: it is not part of the extraction
   if (path.startsWith("roles/")) return nothing;
+  // services/ is what the operations of the roles' reading rest on; providers/ what the
+  // target expects of the systems it calls, and their twins
+  if (path.startsWith("services/") || path.startsWith("providers/")) return nothing;
   switch (path) {
     case "target.yaml":
       return parseFile(file, targetSchema, (target) => ({ target }));

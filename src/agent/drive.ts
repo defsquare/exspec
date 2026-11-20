@@ -63,7 +63,7 @@ const toolInput = z
     path: z.string(),
     pattern: z.string(),
     glob: z.string(),
-    steps: z.array(z.object({ when: z.string(), request: stepRequestSchema })),
+    steps: z.array(z.object({ when: z.string(), request: stepRequestSchema.optional() })),
   })
   .partial();
 
@@ -74,7 +74,10 @@ const playName = "mcp__exspec__play";
 function aboutOf(input: unknown): string {
   const parsed = toolInput.safeParse(input);
   const { command, file_path, pattern, steps } = parsed.success ? parsed.data : {};
-  const step = steps?.find(({ when }) => when === "call") ?? steps?.[0];
+  const sent = steps?.flatMap(({ when, request }) =>
+    request === undefined ? [] : [{ when, request }],
+  );
+  const step = sent?.find(({ when }) => when === "call") ?? sent?.[0];
   const played =
     step === undefined ? undefined : `${step.request.method} ${step.request.path}`;
   return (command ?? file_path ?? pattern ?? played ?? "")

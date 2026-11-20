@@ -208,11 +208,13 @@ test("describeEvent words a role's failure and a roles' step queued", () => {
   const events: readonly Event[] = [
     { type: "roles-queued", role: "reader", count: 3 },
     { type: "role-failed", role: "reader", interface: "f", message: "m" },
+    { type: "role-failed", role: "twin-writer", provider: "p", message: "m" },
     { type: "role-failed", role: "common-reader", message: "m" },
   ];
   expect(events.map(describeEvent)).toEqual([
     "roles    3 readers queued",
     "[f] role     reader failed: m",
+    "[p] role     twin-writer failed: m",
     "[common-reader] role     common-reader failed: m",
   ]);
 });

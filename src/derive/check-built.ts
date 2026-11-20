@@ -3,9 +3,12 @@ import {
   type Rules,
   readYaml,
   roleScenarioSchema,
+  type ServiceStep,
+  type Step,
 } from "../shapes/roles.ts";
+import type { Service } from "../shapes/service.ts";
 import type { Interface } from "../shapes/target.ts";
-import { holesOf } from "./holes.ts";
+import { holesOf, holesOfGiven } from "./holes.ts";
 
 // "/a/{id}/b" and "/a/7/b" or "/a/{{m.body.id}}/b" -> true; "/a/7" -> false
 function pathMatches(pattern: string, path: string): boolean {
@@ -27,11 +30,50 @@ export const ownersOf = (rules: Rules): readonly string[] => [
   "answers",
 ];
 
+// What is wrong with a service step: its service, its condition, what it gives, its when
+//   {service: s, is: refuses, with: {}}, s's refuses takes {address: string}
+//   -> ['"refuses" of "s" takes "address", which is not given']
+function checkServiceStep(
+  { when, service, is, with: given = {} }: ServiceStep,
+  services: readonly Service[],
+): readonly string[] {
+  const named = services.find((one) => one.service === service);
+  if (named === undefined) {
+    const known = services.map((one) => one.service).join(", ") || "none";
+    return [`"${service}" is not a service (${known})`];
+  }
+  const condition = named.conditions.find((one) => one.condition === is);
+  const takes = Object.keys(condition?.takes ?? {});
+  return [
+    ...(when === "arrange"
+      ? []
+      : [`a step that gives "${service}" a condition is an arrange step, not ${when}`]),
+    ...(condition === undefined
+      ? [
+          `"${is}" is not a condition of "${service}" (${named.conditions.map((one) => one.condition).join(", ") || "none"})`,
+        ]
+      : [
+          ...takes
+            .filter((key) => !Object.hasOwn(given, key))
+            .map((key) => `"${is}" of "${service}" takes "${key}", which is not given`),
+          ...Object.keys(given)
+            .filter((key) => !takes.includes(key))
+            .map((key) => `"${is}" of "${service}" takes no "${key}"`),
+        ]),
+  ];
+}
+
+// the holes a step cites and those inside a longer string, wherever they are
+const holesOfStep = (step: Step) =>
+  "service" in step ? holesOfGiven(step.with) : holesOf(step.request);
+
 function checkScenario(
   { rule, steps }: RoleScenario,
-  { slug, bound, rules, actors }: Checking & { readonly slug: string },
+  { slug, bound, rules, actors, services }: Checking & { readonly slug: string },
 ): readonly string[] {
-  const calls = steps.filter(({ when }) => when === "call");
+  const calls = steps.flatMap((step) =>
+    "request" in step && step.when === "call" ? [step] : [],
+  );
   const call = calls[0];
   return [
     ...(ownersOf(rules).includes(rule)
@@ -47,13 +89,17 @@ function checkScenario(
     ...(call === undefined || pathMatches(bound.pattern, call.request.path)
       ? []
       : [`the call's path ${call.request.path} does not match ${bound.pattern}`]),
-    ...steps.flatMap(({ as, request }, i) => {
-      const before = new Set(steps.slice(0, i).flatMap(({ name }) => name ?? []));
-      const { cited, misplaced } = holesOf(request);
+    ...steps.flatMap((step, i) => {
+      const before = new Set(
+        steps.slice(0, i).flatMap((one) => ("name" in one ? (one.name ?? []) : [])),
+      );
+      const { cited, misplaced } = holesOfStep(step);
       return [
-        ...(as === null || actors.includes(as)
-          ? []
-          : [`step ${i + 1}: "${as}" is not an actor (${actors.join(", ")})`]),
+        ...("service" in step
+          ? checkServiceStep(step, services).map((finding) => `step ${i + 1}: ${finding}`)
+          : step.as === null || actors.includes(step.as)
+            ? []
+            : [`step ${i + 1}: "${step.as}" is not an actor (${actors.join(", ")})`]),
         ...cited
           .filter((name) => !before.has(name))
           .map(
@@ -73,6 +119,8 @@ type Checking = {
   readonly rules: Rules;
   // the names of the credentials
   readonly actors: readonly string[];
+  // the services of exspec/services/ that pass their check
+  readonly services: readonly Service[];
 };
 
 // What a builder wrote, checked before it is played: each scenario file, then the folder.
