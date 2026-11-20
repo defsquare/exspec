@@ -5,6 +5,7 @@ import type {
   Judgement,
   RoleScenario,
   Rules,
+  SideEffect,
 } from "../shapes/roles.ts";
 import type { Structure } from "../shapes/specification.ts";
 import type { Interface, Target } from "../shapes/target.ts";
@@ -55,6 +56,8 @@ export type Line = {
   readonly says?: string;
   readonly short: string;
   readonly source?: string;
+  // the service of exspec/services/ the rule rests on
+  readonly service?: string;
   readonly doubts: readonly string[];
 };
 
@@ -71,6 +74,8 @@ export type StepView = {
   readonly body?: unknown;
   readonly status?: number;
   readonly answer?: unknown;
+  // what the target sent to its providers while the step was played, as recorded
+  readonly sideEffects?: readonly SideEffect[];
   readonly unplayable?: string;
 };
 
@@ -165,12 +170,13 @@ function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
           };
     }),
     ...rules.requires.map(
-      ({ rule, on, when, fact, otherwise, source }): Line => ({
+      ({ rule, on, when, service, fact, otherwise, source }): Line => ({
         kind: "requires",
         rule,
         shared: false,
         ...(on === undefined ? {} : { input: on }),
         ...(when === undefined ? {} : { when }),
+        ...(service === undefined ? {} : { service }),
         fact,
         otherwise: otherwise.refusal,
         status: otherwise.status,
@@ -181,11 +187,12 @@ function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
       }),
     ),
     ...rules.effects.map(
-      ({ rule, when, says, source }): Line => ({
+      ({ rule, when, says, service, source }): Line => ({
         kind: "effect",
         rule,
         shared: false,
         ...(when === undefined ? {} : { when }),
+        ...(service === undefined ? {} : { service }),
         says,
         short: says,
         source,
@@ -220,6 +227,7 @@ function stepsOf(
         return { when, as, unplayable };
       }
       const { when, as, request, response } = exchange;
+      const sideEffects = exchange["side-effects"];
       return {
         when,
         as,
@@ -229,6 +237,7 @@ function stepsOf(
         ...(request.body === undefined ? {} : { body: request.body }),
         status: response.status,
         answer: response.body,
+        ...(sideEffects === undefined ? {} : { sideEffects }),
       };
     });
   }
@@ -430,3 +439,12 @@ export function viewOfRoles({
     placed,
   };
 }
+
+// Who calls the target, the system drawn between them and its services:
+//   steps as b, as null, as a; as b  ->  ["a", "b"]
+export const actorsOf = (
+  scenarios: readonly { readonly steps: readonly Pick<StepView, "as">[] }[],
+): readonly string[] =>
+  [
+    ...new Set(scenarios.flatMap(({ steps }) => steps.flatMap(({ as }) => as ?? []))),
+  ].sort();

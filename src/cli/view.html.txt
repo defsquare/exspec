@@ -18,6 +18,8 @@
   --body: 'IBM Plex Sans Condensed', 'IBM Plex Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
   --mono: 'Fira Code', 'SF Mono', Menlo, Consolas, monospace;
   --radius: 0.375rem;
+  /* of the specification, drawn solid: a service, a condition; of the target, dashed: a provider, what is sent to it */
+  --service: #7c3aed; --service-50: #f5f3ff; --target: #475569; --target-50: #f1f5f9;
 }
 * { box-sizing: border-box; }
 html { font-size: 17px; }
@@ -91,6 +93,13 @@ td { padding: 0.4rem 0.75rem 0.4rem 0; border-bottom: 1px solid var(--border-sof
 .chip { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 9999px; padding: 0.1rem 0.7rem; font-size: 0.88rem; background: var(--bg); color: var(--fg); }
 .chip:hover { border-color: var(--primary); color: var(--primary); }
 .chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.chip.svc { border-color: var(--service); color: var(--service); background: var(--service-50); }
+.cond { font-family: var(--mono); font-size: 0.84em; color: var(--service); background: var(--service-50); border: 1px solid #ddd6fe; border-radius: 0.25rem; padding: 0.05em 0.35em; white-space: nowrap; }
+.card.given { border-left: 3px solid var(--service); background: var(--service-50); }
+.card.sent { border: 1px dashed var(--target); border-left-width: 3px; margin-left: 1.5rem; background: var(--target-50); }
+.side { border: 1px dashed var(--target); background: var(--target-50); border-radius: var(--radius); padding: 0.8rem 1.1rem; margin-top: 1.75rem; }
+.side h2 { margin-top: 0; font-size: 1.3rem; color: var(--target); }
+.sheet .side .eyebrow { color: var(--target); }
 .card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; overflow-x: auto; }
 a.card { display: block; color: var(--fg); }
 a.card:hover { color: var(--fg); border-color: var(--primary); background: var(--primary-50); }
@@ -99,7 +108,7 @@ a.card > p > b:first-child { color: var(--primary); margin-right: 0.5rem; }
 .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
 .legend i { display: inline-block; width: 1.1rem; height: 0.7rem; border: 2.5px solid; border-radius: 3px; }
 .legend i.path { height: 0; border: 0; border-top: 4px solid #2563eb; border-radius: 0; }
-.legend .otherwise { color: var(--accent-300); font-weight: 600; }
+.otherwise { color: var(--accent-300); font-weight: 600; }
 .bar { display: flex; height: 0.6rem; border-radius: 9999px; overflow: hidden; background: var(--border); max-width: 36rem; margin: 0.25rem 0 0.5rem; }
 .bar i { display: block; }
 .measure { display: inline-flex; align-items: center; gap: 0.3rem; flex: none; align-self: center; }
@@ -112,6 +121,8 @@ svg { max-width: 100%; height: auto; font-family: var(--body); }
 svg text { fill: var(--fg); font-size: 14px; }
 svg .m { font-family: var(--mono); font-size: 12px; }
 svg .small { font-size: 12px; fill: var(--fg-muted); }
+svg .sv { fill: var(--service); }
+svg .tg { fill: var(--target); }
 /* the gates scroll in their card rather than shrink: their text is drawn at 12px */
 .sheet .card > svg { max-width: none; }
 svg .click { cursor: pointer; }
@@ -218,15 +229,26 @@ function lines(o) {
       say: [whenSay(e.when), thenSay(e.then)], short: typeof e.then === "string" ? "nothing changes" : "says" in e.then ? e.then.says : "changes what is kept" })),
   ];
 }
-// the rules of an operation as a small bar — held, wrong, neither — and the count of the wrong ones
+// what the rules of an operation are, the zeros left out; every one unjudged is one word
+//   [holds, holds, not-shown, unjudged]  ->  "2 hold · 1 not shown · 1 unjudged"
+//   [unjudged, unjudged]                 ->  "unjudged"
+function wordsOf(o) {
+  const words = lines(o).map((l) => provenanceOf(o.operation, l.rule));
+  const held = words.filter(good).length, wrong = words.filter(bad).length, unjudged = roles ? words.filter((w) => w === unproven).length : 0;
+  if (unjudged > 0 && unjudged === words.length) return unproven;
+  return [[held, roles ? "hold" : "verified"], [wrong, roles ? "contradicted" : "refuted"], [words.length - held - wrong - unjudged, roles ? "not shown" : "not verified"], [unjudged, unproven]]
+    .filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`).join(" · ");
+}
+// the rules of an operation as a small bar — held, wrong, neither, unjudged — and the count of the wrong
+// ones; the bar and its title count the same
 //   [holds, holds, contradicted, not-shown]  ->  ██▌░ 1   titled "2 hold · 1 contradicted · 1 not shown"
 function measure(o) {
   const words = lines(o).map((l) => provenanceOf(o.operation, l.rule));
-  const held = words.filter(good).length, wrong = words.filter(bad).length, neither = words.length - held - wrong;
-  const title = `${held} ${roles ? "hold" : "verified"} · ${wrong} ${roles ? "contradicted" : "refuted"} · ${neither} ${roles ? "not shown" : "not verified"}`;
+  const held = words.filter(good).length, wrong = words.filter(bad).length, unjudged = roles ? words.filter((w) => w === unproven).length : 0, neither = words.length - held - wrong - unjudged;
+  const title = wordsOf(o);
   const part = (n, color) => n === 0 ? null : h("i", { style: `background:${color};width:${(100 * n) / words.length}%` });
   return h("span", { class: "measure", role: "img", "aria-label": title, title },
-    h("span", { class: "bar" }, part(held, colors.holds), part(wrong, colors.refuted), part(neither, roles ? colors["not-shown"] : colors.none)), h("b", null, wrong === 0 ? "" : String(wrong)));
+    h("span", { class: "bar" }, part(held, colors.holds), part(wrong, colors.refuted), part(neither, roles ? colors["not-shown"] : colors.none), part(unjudged, colors.none)), h("b", null, wrong === 0 ? "" : String(wrong)));
 }
 // what the references say of one scenario: its rules' verdicts, then its trigger's
 const verdictsOf = (path) => { const e = scenarioAt(path), name = e && operationOfScenario(e); return [
@@ -234,6 +256,16 @@ const verdictsOf = (path) => { const e = scenarioAt(path), name = e && operation
   ...data.bindings.flatMap((b) => b.by.filter((v) => v.scenario === path).map((v) => ({ claim: `trigger ${b.trigger}`, binding: true, ...v }))),
 ]; };
 const scenarioColor = (path) => blend(verdictsOf(path).filter((v) => !v.binding).map((v) => v.verdict));
+
+// ---- the services, of the specification, and the providers rendering them on this target
+const services = data.services ?? [];
+const serviceAt = (name) => services.find((sv) => sv.service === name);
+const providerOfService = (name) => serviceAt(name)?.provider?.provider;
+const toService = (name) => h("a", { class: "chip svc", href: route("service", name) }, name);
+const servicesOf = (o) => [...new Set((o.lines ?? []).flatMap((l) => l.service ?? []))];
+// {a: "x", n: 1} -> "a: x, n: 1"
+const given = (values) => Object.entries(values ?? {}).map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`).join(", ");
+const plural = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
 // ---- diagrams
 // What a scenario takes is drawn in blue: red is a verdict's, and a scenario that holds takes a path too.
@@ -274,26 +306,49 @@ function sequence(path) {
 }
 
 // The steps of a scenario of the roles as one sequence: arrange, before, the call (heavier), after.
+// A step giving a service a condition is a note on its provider's lifeline; what the target sent a provider
+// while a step was played, an arrow to that provider's lifeline, between the step and what it answered.
 function steps(e) {
   const who = (st) => st.as ?? "nobody";
-  const actors = [...new Set(e.steps.map(who))];
-  const col = 150, left = 60, targetX = left + actors.length * col, width = targetX + 260, els = [];
+  const laneOf = (st) => providerOfService(st.service) ?? `no provider of ${st.service}`;
+  const lanes = [...new Set(e.steps.flatMap((st) => st.service ? [laneOf(st)] : (st.sideEffects ?? []).map((se) => se.observable)))];
+  const renders = (lane) => services.find((sv) => sv.provider?.provider === lane)?.service;
+  const actors = [...new Set(e.steps.filter((st) => !st.service).map(who))];
+  const col = 150, left = 60, targetX = left + actors.length * col, laneX = (n) => targetX + 230 + n * 190;
+  const width = lanes.length === 0 ? targetX + 260 : laneX(lanes.length - 1) + 200, els = [];
+  const clip = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
   let y = 64, was;
   for (const st of e.steps) {
     if (st.when !== was) { els.push(s("text", { x: 8, y: y - 16, class: "small", "font-weight": 600 }, st.when)); was = st.when; }
+    if (st.service) {
+      const at = laneX(lanes.indexOf(laneOf(st))), values = given(st.body), height = values ? 42 : 26;
+      els.push(s("rect", { x: at + 8, y: y - 14, width: 180, height, rx: 6, fill: "#f5f3ff", stroke: "#7c3aed" }),
+        s("text", { x: at + 16, y: y + 3, class: "m sv", "font-weight": 600 }, clip(st.unplayable ? `${st.is}: unplayable` : st.is, 22)),
+        values ? s("text", { x: at + 16, y: y + 19, class: "m sv" }, clip(values, 22)) : null);
+      y += height + 22;
+      continue;
+    }
     const ax = left + actors.indexOf(who(st)) * col, call = st.when === "call", color = call ? pathColor : "#1e416e";
     const said = st.unplayable ? `unplayable: ${st.unplayable}` : `${st.method.toUpperCase()} ${st.path}`;
+    const sent = st.sideEffects ?? [], off = sent.length === 0 ? 0 : sent.length * 30 + 8;
     els.push(s("line", { x1: ax, y1: y, x2: targetX - 6, y2: y, stroke: color, "stroke-width": call ? 2.5 : 1.5, "marker-end": `url(#r-${call ? "act" : "call"})` }),
       s("text", { x: ax + 8, y: y - 7, class: "m", "font-weight": call ? 700 : 400 }, said.length > 46 ? `${said.slice(0, 45)}…` : said),
-      st.status === undefined ? null : [s("line", { x1: targetX, y1: y + 22, x2: ax + 6, y2: y + 22, stroke: "#4b5563", "stroke-dasharray": "5 4", "marker-end": "url(#r-back)" }),
-        s("text", { x: targetX + 10, y: y + 26, class: "m", "font-weight": 600 }, String(st.status))]);
-    y += 58;
+      sent.map((se, k) => { const at = laneX(lanes.indexOf(se.observable)), sy = y + 30 + k * 30;
+        return [s("line", { x1: targetX, y1: sy, x2: at - 6, y2: sy, stroke: "#475569", "stroke-width": 1.5, "stroke-dasharray": "5 3", "marker-end": "url(#r-sent)" }),
+          s("text", { x: targetX + 8, y: sy - 6, class: "m tg" }, clip(`${se.request.method.toUpperCase()} ${se.request.path}`, Math.floor((at - targetX - 16) / 7.3))),
+          s("text", { x: at + 8, y: sy + 4, class: "m", "font-weight": 600, style: se.response.status >= 400 ? "fill:#a62949" : null }, String(se.response.status))]; }),
+      st.status === undefined ? null : [s("line", { x1: targetX, y1: y + 22 + off, x2: ax + 6, y2: y + 22 + off, stroke: "#4b5563", "stroke-dasharray": "5 4", "marker-end": "url(#r-back)" }),
+        s("text", { x: targetX + 10, y: y + 26 + off, class: "m", "font-weight": 600 }, String(st.status))]);
+    y += 58 + off;
   }
   const lifeline = (at, label) => [s("text", { x: at, y: 24, "text-anchor": "middle", "font-weight": 600 }, label), s("line", { x1: at, y1: 34, x2: at, y2: y, stroke: "#d1d5db" })];
   const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
   return s("svg", { viewBox: `0 0 ${width} ${y}`, width, role: "img", "aria-label": `Steps of ${e.path}` },
-    s("defs", null, marker("r-call", "#1e416e"), marker("r-act", pathColor), marker("r-back", "#4b5563")),
-    actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"), els);
+    s("defs", null, marker("r-call", "#1e416e"), marker("r-act", pathColor), marker("r-back", "#4b5563"), lanes.length === 0 ? null : marker("r-sent", "#475569")),
+    actors.map((a, n) => lifeline(left + n * col, a)), lifeline(targetX, "the target"),
+    lanes.map((lane, n) => [renders(lane) ? s("text", { x: laneX(n), y: 10, "text-anchor": "middle", class: "small sv" }, renders(lane)) : null,
+      s("text", { x: laneX(n), y: 24, "text-anchor": "middle", "font-weight": 600, class: "tg" }, lane),
+      s("line", { x1: laneX(n), y1: 34, x2: laneX(n), y2: y, stroke: "#94a3b8", "stroke-dasharray": "4 3" })]), els);
 }
 
 // An operation as a column of gates: each rule that can refuse is an exit to the right, the effects are
@@ -315,7 +370,11 @@ function gates(o, path, picked) {
   let y = 20;
   const stroke = (rule) => colors[provenanceOf(o.operation, rule)] ?? colors.none;
   const mark = (rule, x, y) => s("circle", { cx: x, cy: y, r: 5, fill: stroke(rule) }, s("title", null, provenanceOf(o.operation, rule)));
-  const edge = (on) => ({ stroke: on ? pathPaint : "#d1d5db", "stroke-width": on ? 3 : 1.5 });
+  const edge = (on, service) => ({ stroke: on ? pathPaint : service ? "#7c3aed" : "#d1d5db", "stroke-width": on ? 3 : 1.5 });
+  // a rule resting on a service is drawn in the specification's violet, a little taller, the service's chip at its foot
+  const fill = (l, plain) => picked === l.rule ? "#d9e3f1" : l.service ? "#f5f3ff" : plain, tall = (l) => (l.service ? 64 : 44);
+  const serviceChip = (left, top, name) => s("a", { href: route("service", name) }, s("title", null, `rests on ${name}`),
+    s("rect", { x: left, y: top, width: name.length * 7.3 + 16, height: 16, rx: 8, fill: "#fff", stroke: "#7c3aed" }), s("text", { x: left + 8, y: top + 12, class: "m sv" }, name));
   const taken = (n) => sc && (exitAt === -1 || n <= exitAt), through = sc && exitAt === -1;
   const pathPaint = "url(#g-flow)";
   const spine = (y1, y2, on) => s("line", { x1: cx, y1, x2: cx, y2, stroke: on ? pathPaint : "#d1d5db", "stroke-width": on ? 4 : 1.5 });
@@ -336,11 +395,12 @@ function gates(o, path, picked) {
     if (st.gate) {
       const g = st.gate;
       els.push(s("a", { class: "click", href: ruleRoute(o.operation, g.rule) },
-        s("rect", { x: cx - bw / 2, y, width: bw, height: 44, rx: 6, fill: picked === g.rule ? "#d9e3f1" : "#fff", ...edge(taken(n)) }), mark(g.rule, cx + bw / 2 - 14, y + 14),
+        s("rect", { x: cx - bw / 2, y, width: bw, height: tall(g), rx: 6, fill: fill(g, "#fff"), ...edge(taken(n), g.service) }), mark(g.rule, cx + bw / 2 - 14, y + 14),
         s("text", { x: cx, y: y + 19, "text-anchor": "middle", class: "m" }, clip(g.rule, 30)),
         s("text", { x: cx, y: y + 36, "text-anchor": "middle", class: "small" }, clip(g.short, 38))),
-        exit(y, 44, out, g.otherwise, g.status === undefined ? "no status declared" : `refused with ${g.status}`, out && answered !== undefined && answered !== g.status));
-      y += 44;
+        exit(y, tall(g), out, g.otherwise, g.status === undefined ? "no status declared" : `refused with ${g.status}`, out && answered !== undefined && answered !== g.status),
+        g.service ? serviceChip(cx - bw / 2 + 12, y + 44, g.service) : null);
+      y += tall(g);
       return;
     }
     // wide as an effect: a mark and a word per requirement, the word being its name without its input's
@@ -370,10 +430,11 @@ function gates(o, path, picked) {
     els.push(spine(y, y + 20, through));
     y += 20;
     els.push(s("a", { class: "click", href: ruleRoute(o.operation, e.rule) },
-      s("rect", { x: cx - bw / 2, y, width: bw + 200, height: 44, rx: 6, fill: picked === e.rule ? "#d9e3f1" : "#f7f7f8", ...edge(through) }), mark(e.rule, cx + bw / 2 + 200 - 14, y + 14),
+      s("rect", { x: cx - bw / 2, y, width: bw + 200, height: tall(e), rx: 6, fill: fill(e, "#f7f7f8"), ...edge(through, e.service) }), mark(e.rule, cx + bw / 2 + 200 - 14, y + 14),
       s("text", { x: cx - bw / 2 + 12, y: y + 19, class: "m" }, clip(e.rule, 56)),
-      s("text", { x: cx - bw / 2 + 12, y: y + 36, class: "small" }, clip(e.short, 66))));
-    y += 44;
+      s("text", { x: cx - bw / 2 + 12, y: y + 36, class: "small" }, clip(e.short, 66))),
+      e.service ? serviceChip(cx - bw / 2 + 12, y + 44, e.service) : null);
+    y += tall(e);
   });
   els.push(spine(y, y + 20, through));
   y += 20;
@@ -479,6 +540,7 @@ function roleOperationHead(o) {
     h("p", null, "Answers ", o.answers.structure ? toStructure(o.answers.structure) : "no structure", ` — ${o.answers.says}.`),
     touches.length === 0 ? null : h("p", null, "Touches ", commas(touches.map((t) => [toStructure(t.structure), ` (${t.as.map((a) => [a.verb, a.what.join(", ")].filter(Boolean).join(" ")).join(" · ")})`])), "."),
     h("p", { class: "muted" }, "On the wire: ", code(`${i.method.toUpperCase()} ${i.pattern}`), "."),
+    servicesOf(o).length === 0 ? null : h("div", { class: "chips" }, h("span", null, "Rests on"), servicesOf(o).map(toService)),
   ];
 }
 function roleRulePanel(o, line) {
@@ -508,9 +570,52 @@ function roleScenarioPanel(e, back) {
     h("h3", null, "The judgement"),
     j ? [h("p", null, judgementOf(j)), h("p", null, j.says)] : h("p", { class: "muted" }, e.steps.some((st) => st.status !== undefined) ? "Not judged yet." : "Not played yet: nothing is judged."),
     h("h3", null, "What happens"), steps(e),
-    h("h3", null, "The exchanges", h("span", { class: "keys" }, keys(["↑↓", "body"], ["←→", "fold"]))), e.steps.map((st) => h("div", { class: "card" }, h("p", null, code(line(st))),
+    h("h3", null, "The exchanges", h("span", { class: "keys" }, keys(["↑↓", "body"], ["←→", "fold"]))), e.steps.map((st) => st.service ? givenCard(st) : [h("div", { class: "card" }, h("p", null, code(line(st))),
       st.body === undefined ? null : h("details", { class: "body" }, h("summary", null, "What was sent"), json(st.body)),
-      st.answer === undefined || st.answer === null ? null : h("details", { class: "body" }, h("summary", null, "What the target answered"), json(st.answer)))),
+      st.answer === undefined || st.answer === null ? null : h("details", { class: "body" }, h("summary", null, "What the target answered"), json(st.answer))),
+      (st.sideEffects ?? []).map(sentCard)]),
+  ];
+}
+// a step giving a service a condition, in the specification's words
+function givenCard(st) {
+  const says = serviceAt(st.service)?.conditions.find((c) => c.condition === st.is)?.says;
+  return h("div", { class: "card given" },
+    h("p", null, h("span", { class: "word" }, "GIVEN "), h("a", { href: route("service", st.service), style: "color:var(--service);font-weight:600" }, st.service), " ", h("span", { class: "cond" }, st.is),
+      st.body === undefined ? "" : [" ", code(given(st.body))], st.unplayable ? h("span", { class: "muted" }, ` — unplayable: ${st.unplayable}`) : ""),
+    says ? h("p", { class: "muted" }, says) : null);
+}
+// what the target sent a provider while a step was played, under that step: a digest stays a digest
+function sentCard({ observable, request: { method, path, ...sent }, response }) {
+  return h("div", { class: "card sent" },
+    h("p", null, h("span", { class: "word" }, "SENT TO "), h("b", { style: "color:var(--target)" }, observable), " ", code(`${method.toUpperCase()} ${path}`), " — answered ",
+      h("code", { style: response.status >= 400 ? "color:#a62949" : null }, String(response.status))),
+    Object.keys(sent).length === 0 ? null : h("details", { class: "body" }, h("summary", null, "What was sent"), json(sent)),
+    response.body === undefined || response.body === null ? null : h("details", { class: "body" }, h("summary", null, "What was answered"), json(response.body)));
+}
+// a service of the specification: its conditions, the rules resting on it, its doubts; set apart, the provider rendering it here
+function serviceSheet(name) {
+  const sv = serviceAt(name);
+  if (!sv) return [h("p", { class: "eyebrow" }, "Service"), h("h1", null, name), h("p", { class: "muted" }, "No service of this name parses.")];
+  const p = sv.provider;
+  const givenBy = (paths) => paths.length === 0 ? h("span", { class: "word" }, "no scenario")
+    : h("details", { class: "body" }, h("summary", { style: "white-space:nowrap" }, plural(paths.length, "scenario")), paths.map((path) => h("div", null, h("a", { href: route("scenario", path) }, path))));
+  const word = (r) => h("span", { class: "word" }, provenanceDot(provenanceOf(r.operation, r.rule)), provenanceOf(r.operation, r.rule));
+  return [
+    h("p", { class: "eyebrow" }, "Service"), h("h1", null, sv.service), h("p", null, sv.says),
+    sv.rules.length === 0 ? h("p", { class: "muted" }, "No rule rests on it.") : [h("p", null, `${sv.rules.length === 1 ? "1 rule rests" : `${sv.rules.length} rules rest`} on it, in`),
+      h("div", { class: "chips" }, sv.in.map((i) => h("a", { class: "chip", href: route("operation", i.operation) }, i.operation, h("span", { class: "word", style: "margin-left:0.4rem" }, String(i.rules)))))],
+    h("h2", null, "Its conditions"),
+    table(["Condition", "Takes", "Says", "Given by"], sv.conditions.map((c) => [h("span", { class: "cond" }, c.condition), Object.keys(c.takes).length === 0 ? "" : code(given(c.takes)), c.says, givenBy(c.given)])),
+    h("h2", null, "Rules that rest on it"),
+    table(["Operation", "Rule", "Says", ""], sv.rules.map((r) => [h("span", { class: "unbroken" }, toOperation(r.operation)), h("a", { class: "unbroken", href: ruleRoute(r.operation, r.rule) }, code(r.rule)), r.says, word(r)])),
+    h("h2", null, "Doubts"), sv.unsure.length === 0 ? h("p", { class: "muted" }, "None.") : sv.unsure.map((d) => h("p", { class: "otherwise" }, d)),
+    h("div", { class: "side" }, h("p", { class: "eyebrow" }, "On this target"), !p ? h("p", null, "No provider renders it on this target.") : [
+      h("h2", null, `Rendered by ${p.provider}`),
+      h("p", null, `${plural(p.calls, "call")} recorded, in ${plural(p.scenarios, "scenario")}. What the target sends it is compared; what it answers is kept.`),
+      table(["Interface", "On the wire"], p.interfaces.map((i) => [code(i.interface), code(`${i.method.toUpperCase()} ${i.pattern}`)])),
+      h("details", { class: "body" }, h("summary", null, `${plural(p.expects.length, "expectation")} read in the code · ${plural(p.unsure.length, "doubt")}`),
+        table(["Expect", "On", "Says", "Source"], p.expects.map((ex) => [code(ex.expect), code(ex.on), ex.says, code(ex.source)])),
+        p.unsure.map((d) => h("p", { class: "otherwise" }, d)))]),
   ];
 }
 // what the common reader wrote: what holds for every operation
@@ -526,6 +631,38 @@ function commonSheet() {
     h("h2", null, "Doubts"), table(["About", "What"], c.unsure.map((u) => [u.about, u.what])),
   ];
 }
+
+// The system between who calls it and what it rests on: an actor a label on the left, the target in the middle,
+// a service a box on the right opening its sheet, the provider rendering it under its name. The longer side sets
+// the height, the shorter is centred on it.
+function system() {
+  const actors = data.actors ?? [], name = x.target?.target ?? data.name, gap = 70, box = 58, row = box + 20, actorRow = 40;
+  const actorW = actors.length === 0 ? 0 : Math.max(...actors.map((a) => a.length)) * 7.3 + 10;
+  const height = Math.max(services.length * row, actors.length * actorRow, row) + 20, mid = height / 2;
+  const tx = actors.length === 0 ? 10 : 10 + actorW + gap, tw = Math.max(150, name.length * 9 + 30);
+  const sx = tx + tw + gap, sw = Math.max(172, ...services.flatMap((sv) => [sv.service.length * 8.5 + 24, `rendered by ${sv.provider?.provider ?? ""}`.length * 6.5 + 24]));
+  const top = (n, count, each) => mid - (count * each) / 2 + n * each;
+  const marker = (id, color) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
+  return s("svg", { viewBox: `0 0 ${sx + sw + 10} ${height}`, width: sx + sw + 10, role: "img", "aria-label": `${name} between its actors and its services` },
+    s("defs", null, marker("o-actor", "#172741"), marker("o-service", "#7c3aed")),
+    actors.map((a, n) => { const y = top(n, actors.length, actorRow) + actorRow / 2;
+      return [s("text", { x: 10, y: y + 4, class: "m" }, a), s("line", { x1: 10 + actorW, y1: y, x2: tx - 6, y2: mid, stroke: "#172741", "stroke-width": 1.5, "marker-end": "url(#o-actor)" })]; }),
+    s("rect", { x: tx, y: mid - box / 2, width: tw, height: box, rx: box / 2, fill: "#172741" }),
+    s("text", { x: tx + tw / 2, y: mid - 3, "text-anchor": "middle", style: "fill:#fff", "font-weight": 600 }, name),
+    s("text", { x: tx + tw / 2, y: mid + 15, "text-anchor": "middle", style: "fill:#d1d5db;font-size:12px" }, plural(x.operations.length, "operation")),
+    services.map((sv, n) => { const y = top(n, services.length, row) + 10;
+      return [s("line", { x1: tx + tw, y1: mid, x2: sx - 6, y2: y + box / 2, stroke: "#7c3aed", "stroke-width": 2, "marker-end": "url(#o-service)" }),
+        s("a", { class: "click", href: route("service", sv.service) }, s("title", null, `the sheet of ${sv.service}`),
+          s("rect", { x: sx, y, width: sw, height: box, rx: 6, fill: "#f5f3ff", stroke: "#7c3aed" }),
+          s("text", { x: sx + 12, y: y + 20, class: "sv", "font-weight": 600 }, sv.service),
+          s("text", { x: sx + 12, y: y + 36, class: "small" }, `${plural(sv.in.length, "operation")} · ${plural(sv.rules.length, "rule")}`),
+          s("text", { x: sx + 12, y: y + 51, class: "small tg" }, sv.provider ? `rendered by ${sv.provider.provider}` : "no provider"))]; }));
+}
+// each operation with the services its rules rest on and what its rules are
+const operationsTable = () => table(["Operation", "Rests on", "Its rules"], x.operations.map(({ operation: o }) => [
+  h("span", { class: "unbroken" }, toOperation(o.operation)),
+  servicesOf(o).length === 0 ? "" : h("div", { class: "chips", style: "margin:0" }, servicesOf(o).map(toService)),
+  h("span", { class: "word" }, wordsOf(o))]));
 
 function overview() {
   const bar = (title, counts) => { const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -547,6 +684,7 @@ function overview() {
     h("h1", null, "The specification of ", h("b", null, x.target?.target ?? data.name), "."),
     h("p", { class: "muted" }, roles ? ["Walk it from a structure to its operations, then to the scenarios that exercise them. Each rule carries the judge's word on its evidence. ", h("a", { href: "#/common" }, "What holds for every operation"), "."]
       : "Walk it from a structure to its operations, then to the scenarios that prove them. Every verdict is computed from the references, each time this page is made."),
+    services.length === 0 ? null : [h("h2", null, "The system and its services"), system(), h("p", { class: "muted" }, "Its actors are the names the scenarios call as; a call made as nobody is not drawn."), operationsTable()],
     h("h2", null, "What holds"), bar("Rules", data.counts.rules), data.counts.bindings ? bar("Bindings", data.counts.bindings) : null,
     h("h2", null, roles ? "Rules that do not hold" : "Rules refuted"),
     table(["Operation", "Rule", "Provenance", "Why"], notHeld.filter((r) => bad(r.provenance)).map((r) => [h("span", { class: "unbroken" }, toOperation(r.operation)), h("a", { class: "unbroken", href: ruleRoute(r.operation, r.rule) }, code(r.rule)), h("span", { class: "unbroken" }, provenanceDot(r.provenance), r.provenance), why(r)])),
@@ -592,13 +730,15 @@ function render() {
     return d;
   };
   const list = h("nav", { class: "col", "aria-label": "Structures and their operations" }, h("p", { class: "eyebrow" }, "Structures", h("kbd", { title: "Press & to come back to this list" }, "&")), groups.map(structureEntry),
+    services.length === 0 ? null : [h("p", { class: "eyebrow", style: "margin-top:0.9rem" }, "Services"), services.map((sv) => h("div", { class: `row ${concept === "service" && name === sv.service ? "on" : ""}` },
+      h("a", { class: "n", href: route("service", sv.service) }, sv.service), h("span", { class: "word" }, plural(sv.conditions.length, "condition"))))],
     h("p", { class: "keys" }, keys(["↑↓", "move"], ["←→", "fold"], ["⏎", "open"])));
   // a scenario sits on the rule it was reached from, or on the first it proves: closing it leads back there
   const proves = sc ? (sc.scenario?.proves ?? [sc.rule]) : [];
   const under = sc && o ? lines(o).find((l) => l.rule === (proves.includes(cols.dataset.rule) ? cols.dataset.rule : proves[0])) : undefined;
   const back = sc ? (under ? ruleRoute(o.operation, under.rule) : route("operation", operationOfScenario(sc))) : undefined;
   const panel = sc ? (roles ? roleScenarioPanel(sc, back) : scenarioPanel(sc, back)) : line ? rulePanel(o, line) : null;
-  const sheet = o ? operationSheet(o, sc?.path, line?.rule ?? under?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet()
+  const sheet = o ? operationSheet(o, sc?.path, line?.rule ?? under?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet() : concept === "service" ? serviceSheet(name ?? "")
     : group === transverse ? [h("p", { class: "eyebrow" }, "Operations"), h("h1", null, "Transverse"), h("p", null, "They answer no structure, and name several in what they take, or none.")]
     : group ? structureSheet(group) : overview();
   cols.className = `cols ${o && panel ? "paneled" : ""}`;

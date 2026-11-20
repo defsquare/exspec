@@ -1,7 +1,8 @@
 import { basename, join } from "node:path";
 import { checkBuilt } from "../derive/check-built.ts";
+import { checkProvider, providerFolderOf } from "../derive/check-provider.ts";
 import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
-import { servicesIn } from "../derive/check-service.ts";
+import { checkService, servicesIn } from "../derive/check-service.ts";
 import { placeOperations } from "../derive/placing.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
 import {
@@ -12,15 +13,55 @@ import {
   slugsIn,
   textAt,
 } from "../derive/roles-files.ts";
-import { type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
+import { actorsOf, type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
+import { type ReadProvider, viewOfServices } from "../derive/services-view.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
+import { providerSchema } from "../shapes/provider.ts";
 import { evidenceSchema, readYaml, rulesSchema } from "../shapes/roles.ts";
+import { interfacesFileSchema } from "../shapes/target.ts";
 import { checkedExtraction, type Examination } from "./examine.ts";
 // .txt: an .html import is a bundle to Bun and a document to lint for Biome
 import page from "./view.html.txt" with { type: "text" };
 
 const parsedValue = <T>(read: { readonly value: T } | { readonly findings: unknown }) =>
   "value" in read ? read.value : undefined;
+
+// The providers of exspec/providers/, those whose provider.yaml parses, and what the checks
+// of the services and the providers say, each "file: message" relative to exspec/. A
+// provider's finding on the service it renders is the service's own, told once.
+function readAndCheckProviders(files: readonly SourceFile[]) {
+  const names = [
+    ...new Set(
+      files.flatMap(({ path }) => /^providers\/([^/]+)\//.exec(path)?.[1] ?? []),
+    ),
+  ];
+  const ofServices = files.flatMap(({ path }) => {
+    const name = /^services\/([^/]+)\.yaml$/.exec(path)?.[1];
+    return name === undefined ? [] : checkService(files, name).findings;
+  });
+  const ofProviders = names.flatMap((name) =>
+    checkProvider(files, name)
+      .findings.filter((finding) => !ofServices.includes(finding))
+      .map((finding) =>
+        finding.startsWith("services/")
+          ? finding
+          : `${providerFolderOf(name)}/${finding}`,
+      ),
+  );
+  const providers = names.flatMap((name): readonly ReadProvider[] => {
+    const text = textAt(files, `${providerFolderOf(name)}/provider.yaml`);
+    const provider =
+      text === undefined ? undefined : parsedValue(readYaml(name, text, providerSchema));
+    if (provider === undefined) return [];
+    const interfaces = textAt(files, `${providerFolderOf(name)}/interfaces.yaml`);
+    const read =
+      interfaces === undefined
+        ? undefined
+        : parsedValue(readYaml(name, interfaces, interfacesFileSchema));
+    return [{ provider, interfaces: read?.interfaces ?? [] }];
+  });
+  return { providers, findings: [...ofServices, ...ofProviders] };
+}
 
 // Every folder of the roles parsed, with what their checks say. The builder's check is run
 // with the actors its scenarios name: the credentials are not read for a page.
@@ -32,6 +73,7 @@ function readingsOf(files: readonly SourceFile[]) {
   );
   const common = checkCommon(textAt(files, "roles/common.yaml"));
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
+  const { providers, findings } = readAndCheckProviders(files);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
     const folder = folderOf(name);
@@ -70,8 +112,14 @@ function readingsOf(files: readonly SourceFile[]) {
     target: extraction.target,
     structures: extraction.structures,
     common: common.common,
-    findings: [...structures.findings, ...common.findings.map((f) => `roles/${f}`)],
+    findings: [
+      ...structures.findings,
+      ...common.findings.map((f) => `roles/${f}`),
+      ...findings,
+    ],
     interfaces,
+    services: servicesIn(files),
+    providers,
   };
 }
 
@@ -79,9 +127,21 @@ function readingsOf(files: readonly SourceFile[]) {
 // extraction and everything derived from it otherwise — the files, the problems and the
 // gaps, every rule and trigger judged, and each operation filed under a structure.
 export function dataOf(dir: string, files: readonly SourceFile[]) {
-  const roles = readingsOf(files);
+  const { services, providers, ...roles } = readingsOf(files);
   if (roles.interfaces.some(({ rules }) => rules !== undefined)) {
-    return { dir, name: basename(dir), ...viewOfRoles(roles) };
+    const view = viewOfRoles(roles);
+    return {
+      dir,
+      name: basename(dir),
+      ...view,
+      services: viewOfServices({
+        services,
+        providers,
+        operations: view.extraction.operations.map(({ operation }) => operation),
+        scenarios: view.extraction.scenarios,
+      }),
+      actors: actorsOf(view.extraction.scenarios),
+    };
   }
   const { extraction, problems, gaps } = checkedExtraction(files);
   const judged = judgeExtraction(extraction);

@@ -238,5 +238,123 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
         touches: [{ structure: "A", as: [{ verb: "takes", what: ["id"] }] }],
       },
     ],
+    services: [],
+    actors: ["u"],
+  });
+});
+
+const service = `
+service: s
+says: keeps a
+conditions:
+  - {condition: c, says: forgets every a}
+`;
+
+const provider = `
+provider: p
+renders: s
+state: {shape: {kept: [string]}, says: what is kept}
+expects:
+  - {expect: e, on: i, says: a key is given, source: src/a.ts}
+`;
+
+const providerInterfaces = `
+interfaces:
+  - {interface: i, method: post, pattern: /x, responses: {200: {body: any}}}
+`;
+
+test("view draws each service with the provider rendering it, and tells a file that does not parse", () => {
+  const data = dataOf("/d/t", [
+    { path: "target.yaml", text: target },
+    { path: "interfaces.yaml", text: interfaces },
+    { path: "structures.yaml", text: structures },
+    { path: "roles/common.yaml", text: common },
+    { path: "roles/f/rules.yaml", text: rules },
+    { path: "roles/f/hints.yaml", text: hints },
+    { path: "services/s.yaml", text: service },
+    { path: "services/u.yaml", text: "service: u" },
+    { path: "providers/p/provider.yaml", text: provider },
+    { path: "providers/p/interfaces.yaml", text: providerInterfaces },
+    { path: "providers/q/provider.yaml", text: "provider: [" },
+  ]);
+  expect({
+    services: "services" in data ? data.services : undefined,
+    problems: data.problems,
+  }).toEqual({
+    services: [
+      {
+        service: "s",
+        says: "keeps a",
+        unsure: [],
+        in: [],
+        conditions: [{ condition: "c", takes: {}, says: "forgets every a", given: [] }],
+        rules: [],
+        provider: {
+          provider: "p",
+          calls: 0,
+          scenarios: 0,
+          interfaces: [{ interface: "i", method: "post", pattern: "/x" }],
+          expects: [{ expect: "e", on: "i", says: "a key is given", source: "src/a.ts" }],
+          unsure: [],
+        },
+      },
+    ],
+    problems: [
+      {
+        file: "services/u.yaml",
+        at: "",
+        message: "says: Invalid input: expected string, received undefined",
+      },
+      {
+        file: "services/u.yaml",
+        at: "",
+        message: "conditions: Invalid input: expected array, received undefined",
+      },
+      { file: "providers/q/interfaces.yaml", at: "", message: "missing" },
+      {
+        file: "providers/q/provider.yaml",
+        at: "",
+        message: "not YAML: YAML Parse error: Unexpected token",
+      },
+    ],
+  });
+});
+
+test("view hands the page a scenario with no service step and no side effect as it was before the services", () => {
+  const data = dataOf("/d/t", [
+    { path: "target.yaml", text: target },
+    { path: "interfaces.yaml", text: interfaces },
+    { path: "structures.yaml", text: structures },
+    { path: "roles/common.yaml", text: common },
+    { path: "roles/f/rules.yaml", text: rules },
+    { path: "roles/f/hints.yaml", text: hints },
+    { path: "roles/f/scenarios/exists.yaml", text: scenario },
+    { path: "roles/f/evidence/exists.yaml", text: evidence },
+  ]);
+  expect({
+    services: "services" in data ? data.services : undefined,
+    scenarios: data.extraction.scenarios,
+  }).toEqual({
+    services: [],
+    scenarios: [
+      {
+        path: "f/exists",
+        judgement: null,
+        operation: "f",
+        rule: "exists",
+        situation: "an id no a has",
+        reached: "yes",
+        steps: [
+          {
+            when: "call",
+            as: "u",
+            method: "delete",
+            path: "/a/9",
+            status: 404,
+            answer: null,
+          },
+        ],
+      },
+    ],
   });
 });
