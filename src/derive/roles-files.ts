@@ -1,3 +1,4 @@
+import { triggerSchema } from "../shapes/bindings.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import {
   type Evidence,
@@ -6,11 +7,19 @@ import {
   judgementsSchema,
   readYaml,
   roleScenarioSchema,
+  rulesSchema,
 } from "../shapes/roles.ts";
-import type { Interface } from "../shapes/target.ts";
+import { type Interface, interfacesFileSchema } from "../shapes/target.ts";
+import { type Callable, callableOf } from "./callables.ts";
 import { checkBuilt, ownersOf } from "./check-built.ts";
-import { checkCommon, checkRulesAndHints, checkStructuresFile } from "./check-reader.ts";
+import {
+  checkCommon,
+  checkProtocol,
+  checkRulesAndHints,
+  checkStructuresFile,
+} from "./check-reader.ts";
 import { servicesIn } from "./check-service.ts";
+import { checkTrigger } from "./check-trigger.ts";
 import { judgeTask } from "./judge-task.ts";
 
 // "delete-item" -> "roles/delete-item"
@@ -44,23 +53,77 @@ export function evidenceAt(
   return read !== undefined && "value" in read ? read.value : undefined;
 }
 
-// what a reader wrote for one interface, checked against what the common reader and the
-// reader of the structures wrote
+// the target's interfaces, undefined when interfaces.yaml does not parse
+function interfacesOf(files: readonly SourceFile[]): readonly Interface[] | undefined {
+  const text = textAt(files, "interfaces.yaml");
+  const read =
+    text === undefined
+      ? undefined
+      : readYaml("interfaces.yaml", text, interfacesFileSchema);
+  return read !== undefined && "value" in read ? read.value.interfaces : undefined;
+}
+
+const interfacesNamed = (files: readonly SourceFile[]) =>
+  interfacesOf(files)?.map(({ interface: name }) => name);
+
+// The operations a step may call: one per interface whose rules.yaml and trigger.yaml
+// parse, checked or not — a step calls what a reading declares.
+export function callablesOf(files: readonly SourceFile[]): readonly Callable[] {
+  const { structures = [] } = checkStructuresFile(textAt(files, "structures.yaml"));
+  return (interfacesOf(files) ?? []).flatMap((bound) => {
+    const folder = folderOf(bound.interface);
+    const rulesText = textAt(files, `${folder}/rules.yaml`);
+    const triggerText = textAt(files, `${folder}/trigger.yaml`);
+    const rules =
+      rulesText === undefined
+        ? undefined
+        : readYaml("rules.yaml", rulesText, rulesSchema);
+    const trigger =
+      triggerText === undefined
+        ? undefined
+        : readYaml("trigger.yaml", triggerText, triggerSchema);
+    return rules !== undefined &&
+      "value" in rules &&
+      trigger !== undefined &&
+      "value" in trigger
+      ? [callableOf({ rules: rules.value, trigger: trigger.value, bound, structures })]
+      : [];
+  });
+}
+
+// what a reader wrote for one interface — its rules, its hints, its trigger — checked
+// against what the common reader and the reader of the structures wrote; rules and trigger
+// only when every check passes. The trigger is checked as soon as rules.yaml parses: the
+// reader is told all there is to fix at once.
 export function readerFilesOf(files: readonly SourceFile[], name: string) {
   const { common } = checkCommon(textAt(files, "roles/common.yaml"));
+  const { protocol } = checkProtocol(textAt(files, "roles/protocol.yaml"));
   const { structures } = checkStructuresFile(textAt(files, "structures.yaml"));
   const folder = folderOf(name);
-  return {
+  const rulesText = textAt(files, `${folder}/rules.yaml`);
+  const read = checkRulesAndHints({
+    operation: name,
     common,
-    ...checkRulesAndHints({
-      operation: name,
-      common,
-      structures,
-      rules: textAt(files, `${folder}/rules.yaml`),
-      hints: textAt(files, `${folder}/hints.yaml`),
-      services: servicesIn(files).map(({ service }) => service),
-    }),
-  };
+    structures,
+    rules: rulesText,
+    hints: textAt(files, `${folder}/hints.yaml`),
+    services: servicesIn(files).map(({ service }) => service),
+  });
+  const parsed =
+    rulesText === undefined ? undefined : readYaml("rules.yaml", rulesText, rulesSchema);
+  if (parsed === undefined || !("value" in parsed))
+    return { common, protocol, findings: read.findings };
+  const { trigger, findings } = checkTrigger({
+    name,
+    interfaces: interfacesNamed(files),
+    rules: parsed.value,
+    common,
+    protocol,
+    text: textAt(files, `${folder}/trigger.yaml`),
+  });
+  return read.rules === undefined || trigger === undefined
+    ? { common, protocol, findings: [...read.findings, ...findings] }
+    : { common, protocol, rules: read.rules, trigger, findings };
 }
 
 // The actors its scenarios name, for a check told without the target: the credentials are
@@ -82,20 +145,29 @@ export function actorsNamed(
 }
 
 // what the builder wrote for one interface, checked against the actors given, or those its
-// scenarios name; undefined when its reading does not pass
+// scenarios name; undefined when its reading does not pass. callables: those of the files,
+// given when they are already computed
 export function builtOf(
   files: readonly SourceFile[],
   bound: Interface,
-  actors?: readonly string[],
+  {
+    actors,
+    callables = callablesOf(files),
+  }: {
+    readonly actors?: readonly string[] | undefined;
+    readonly callables?: readonly Callable[];
+  } = {},
 ) {
-  const { rules } = readerFilesOf(files, bound.interface);
-  if (rules === undefined) return undefined;
+  const { rules, trigger } = readerFilesOf(files, bound.interface);
+  if (rules === undefined || trigger === undefined) return undefined;
   const written = slugsIn(files, `${folderOf(bound.interface)}/scenarios`);
   return checkBuilt({
     bound,
     rules,
+    protocol: trigger.protocol ?? [],
     actors: actors ?? actorsNamed(written),
     services: servicesIn(files),
+    callables,
     files: written,
   });
 }
@@ -108,9 +180,9 @@ export function unownedScenarios(
   files: readonly SourceFile[],
   name: string,
 ): readonly string[] {
-  const { rules } = readerFilesOf(files, name);
-  if (rules === undefined) return [];
-  const owners = ownersOf(rules);
+  const { rules, trigger } = readerFilesOf(files, name);
+  if (rules === undefined || trigger === undefined) return [];
+  const owners = ownersOf(rules, trigger.protocol ?? []);
   return slugsIn(files, `${folderOf(name)}/scenarios`)
     .map(({ slug }) => slug)
     .filter((slug) => !owners.some((rule) => slug.startsWith(rule)));
@@ -149,8 +221,9 @@ export function judgeTaskOf(
   bound: Interface,
   recordings: readonly { readonly slug: string; readonly evidence: Evidence }[],
 ) {
-  const { common, rules } = readerFilesOf(files, bound.interface);
-  if (rules === undefined || recordings.length === 0) return undefined;
-  const task = judgeTask({ bound, common, rules, recordings });
+  const { common, protocol, rules, trigger } = readerFilesOf(files, bound.interface);
+  if (rules === undefined || trigger === undefined || recordings.length === 0)
+    return undefined;
+  const task = judgeTask({ bound, common, protocol, rules, trigger, recordings });
   return { ...task, recordings };
 }

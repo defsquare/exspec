@@ -2,11 +2,13 @@ import { expect, test } from "bun:test";
 import { z } from "zod";
 import { instructionsFor, roleInstructions } from "../../src/agent/instructions.ts";
 import { checkProvider } from "../../src/derive/check-provider.ts";
+import { triggerSchema } from "../../src/shapes/bindings.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
 import {
   commonSchema,
   hintsSchema,
   judgedSchema,
+  protocolSchema,
   readYaml,
   roleScenarioSchema,
   rulesSchema,
@@ -43,7 +45,8 @@ test("every example of a file in a role's instructions parses as that file", () 
     [...text.matchAll(new RegExp(`^\`\`\`${language}\\n([\\s\\S]*?)^\`\`\`$`, "gm"))].map(
       ([, block = ""]) => block,
     );
-  const [rules = "", hints = ""] = blocks(roleInstructions.reader, "yaml");
+  const [rules = "", trigger = "", hints = ""] = blocks(roleInstructions.reader, "yaml");
+  const [common = "", protocol = ""] = blocks(roleInstructions["common-reader"], "yaml");
   const read = (file: string, text: string, schema: Parameters<typeof readYaml>[2]) => {
     const parsed = readYaml(file, text, schema);
     return "value" in parsed ? [] : parsed.findings;
@@ -52,10 +55,10 @@ test("every example of a file in a role's instructions parses as that file", () 
     ...blocks(roleInstructions["structures-reader"], "yaml").map((text) =>
       read("structures.yaml", text, z.array(structureSchema)),
     ),
-    ...blocks(roleInstructions["common-reader"], "yaml").map((text) =>
-      read("common.yaml", text, commonSchema),
-    ),
+    read("common.yaml", common, commonSchema),
+    read("protocol.yaml", protocol, protocolSchema),
     read("rules.yaml", rules, rulesSchema),
+    read("trigger.yaml", trigger, triggerSchema),
     read("hints.yaml", hints, hintsSchema),
     ...blocks(roleInstructions.builder, "yaml").map((text) =>
       read("scenario.yaml", text, roleScenarioSchema),
@@ -63,7 +66,37 @@ test("every example of a file in a role's instructions parses as that file", () 
     ...blocks(roleInstructions.judge, "json").map((text) =>
       read("answer.json", text, z.array(judgedSchema)),
     ),
-  ]).toEqual([[], [], [], [], [], []]);
+  ]).toEqual([[], [], [], [], [], [], [], []]);
+});
+
+test("the builder's example scenario calls operations by their inputs, a hole reading a field of what a call answered", () => {
+  const [example = ""] = [
+    ...roleInstructions.builder.matchAll(/^```yaml\n([\s\S]*?)^```$/gm),
+  ].map(([, block = ""]) => block);
+  const read = readYaml("scenario.yaml", example, roleScenarioSchema);
+  expect("value" in read ? read.value.steps : read.findings).toEqual([
+    {
+      when: "arrange",
+      as: "ann",
+      name: "made",
+      call: { operation: "add-item", with: { name: "a" } },
+    },
+    {
+      when: "before",
+      as: "ann",
+      call: { operation: "get-item", with: { id: "{{made.id}}" } },
+    },
+    {
+      when: "call",
+      as: "bob",
+      call: { operation: "rename-item", with: { id: "{{made.id}}", name: "b" } },
+    },
+    {
+      when: "after",
+      as: "ann",
+      call: { operation: "get-item", with: { id: "{{made.id}}" } },
+    },
+  ]);
 });
 
 test("the provider reader's examples are a service and a provider's two files, which pass their check", () => {

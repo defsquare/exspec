@@ -1,0 +1,9 @@
+trigger: delete-pet
+interface: delete-pet
+operation: delete-pet
+answers: 
+  status: [204]
+refuses: 
+  not-found: 
+    status: 404
+    body: "empty: the status alone, no problem detail"

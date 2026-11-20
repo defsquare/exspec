@@ -1,8 +1,10 @@
-import { fillGiven, fillHoles } from "../derive/holes.ts";
+import type { Callable } from "../derive/callables.ts";
+import { fillGiven, type Reads } from "../derive/holes.ts";
 import { headersOf } from "../derive/request.ts";
 import { stepRequest } from "../derive/step-request.ts";
-import type { Exchange, ServiceStep, Step } from "../shapes/roles.ts";
-import type { Run, TargetResponse } from "../shapes/scenario.ts";
+import { readOfStep, sentOfStep } from "../derive/step-sent.ts";
+import type { Exchange, Json, ServiceStep, Step } from "../shapes/roles.ts";
+import type { Run } from "../shapes/scenario.ts";
 import type { Credentials, Target } from "../shapes/target.ts";
 import type { Io } from "./io.ts";
 import { resetTarget } from "./lifecycle.ts";
@@ -21,7 +23,7 @@ export type PlayedSteps = {
 async function giveStep(
   { when, service, is, with: given }: ServiceStep,
   io: Io,
-  answers: ReadonlyMap<string, TargetResponse>,
+  answers: Reads,
 ): Promise<Exchange> {
   const addressed = { when, service, is };
   const filled = fillGiven(given ?? {}, answers);
@@ -34,20 +36,23 @@ async function giveStep(
   return given === undefined ? addressed : { ...addressed, with: filled.given };
 }
 
-// The target reset, then each step sent in order, its holes filled from the answers of the
-// steps named before it. A step that cannot be sent is the last exchange: {when, as,
-// unplayable}. The reset's own events are not kept: the exchanges are the record.
+// The target reset, then each step sent in order, its holes filled from what the steps named
+// before it read; a call sent through its operation's trigger, among the callables. A step
+// that cannot be sent is the last exchange: {when, as, unplayable}. The reset's own events
+// are not kept: the exchanges are the record.
 export async function playSteps({
   dir,
   target,
   io,
   credentials,
+  callables,
   steps,
 }: {
   readonly dir: string;
   readonly target: Target;
   readonly io: Io;
   readonly credentials: Credentials;
+  readonly callables: readonly Callable[];
   readonly steps: readonly Step[];
 }): Promise<PlayedSteps> {
   await Array.fromAsync(resetTarget({ dir, target, io }));
@@ -55,7 +60,7 @@ export async function playSteps({
   // shown; a reset that failed at a provider shows only in what the steps then answer.
   await io.resetProviders?.();
   const run = { target: target.target, version: io.version, at: io.now(), clock: null };
-  const answers = new Map<string, TargetResponse>();
+  const answers = new Map<string, Json>();
   const exchanges: Exchange[] = [];
   const notTaken: string[] = [];
   const base = target.api["base-url"];
@@ -66,10 +71,10 @@ export async function playSteps({
       if ("unplayable" in given) break;
       continue;
     }
-    const { when, as, name, request } = step;
+    const { when, as, name } = step;
     const addressed = { when, as };
     const headers = headersOf(credentials, as);
-    const filled = fillHoles(request, answers);
+    const filled = sentOfStep(step, answers, callables);
     if (headers === undefined) {
       exchanges.push({ ...addressed, unplayable: `no credentials for "${as}"` });
       break;
@@ -85,7 +90,8 @@ export async function playSteps({
       break;
     }
     const response = await io.send(stepRequest({ base, sent, headers }));
-    if (name !== undefined) answers.set(name, response);
+    const read = readOfStep(step, response, callables);
+    if (name !== undefined && read !== undefined) answers.set(name, read);
     const exchange = { ...addressed, request: sent, response };
     if (io.takeSideEffects === undefined) {
       exchanges.push(exchange);

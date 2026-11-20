@@ -16,11 +16,14 @@ interfaces:
   - {interface: f, method: get, pattern: "/f/{a}", responses: {200: {body: any}}}
 `,
   "roles/common.yaml": "target: t",
+  "roles/protocol.yaml": "target: t",
+  "roles/f/trigger.yaml":
+    "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
   "roles/f/rules.yaml": `
 operation: f
 requires:
-  - {rule: exists, fact: the item exists, otherwise: {refusal: not-found, status: 404, body: empty}, source: "F.java:1"}
-answers: {says: "200", structure: null}
+  - {rule: exists, fact: the item exists, otherwise: not-found, source: "F.java:1"}
+answers: {says: "the item", structure: null}
 `,
   "roles/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",
@@ -132,9 +135,11 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
     received: [
       {
         prompt: [
-          "The operation: f, GET /f/{a}.",
-          "Your folder: exspec/roles/f/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
           "The actors: u; null for a call by nobody.",
+          "The operations a step may call, by their inputs, and what each answers:",
+          "- f: takes nothing. Answers no structure a hole can read: the operation answers no structure.",
+          "The operation: f, GET /f/{a}.",
+          "Your folder: exspec/roles/f/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
         ].join("\n"),
         mayWrite: [true, false, false],
       },

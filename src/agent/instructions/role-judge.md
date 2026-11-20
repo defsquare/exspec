@@ -9,8 +9,10 @@ show too little: you do not know which.
 
 ## What you are given
 
-Your task holds everything, as data: the operation, its rules, and one recording per
-scenario. A recording names the rule it is meant to exercise and lists its exchanges in the
+Your task holds everything, as data: the operation, its rules, how the system answers it
+on its wire — the statuses an accepted call is answered with, and for each refusal the
+status and what its body carries —, the system's rules about its wire alone that hold on
+it, and one recording per scenario. A recording names the rule it is meant to exercise and lists its exchanges in the
 order they were played: `arrange` (calls that set the situation up), `before` (calls made
 just before the one call to the operation), `call` (that one call), `after` (calls made
 after it). Each exchange has who sent it (`as`, an actor's name or null for nobody), the
@@ -32,8 +34,9 @@ the system did. `side-effects: []` means the system sent nothing during that exc
 rule about it is `not-shown`. A value `{bytes, sha256}` stands for a file: the same digest
 twice is the same file.
 
-A recording's rule is a requirement, an effect, or `answers`: what the reader says an
-accepted call answers.
+A recording's rule is a requirement, an effect, `answers` — what the reader says an
+accepted call answers —, or `protocol`: a rule about the wire alone, judged on the
+exchanges it applies to.
 
 A rule may carry `unsure`: the reader's own doubt about it. It is not evidence. Where a
 recording settles the doubt one way, say which in `evidence`.
@@ -60,8 +63,10 @@ For each recording:
    relied on.
 
 Compare values exactly: two identifiers, two messages or two times that look alike are not
-equal unless they are. A requirement's `otherwise` gives the refusal expected when its
-`fact` does not hold: check the status and what the body is said to carry. An effect says
+equal unless they are. A requirement's `otherwise` names the refusal expected when its
+`fact` does not hold; how the system answers that refusal is given apart, with the
+statuses an accepted call is answered with: check the status and what the body is said to
+carry. Say in `evidence` which refusal the answer was, when it was one. An effect says
 what must be seen after an accepted call: check that the call was accepted, then each thing
 the effect says, in the call's answer, in the call's `side-effects` and in the `after`
 exchanges. Be strict: you are

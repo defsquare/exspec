@@ -1,7 +1,8 @@
-import type { Evidence, Exchange, RoleScenario } from "../shapes/roles.ts";
-import type { Difference, Place, TargetResponse } from "../shapes/scenario.ts";
+import type { Evidence, Exchange, Json, RoleScenario } from "../shapes/roles.ts";
+import type { Difference, Place } from "../shapes/scenario.ts";
+import type { Callable } from "./callables.ts";
 import { comparePlaces } from "./compare.ts";
-import { fillGiven, fillHoles } from "./holes.ts";
+import { fillGiven } from "./holes.ts";
 import { deepEqual } from "./json.ts";
 import {
   type Answer,
@@ -10,6 +11,7 @@ import {
   markPlaces,
   type Valued,
 } from "./noise.ts";
+import { readOfStep, sentOfStep } from "./step-sent.ts";
 
 // An unplayable exchange answered nothing:
 //   [{call, response: r0}, {call, unplayable: "…"}, …] -> [{at: [exchanges, 0, response], response: r0}]
@@ -145,13 +147,18 @@ export function compareEvidence(
 }
 
 // An evidence is of a scenario as written when it names its rule and, step by step, sent
-// the step's request — holes filled from the evidence's own answers, as playSteps does:
+// the step's request — a call's through its operation's trigger, holes filled from the
+// evidence's own answers, as playSteps does:
 //   step {name: m, path: "/a"}, {path: "/b/{{m.body.id}}"}; m answered {body: {id: 7}}
 //   -> the second exchange must have sent "/b/7"
-export function isAsWritten(scenario: RoleScenario, evidence: Evidence): boolean {
+export function isAsWritten(
+  scenario: RoleScenario,
+  evidence: Evidence,
+  callables: readonly Callable[],
+): boolean {
   if (evidence.rule !== scenario.rule) return false;
   if (evidence.exchanges.length !== scenario.steps.length) return false;
-  const answers = new Map<string, TargetResponse>();
+  const answers = new Map<string, Json>();
   return scenario.steps.every((step, i) => {
     const exchange = evidence.exchanges[i];
     if (exchange === undefined || exchange.when !== step.when) return false;
@@ -165,11 +172,12 @@ export function isAsWritten(scenario: RoleScenario, evidence: Evidence): boolean
         deepEqual(filled.given, exchange.with ?? {})
       );
     }
-    const { as, name, request } = step;
+    const { as, name } = step;
     if (!("response" in exchange) || exchange.as !== as) return false;
-    const filled = fillHoles(request, answers);
+    const filled = sentOfStep(step, answers, callables);
     if ("unplayable" in filled || !deepEqual(filled.sent, exchange.request)) return false;
-    if (name !== undefined) answers.set(name, exchange.response);
+    const read = readOfStep(step, exchange.response, callables);
+    if (name !== undefined && read !== undefined) answers.set(name, read);
     return true;
   });
 }

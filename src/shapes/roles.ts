@@ -3,9 +3,11 @@ import { noiseSchema, responseSchema, runSchema } from "./scenario.ts";
 import { methodSchema } from "./target.ts";
 
 // The files of a reading by three roles kept apart, under exspec/roles/:
-//   common.yaml                        what holds for the whole system
+//   common.yaml                        what holds for the whole system, in its words
+//   protocol.yaml                      what the whole target says of its wire
 //   <interface>/rules.yaml, hints.yaml what one operation is supposed to do
-//   <interface>/scenarios/<slug>.yaml  a scenario, requests only
+//   <interface>/trigger.yaml           how this target says it: its statuses, its refusals'
+//   <interface>/scenarios/<slug>.yaml  a scenario: calls, requests, a service's conditions
 //   <interface>/evidence/<slug>.yaml   what the system answered to it, written by the tool
 //   <interface>/judgements.yaml        what the judge made of it, written by the tool
 
@@ -16,11 +18,8 @@ const source = z
   .string()
   .regex(/\.\w+:\d+/, "a source is path/to/File.ext:line or :from-to");
 
-const refusalSchema = z
-  .strictObject({ refusal: ruleName, status: z.int(), body: z.string() })
-  .readonly();
-
 // service: the service of exspec/services/ the rule rests on
+// otherwise: the refusal's name; how it leaves is the trigger's
 export const requirementSchema = z
   .strictObject({
     rule: ruleName,
@@ -28,7 +27,7 @@ export const requirementSchema = z
     when: z.string().optional(),
     service: z.string().optional(),
     fact: z.string(),
-    otherwise: refusalSchema,
+    otherwise: ruleName,
     source,
   })
   .readonly();
@@ -50,19 +49,56 @@ export const commonRuleSchema = z
     rule: ruleName,
     "applies-to": z.string(),
     fact: z.string(),
-    otherwise: refusalSchema,
+    otherwise: ruleName,
     source,
   })
   .readonly();
 
+const unsureSchema = z
+  .array(z.strictObject({ about: z.string(), what: z.string() }).readonly())
+  .readonly()
+  .default([]);
+
 export const commonSchema = z
+  .strictObject({
+    target: z.string(),
+    rules: z.array(commonRuleSchema).readonly().default([]),
+    unsure: unsureSchema,
+  })
+  .readonly();
+
+export type Common = z.infer<typeof commonSchema>;
+
+const wireSchema = z.strictObject({ status: z.int(), body: z.string() }).readonly();
+
+// A rule about the wire and nothing else; otherwise absent: it refuses nothing
+//   {rule: p, applies-to: "…", fact: "the body is a JSON object",
+//    otherwise: {refusal: malformed-body, status: 400, body: "…"}, source: "…"}
+export const protocolRuleSchema = z
+  .strictObject({
+    rule: ruleName,
+    "applies-to": z.string(),
+    fact: z.string(),
+    otherwise: z
+      .strictObject({ refusal: ruleName, status: z.int(), body: z.string() })
+      .readonly()
+      .optional(),
+    source,
+  })
+  .readonly();
+
+export type ProtocolRule = z.infer<typeof protocolRuleSchema>;
+
+// refuses: how a refusal of common.yaml leaves, {r: {status: 401, body: "…"}}
+export const protocolSchema = z
   .strictObject({
     target: z.string(),
     "runs-with": z
       .array(z.strictObject({ setting: z.string(), source }).readonly())
       .readonly()
       .default([]),
-    rules: z.array(commonRuleSchema).readonly().default([]),
+    rules: z.array(protocolRuleSchema).readonly().default([]),
+    refuses: z.record(ruleName, wireSchema).readonly().default({}),
     errors: z
       .array(
         z
@@ -72,20 +108,17 @@ export const commonSchema = z
       .readonly()
       .default([]),
     contract: z.array(z.string()).readonly().default([]),
-    unsure: z
-      .array(z.strictObject({ about: z.string(), what: z.string() }).readonly())
-      .readonly()
-      .default([]),
+    unsure: unsureSchema,
   })
   .readonly();
 
-export type Common = z.infer<typeof commonSchema>;
+export type Protocol = z.infer<typeof protocolSchema>;
 
 const structureFieldSchema = z.tuple([z.string(), z.string()]).readonly();
 
 // takes: {itemId: {says: "the item", field: [Item, id]}, dryRun: {says: "…"}}
-// requires: [{rule: a, on: itemId, fact: "…", otherwise: {…}, source: "…"}], on an entry of takes
-// answers: {says: "200 with the item", structure: Item}, structure null when it shows none
+// requires: [{rule: a, on: itemId, fact: "…", otherwise: r, source: "…"}], on an entry of takes
+// answers: {says: "the item", structure: Item}, structure null when it shows none
 // unsure.rule: a rule of the file, a name under common, or "answers"
 export const rulesSchema = z
   .strictObject({
@@ -161,12 +194,17 @@ export const stepRequestSchema = z
 
 export type StepRequest = z.infer<typeof stepRequestSchema>;
 
-// A step is addressed to the target, or gives a service a condition:
+const givenSchema = z.record(z.string(), z.json()).readonly();
+
+// A step calls an operation of the target, sends it a request, or gives a service a
+// condition; its key tells which:
+//   {when: arrange, as: a, name: c, call: {operation: f, with: {x: 1, y: "{{b.id}}"}}}
 //   {when: call, as: a, name: n, request: {method: post, path: /x}}
 //   {when: arrange, service: s, is: refuses, with: {address: "{{n.body.to}}"}}
 // as: an actor's name, null for a call by nobody; name: what a later hole cites;
-// with: a value for each parameter the condition takes, holes filled as in a request
-const targetStepSchema = z
+// call.with: a value for each input given, by the input's name; a service step's with: a
+// value for each parameter the condition takes; holes filled as in a request
+const requestStepSchema = z
   .strictObject({
     when: whenSchema,
     as: z.string().nullable(),
@@ -175,7 +213,18 @@ const targetStepSchema = z
   })
   .readonly();
 
-const givenSchema = z.record(z.string(), z.json()).readonly();
+export const stepCallSchema = z
+  .strictObject({ operation: z.string(), with: givenSchema.default({}) })
+  .readonly();
+
+const callStepSchema = z
+  .strictObject({
+    when: whenSchema,
+    as: z.string().nullable(),
+    name: z.string().optional(),
+    call: stepCallSchema,
+  })
+  .readonly();
 
 const serviceStepSchema = z
   .strictObject({
@@ -186,9 +235,12 @@ const serviceStepSchema = z
   })
   .readonly();
 
-export const stepSchema = z.union([targetStepSchema, serviceStepSchema]);
+export const stepSchema = z.union([requestStepSchema, callStepSchema, serviceStepSchema]);
 
 export type Step = z.infer<typeof stepSchema>;
+export type RequestStep = z.infer<typeof requestStepSchema>;
+export type CallStep = z.infer<typeof callStepSchema>;
+export type StepCall = z.infer<typeof stepCallSchema>;
 export type ServiceStep = z.infer<typeof serviceStepSchema>;
 
 export const roleScenarioSchema = z

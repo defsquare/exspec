@@ -1,8 +1,14 @@
 import { expect, test } from "bun:test";
 import { dataOf } from "../../src/cli/view.ts";
 import { judgeTask } from "../../src/derive/judge-task.ts";
+import { triggerSchema } from "../../src/shapes/bindings.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
-import { commonSchema, evidenceSchema, rulesSchema } from "../../src/shapes/roles.ts";
+import {
+  commonSchema,
+  evidenceSchema,
+  protocolSchema,
+  rulesSchema,
+} from "../../src/shapes/roles.ts";
 import { target } from "../files.ts";
 
 const interfaces = `
@@ -20,7 +26,7 @@ const structures = `
 const common = `
 target: t
 rules:
-  - {rule: signed-in, applies-to: every operation, fact: the caller is signed in, otherwise: {refusal: unauthenticated, status: 401, body: empty}, source: "S.java:1"}
+  - {rule: signed-in, applies-to: every operation, fact: the caller is signed in, otherwise: unauthenticated, source: "S.java:1"}
 `;
 
 const rules = `
@@ -28,10 +34,21 @@ operation: f
 takes: {id: {says: the a to remove, field: [A, id]}}
 common: [signed-in]
 requires:
-  - {rule: exists, fact: the a exists, otherwise: {refusal: not-found, status: 404, body: empty}, source: "F.java:2"}
-answers: {says: 204 with no body, structure: null}
+  - {rule: exists, fact: the a exists, otherwise: not-found, source: "F.java:2"}
+answers: {says: no body, structure: null}
 unsure:
   - {rule: exists, what: a negative id is not checked}
+`;
+
+const protocol = `
+target: t
+runs-with:
+  - {setting: security is on, source: "c.yaml:1"}
+refuses: {unauthenticated: {status: 401, body: empty}}
+`;
+
+const trigger = `
+{trigger: f, interface: f, operation: f, answers: {status: 204}, refuses: {not-found: {status: 404, body: empty}}}
 `;
 
 const hints = `
@@ -64,7 +81,9 @@ const of =
     : judgeTask({
         bound,
         common: commonSchema.parse(Bun.YAML.parse(common)),
+        protocol: protocolSchema.parse(Bun.YAML.parse(protocol)),
         rules: rulesSchema.parse(Bun.YAML.parse(rules)),
+        trigger: triggerSchema.parse(Bun.YAML.parse(trigger)),
         recordings: [
           { slug: "exists", evidence: evidenceSchema.parse(Bun.YAML.parse(evidence)) },
         ],
@@ -84,7 +103,9 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
       { path: "interfaces.yaml", text: interfaces },
       { path: "structures.yaml", text: structures },
       { path: "roles/common.yaml", text: common },
+      { path: "roles/protocol.yaml", text: protocol },
       { path: "roles/f/rules.yaml", text: rules },
+      { path: "roles/f/trigger.yaml", text: trigger },
       { path: "roles/f/hints.yaml", text: hints },
       { path: "roles/f/scenarios/exists.yaml", text: scenario },
       { path: "roles/f/evidence/exists.yaml", text: evidence },
@@ -111,7 +132,7 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
             operation: "f",
             interface: { method: "delete", pattern: "/a/{id}" },
             takes: { id: { says: "the a to remove", field: ["A", "id"] } },
-            answers: { says: "204 with no body", structure: null },
+            answers: { says: "no body", structure: null },
             lines: [
               {
                 kind: "requires",
@@ -141,11 +162,12 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
                 kind: "answers",
                 rule: "answers",
                 shared: false,
-                says: "204 with no body",
-                short: "204 with no body",
+                says: "no body",
+                short: "no body",
                 doubts: [],
               },
             ],
+            protocol: [],
           },
         },
       ],
@@ -176,10 +198,11 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
       ],
       facts: [],
       projections: [],
-      triggers: [],
+      triggers: [triggerSchema.parse(Bun.YAML.parse(trigger))],
       references: [],
     },
     common: commonSchema.parse(Bun.YAML.parse(common)),
+    protocol: protocolSchema.parse(Bun.YAML.parse(protocol)),
     problems: [
       { file: "roles/f", at: "", message: 'no scenario for the rule "signed-in"' },
     ],
@@ -269,7 +292,9 @@ test("view draws each service with the provider rendering it, and tells a file t
     { path: "interfaces.yaml", text: interfaces },
     { path: "structures.yaml", text: structures },
     { path: "roles/common.yaml", text: common },
+    { path: "roles/protocol.yaml", text: protocol },
     { path: "roles/f/rules.yaml", text: rules },
+    { path: "roles/f/trigger.yaml", text: trigger },
     { path: "roles/f/hints.yaml", text: hints },
     { path: "services/s.yaml", text: service },
     { path: "services/u.yaml", text: "service: u" },
@@ -326,7 +351,9 @@ test("view hands the page a scenario with no service step and no side effect as 
     { path: "interfaces.yaml", text: interfaces },
     { path: "structures.yaml", text: structures },
     { path: "roles/common.yaml", text: common },
+    { path: "roles/protocol.yaml", text: protocol },
     { path: "roles/f/rules.yaml", text: rules },
+    { path: "roles/f/trigger.yaml", text: trigger },
     { path: "roles/f/hints.yaml", text: hints },
     { path: "roles/f/scenarios/exists.yaml", text: scenario },
     { path: "roles/f/evidence/exists.yaml", text: evidence },

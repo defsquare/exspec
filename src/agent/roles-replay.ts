@@ -17,7 +17,7 @@ type Selected =
 // scenario as it was is refused; no reference at all, refused only when the interface was
 // asked for
 function selected(one: CheckedScenario, asked: boolean): Selected {
-  const { evidence, scenario } = one;
+  const { evidence, scenario, callables } = one;
   if (evidence?.noise === undefined) {
     return asked ? { one, refused: "it has no reference" } : undefined;
   }
@@ -27,7 +27,7 @@ function selected(one: CheckedScenario, asked: boolean): Selected {
       refused: "its evidence has a step that could not be played: record it again",
     };
   }
-  return isAsWritten(scenario, evidence)
+  return isAsWritten(scenario, evidence, callables)
     ? { one, reference: { ...evidence, noise: evidence.noise } }
     : { one, refused: "its reference is of the scenario as it was: record it again" };
 }

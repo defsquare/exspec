@@ -12,6 +12,7 @@ const done = (
 ): Left => ({
   structures: false,
   common: false,
+  protocol: false,
   interfaces: [
     {
       interface: "f",
@@ -31,6 +32,7 @@ test("with only the target and its interfaces declared, everything is left to re
   expect(leftOf({ files, interfaces: [bound] })).toEqual({
     structures: true,
     common: true,
+    protocol: true,
     interfaces: [{ interface: "f", reading: "to-do" }],
   });
 });

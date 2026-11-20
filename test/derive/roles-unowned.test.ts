@@ -4,9 +4,9 @@ import { unownedScenarios } from "../../src/derive/roles-files.ts";
 const rules = `
 operation: f
 requires:
-  - {rule: a, fact: the item exists, otherwise: {refusal: not-found, status: 404, body: empty}, source: "F.java:1"}
-  - {rule: a-b, fact: the item is open, otherwise: {refusal: closed, status: 409, body: empty}, source: "F.java:2"}
-answers: {says: "200", structure: null}
+  - {rule: a, fact: the item exists, otherwise: not-found, source: "F.java:1"}
+  - {rule: a-b, fact: the item is open, otherwise: closed, source: "F.java:2"}
+answers: {says: "the item", structure: null}
 `;
 
 const hints = `
@@ -25,6 +25,10 @@ test("a scenario file is unowned when its name starts with no rule of the readin
       [
         { path: "roles/f/rules.yaml", text: rules },
         { path: "roles/f/hints.yaml", text: hints },
+        {
+          path: "roles/f/trigger.yaml",
+          text: "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404}, closed: {status: 409}}}",
+        },
         ...scenarios,
       ],
       "f",
@@ -38,6 +42,10 @@ test("no scenario file is unowned while the reading does not pass its check", ()
       [
         { path: "roles/f/rules.yaml", text: "operation: [" },
         { path: "roles/f/hints.yaml", text: hints },
+        {
+          path: "roles/f/trigger.yaml",
+          text: "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404}, closed: {status: 409}}}",
+        },
         ...scenarios,
       ],
       "f",

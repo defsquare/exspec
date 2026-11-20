@@ -1,11 +1,14 @@
+import type { Trigger } from "../shapes/bindings.ts";
 import type { Problem } from "../shapes/extraction.ts";
 import type {
   Common,
   Evidence,
   Judgement,
+  Protocol,
   RoleScenario,
   Rules,
   SideEffect,
+  StepCall,
 } from "../shapes/roles.ts";
 import type { Structure } from "../shapes/specification.ts";
 import type { Interface, Target } from "../shapes/target.ts";
@@ -17,6 +20,7 @@ import { type Placed, placedOfRoles } from "./placing.ts";
 export type ReadInterface = {
   readonly bound: Interface;
   readonly rules: Rules | undefined;
+  readonly trigger: Trigger | undefined;
   readonly findings: readonly string[];
   readonly scenarios: readonly {
     readonly slug: string;
@@ -42,9 +46,11 @@ const words: readonly Word[] = [
 ];
 
 // one line of an operation's reading, in the order it applies: the shared requirements it
-// names, its own, its effects, what it answers
+// names, its own, its effects, what it answers. A rule of the target's wire is a line of
+// kind protocol, apart. status and body: how the refusal leaves on this target, when its
+// trigger or the protocol says it
 export type Line = {
-  readonly kind: "requires" | "effect" | "answers";
+  readonly kind: "requires" | "effect" | "answers" | "protocol";
   readonly rule: string;
   readonly shared: boolean;
   readonly input?: string;
@@ -63,9 +69,13 @@ export type Line = {
 
 // one step as it was sent, with what it answered; as it was written when it was not played.
 // A service step: {when: arrange, as: null, service: s, is: c, body: <what it gives>}
+// A call step says its call, and the interface of its operation:
+//   {when: call, as: a, call: {operation: f, with: {x: 1}}, interface: f, method: post, …}
 export type StepView = {
   readonly when: string;
   readonly as: string | null;
+  readonly call?: StepCall;
+  readonly interface?: string;
   readonly service?: string;
   readonly is?: string;
   readonly method?: string;
@@ -99,6 +109,8 @@ export type RuleView = {
   readonly rule: string;
   readonly provenance: Word;
   readonly reason?: string;
+  // a rule of the target's wire, not of the specification
+  readonly protocol?: true;
   readonly by: readonly {
     readonly scenario: string;
     readonly verdict: Word;
@@ -142,7 +154,61 @@ function problemOf(folder: string, finding: string): Problem {
     : { file: folder === "" ? file : `${folder}/${file}`, at: "", message };
 }
 
-function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
+// how a refusal leaves on this target: as the trigger says it, else as the protocol does
+//   "r", trigger refuses {r: {status: 404}} -> {status: 404}; a refusal neither says -> {}
+function wireOf(
+  refusal: string,
+  trigger: Trigger | undefined,
+  protocol: Protocol | undefined,
+): { readonly status?: number; readonly body?: string } {
+  const wire = trigger?.refuses[refusal] ?? protocol?.refuses[refusal];
+  if (wire === undefined) return {};
+  return wire.body === undefined
+    ? { status: wire.status }
+    : { status: wire.status, body: wire.body };
+}
+
+// the target's rules about its wire that its trigger says hold on the operation
+function protocolLinesOf(
+  trigger: Trigger | undefined,
+  protocol: Protocol | undefined,
+): readonly Line[] {
+  return (trigger?.protocol ?? []).map((rule): Line => {
+    const wire = protocol?.rules.find((r) => r.rule === rule);
+    if (wire === undefined)
+      return {
+        kind: "protocol",
+        rule,
+        shared: true,
+        short: "not a rule of protocol.yaml",
+        doubts: [],
+      };
+    const { fact, otherwise, source } = wire;
+    return {
+      kind: "protocol",
+      rule,
+      shared: true,
+      fact,
+      ...(otherwise === undefined
+        ? {}
+        : {
+            otherwise: otherwise.refusal,
+            status: otherwise.status,
+            body: otherwise.body,
+          }),
+      short: fact,
+      source,
+      doubts: [],
+    };
+  });
+}
+
+function linesOf(
+  rules: Rules,
+  common: Common | undefined,
+  trigger: Trigger | undefined,
+  protocol: Protocol | undefined,
+): readonly Line[] {
   const doubts = (rule: string) =>
     rules.unsure.filter((u) => u.rule === rule).map(({ what }) => what);
   return [
@@ -161,9 +227,8 @@ function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
             rule,
             shared: true,
             fact: shared.fact,
-            otherwise: shared.otherwise.refusal,
-            status: shared.otherwise.status,
-            body: shared.otherwise.body,
+            otherwise: shared.otherwise,
+            ...wireOf(shared.otherwise, trigger, protocol),
             short: shared.fact,
             source: shared.source,
             doubts: doubts(rule),
@@ -178,9 +243,8 @@ function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
         ...(when === undefined ? {} : { when }),
         ...(service === undefined ? {} : { service }),
         fact,
-        otherwise: otherwise.refusal,
-        status: otherwise.status,
-        body: otherwise.body,
+        otherwise,
+        ...wireOf(otherwise, trigger, protocol),
         short: fact,
         source,
         doubts: doubts(rule),
@@ -213,9 +277,19 @@ function linesOf(rules: Rules, common: Common | undefined): readonly Line[] {
 function stepsOf(
   scenario: RoleScenario | undefined,
   evidence: Evidence | undefined,
+  interfaceOf: (operation: string) => string | undefined,
 ): readonly StepView[] {
+  // what a call step of the scenario called, beside what it was sent as. A step and its
+  // exchange are paired by their place: right while the evidence is as written; on a stale
+  // one — told stale beside it — a call may stand by an exchange that is not its own.
+  const calledAt = (i: number) => {
+    const step = scenario?.steps[i];
+    if (step === undefined || !("call" in step)) return {};
+    const found = interfaceOf(step.call.operation);
+    return { call: step.call, ...(found === undefined ? {} : { interface: found }) };
+  };
   if (evidence !== undefined) {
-    return evidence.exchanges.map((exchange): StepView => {
+    return evidence.exchanges.map((exchange, i): StepView => {
       if ("service" in exchange) {
         const { when, service, is } = exchange;
         return "unplayable" in exchange
@@ -224,13 +298,14 @@ function stepsOf(
       }
       if ("unplayable" in exchange) {
         const { when, as, unplayable } = exchange;
-        return { when, as, unplayable };
+        return { when, as, ...calledAt(i), unplayable };
       }
       const { when, as, request, response } = exchange;
       const sideEffects = exchange["side-effects"];
       return {
         when,
         as,
+        ...calledAt(i),
         method: request.method,
         path: request.path,
         ...(request.query === undefined ? {} : { query: request.query }),
@@ -241,11 +316,12 @@ function stepsOf(
       };
     });
   }
-  return (scenario?.steps ?? []).map((step): StepView => {
+  return (scenario?.steps ?? []).map((step, i): StepView => {
     if ("service" in step) {
       const { when, service, is } = step;
       return { when, as: null, service, is, ...givenOf(step.with) };
     }
+    if ("call" in step) return { when: step.when, as: step.as, ...calledAt(i) };
     const { when, as, request } = step;
     return {
       when,
@@ -269,12 +345,14 @@ export function viewOfRoles({
   target,
   structures,
   common,
+  protocol,
   findings,
   interfaces,
 }: {
   readonly target: Target | undefined;
   readonly structures: readonly Structure[];
   readonly common: Common | undefined;
+  readonly protocol: Protocol | undefined;
   // of structures.yaml and roles/common.yaml, each "file: message" relative to exspec/
   readonly findings: readonly string[];
   readonly interfaces: readonly ReadInterface[];
@@ -282,58 +360,66 @@ export function viewOfRoles({
   const read = interfaces.flatMap((i) =>
     i.rules === undefined ? [] : [{ ...i, rules: i.rules }],
   );
-  const scenarios = read.flatMap(({ bound, rules, scenarios, evidence, judgements }) => {
-    const name = bound.interface;
-    const { of } =
-      evidence.length === 0
-        ? { of: new Map<string, string>() }
-        : judgeTask({ bound, common, rules, recordings: evidence });
-    const slugs = [
-      ...new Set([
-        ...scenarios.map(({ slug }) => slug),
-        ...evidence.map(({ slug }) => slug),
-      ]),
-    ].sort();
-    return slugs.flatMap((slug): readonly ScenarioView[] => {
-      const scenario = scenarios.find((s) => s.slug === slug)?.scenario;
-      const played = evidence.find((e) => e.slug === slug)?.evidence;
-      const rule = scenario?.rule ?? played?.rule;
-      if (rule === undefined) return [];
-      const judged = judgements.find((j) => j.scenario === slug);
-      return [
-        {
-          path: `${name}/${slug}`,
-          operation: name,
-          rule,
-          ...(scenario === undefined
-            ? {}
-            : { situation: scenario.situation, reached: String(scenario.reached) }),
-          steps: stepsOf(scenario, played),
-          judgement:
-            judged === undefined
-              ? null
-              : {
-                  verdict: judged.verdict,
-                  confidence: judged.confidence,
-                  says: judged.evidence,
-                  stale: judged.of !== of.get(slug),
-                },
-        },
-      ];
-    });
-  });
-  const operations = read.map(({ bound, rules }) => ({
+  const interfaceOf = (operation: string) =>
+    read.find(({ rules }) => rules.operation === operation)?.bound.interface;
+  const scenarios = read.flatMap(
+    ({ bound, rules, trigger, scenarios, evidence, judgements }) => {
+      const name = bound.interface;
+      // with no trigger, no text a judge would be given today: every judgement is stale
+      const { of } =
+        evidence.length === 0 || trigger === undefined
+          ? { of: new Map<string, string>() }
+          : judgeTask({ bound, common, protocol, rules, trigger, recordings: evidence });
+      const slugs = [
+        ...new Set([
+          ...scenarios.map(({ slug }) => slug),
+          ...evidence.map(({ slug }) => slug),
+        ]),
+      ].sort();
+      return slugs.flatMap((slug): readonly ScenarioView[] => {
+        const scenario = scenarios.find((s) => s.slug === slug)?.scenario;
+        const played = evidence.find((e) => e.slug === slug)?.evidence;
+        const rule = scenario?.rule ?? played?.rule;
+        if (rule === undefined) return [];
+        const judged = judgements.find((j) => j.scenario === slug);
+        return [
+          {
+            path: `${name}/${slug}`,
+            operation: name,
+            rule,
+            ...(scenario === undefined
+              ? {}
+              : { situation: scenario.situation, reached: String(scenario.reached) }),
+            steps: stepsOf(scenario, played, interfaceOf),
+            judgement:
+              judged === undefined
+                ? null
+                : {
+                    verdict: judged.verdict,
+                    confidence: judged.confidence,
+                    says: judged.evidence,
+                    stale: judged.of !== of.get(slug),
+                  },
+          },
+        ];
+      });
+    },
+  );
+  const operations = read.map(({ bound, rules, trigger }) => ({
     path: bound.interface,
     operation: {
       operation: bound.interface,
       interface: { method: bound.method, pattern: bound.pattern },
       takes: rules.takes ?? {},
       answers: rules.answers,
-      lines: linesOf(rules, common),
+      lines: linesOf(rules, common, trigger, protocol),
+      protocol: protocolLinesOf(trigger, protocol),
     },
   }));
-  const rules = operations.flatMap(({ operation: { operation, lines } }) =>
-    lines.map(({ rule }): RuleView => {
+  // a rule of the target's wire is judged as a rule is, and marked so that nothing counts it
+  // with the specification's
+  const rules = operations.flatMap(({ operation: { operation, lines, protocol } }) =>
+    [...lines, ...protocol].map(({ rule, kind }): RuleView => {
       const of = scenarios.filter((s) => s.operation === operation && s.rule === rule);
       const provenance = wordOf(of.flatMap(({ judgement }) => judgement?.verdict ?? []));
       const reason =
@@ -347,6 +433,7 @@ export function viewOfRoles({
         rule,
         provenance,
         ...(provenance === "unjudged" ? { reason } : {}),
+        ...(kind === "protocol" ? { protocol: true } : {}),
         by: of.map(({ path, judgement }) =>
           judgement === null
             ? { scenario: path, verdict: "unjudged" }
@@ -418,10 +505,11 @@ export function viewOfRoles({
       scenarios,
       facts: [],
       projections: [],
-      triggers: [],
+      triggers: read.flatMap(({ trigger }) => trigger ?? []),
       references: [],
     },
     common: common ?? null,
+    protocol: protocol ?? null,
     problems: [
       ...findings.map((finding) => problemOf("", finding)),
       ...interfaces.flatMap(({ bound, findings }) =>
@@ -433,7 +521,10 @@ export function viewOfRoles({
     bindings: [],
     counts: {
       rules: Object.fromEntries(
-        words.map((word) => [word, rules.filter((r) => r.provenance === word).length]),
+        words.map((word) => [
+          word,
+          rules.filter((r) => !r.protocol && r.provenance === word).length,
+        ]),
       ),
     },
     placed,

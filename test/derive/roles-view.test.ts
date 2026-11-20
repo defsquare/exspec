@@ -1,15 +1,33 @@
 import { expect, test } from "bun:test";
 import { actorsOf, viewOfRoles } from "../../src/derive/roles-view.ts";
-import { evidenceSchema, rulesSchema } from "../../src/shapes/roles.ts";
+import { triggerSchema } from "../../src/shapes/bindings.ts";
+import { evidenceSchema, protocolSchema, rulesSchema } from "../../src/shapes/roles.ts";
 
 const rules = rulesSchema.parse(
   Bun.YAML.parse(`
 operation: f
 takes: {a: {says: s}}
 requires:
-  - {rule: r-on, on: a, fact: f1, otherwise: {refusal: bad, status: 400, body: b}, source: "F.java:1"}
-  - {rule: r-off, fact: f2, otherwise: {refusal: gone, status: 404, body: b}, source: "F.java:2"}
+  - {rule: r-on, on: a, fact: f1, otherwise: bad, source: "F.java:1"}
+  - {rule: r-off, fact: f2, otherwise: gone, source: "F.java:2"}
 answers: {says: ok, structure: null}
+`),
+);
+
+const trigger = triggerSchema.parse(
+  Bun.YAML.parse(`
+{trigger: f, interface: f, operation: f, answers: {status: 200},
+ refuses: {bad: {status: 400, body: b}}, protocol: [p, q]}
+`),
+);
+
+const protocol = protocolSchema.parse(
+  Bun.YAML.parse(`
+target: t
+rules:
+  - {rule: p, applies-to: every write, fact: the body is an object, otherwise: {refusal: malformed, status: 400, body: m}, source: "P.java:1"}
+  - {rule: q, applies-to: every answer, fact: the answer is not cached, source: "P.java:2"}
+refuses: {gone: {status: 404, body: g}}
 `),
 );
 
@@ -18,6 +36,7 @@ test("a requirement on an input says it in its line, one that is not does not", 
     target: undefined,
     structures: [],
     common: undefined,
+    protocol: undefined,
     findings: [],
     interfaces: [
       {
@@ -29,6 +48,7 @@ test("a requirement on an input says it in its line, one that is not does not", 
           responses: {},
         },
         rules,
+        trigger,
         findings: [],
         scenarios: [],
         evidence: [],
@@ -56,8 +76,6 @@ test("a requirement on an input says it in its line, one that is not does not", 
       shared: false,
       fact: "f2",
       otherwise: "gone",
-      status: 404,
-      body: "b",
       short: "f2",
       source: "F.java:2",
       doubts: [],
@@ -70,6 +88,7 @@ test("a rule names the service it rests on, a step played keeps what the target 
     target: undefined,
     structures: [],
     common: undefined,
+    protocol: undefined,
     findings: [],
     interfaces: [
       {
@@ -88,6 +107,7 @@ effects:
 answers: {says: ok, structure: null}
 `),
         ),
+        trigger: undefined,
         findings: [],
         scenarios: [],
         evidence: [
@@ -148,6 +168,86 @@ exchanges:
   });
 });
 
+test("a call step says its call and the interface of its operation, played with what it was sent as and answered, written with nothing more", () => {
+  const read = (slug: string, played: boolean) =>
+    viewOfRoles({
+      target: undefined,
+      structures: [],
+      common: undefined,
+      protocol: undefined,
+      findings: [],
+      interfaces: [
+        {
+          bound: {
+            interface: "i",
+            method: "post",
+            pattern: "/a/{x}",
+            request: {},
+            responses: {},
+          },
+          rules,
+          trigger,
+          findings: [],
+          scenarios: [
+            {
+              slug,
+              scenario: {
+                rule: "answers",
+                situation: "s",
+                reached: "yes",
+                steps: [
+                  { when: "call", as: "u", call: { operation: "f", with: { x: 1 } } },
+                  { when: "after", as: "u", call: { operation: "g", with: {} } },
+                ],
+              },
+            },
+          ],
+          evidence: played
+            ? [
+                {
+                  slug,
+                  evidence: evidenceSchema.parse(
+                    Bun.YAML.parse(`
+rule: answers
+run: {target: t, version: v, at: "2026-11-13T10:00:00.000Z", clock: null}
+exchanges:
+  - {when: call, as: u, request: {method: post, path: /a/1}, response: {status: 200, body: null}}
+  - {when: after, as: u, unplayable: 'no reading declares the operation "g"'}
+`),
+                  ),
+                },
+              ]
+            : [],
+          judgements: [],
+        },
+      ],
+    }).extraction.scenarios[0]?.steps;
+  expect({ played: read("a", true), written: read("a", false) }).toEqual({
+    played: [
+      {
+        when: "call",
+        as: "u",
+        call: { operation: "f", with: { x: 1 } },
+        interface: "i",
+        method: "post",
+        path: "/a/1",
+        status: 200,
+        answer: null,
+      },
+      {
+        when: "after",
+        as: "u",
+        call: { operation: "g", with: {} },
+        unplayable: 'no reading declares the operation "g"',
+      },
+    ],
+    written: [
+      { when: "call", as: "u", call: { operation: "f", with: { x: 1 } }, interface: "i" },
+      { when: "after", as: "u", call: { operation: "g", with: {} } },
+    ],
+  });
+});
+
 test("the actors are the names the scenarios' steps call as, each once, a step called as nobody left out", () => {
   expect(
     actorsOf([
@@ -155,4 +255,85 @@ test("the actors are the names the scenarios' steps call as, each once, a step c
       { steps: [{ as: null }, { as: "b" }] },
     ]),
   ).toEqual(["a", "b"]);
+});
+
+test("a refusal's status is its trigger's, else the protocol's; a rule of the wire is listed apart and counted with none", () => {
+  const view = viewOfRoles({
+    target: undefined,
+    structures: [],
+    common: undefined,
+    protocol,
+    findings: [],
+    interfaces: [
+      {
+        bound: {
+          interface: "f",
+          method: "get",
+          pattern: "/a",
+          request: {},
+          responses: {},
+        },
+        rules,
+        trigger,
+        findings: [],
+        scenarios: [],
+        evidence: [],
+        judgements: [],
+      },
+    ],
+  });
+  const operation = view.extraction.operations[0]?.operation;
+  expect({
+    statuses: operation?.lines.map(({ rule, status }) => [rule, status]),
+    protocol: operation?.protocol,
+    rules: view.rules.map(({ rule, protocol }) => [rule, protocol ?? false]),
+    counts: view.counts,
+    triggers: view.extraction.triggers,
+  }).toEqual({
+    statuses: [
+      ["r-on", 400],
+      ["r-off", 404],
+      ["answers", undefined],
+    ],
+    protocol: [
+      {
+        kind: "protocol",
+        rule: "p",
+        shared: true,
+        fact: "the body is an object",
+        otherwise: "malformed",
+        status: 400,
+        body: "m",
+        short: "the body is an object",
+        source: "P.java:1",
+        doubts: [],
+      },
+      {
+        kind: "protocol",
+        rule: "q",
+        shared: true,
+        fact: "the answer is not cached",
+        short: "the answer is not cached",
+        source: "P.java:2",
+        doubts: [],
+      },
+    ],
+    rules: [
+      ["r-on", false],
+      ["r-off", false],
+      ["answers", false],
+      ["p", true],
+      ["q", true],
+    ],
+    counts: {
+      rules: {
+        holds: 0,
+        contradicted: 0,
+        "refused-unexpectedly": 0,
+        "not-shown": 0,
+        unjudged: 3,
+      },
+    },
+    triggers: [trigger],
+  });
 });

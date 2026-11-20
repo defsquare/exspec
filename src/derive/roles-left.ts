@@ -1,8 +1,16 @@
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Interface } from "../shapes/target.ts";
-import { checkCommon, checkStructuresFile } from "./check-reader.ts";
+import type { Callable } from "./callables.ts";
+import { checkCommon, checkProtocol, checkStructuresFile } from "./check-reader.ts";
 import { isAsWritten } from "./evidence.ts";
-import { builtOf, evidenceAt, judgementsIn, judgeTaskOf, textAt } from "./roles-files.ts";
+import {
+  builtOf,
+  callablesOf,
+  evidenceAt,
+  judgementsIn,
+  judgeTaskOf,
+  textAt,
+} from "./roles-files.ts";
 
 // What is left of one interface. Its reading to do: nothing can be built, recorded or
 // judged of it yet. Its reading done:
@@ -26,9 +34,10 @@ export type InterfaceLeft =
     };
 
 export type Left = {
-  // structures.yaml, roles/common.yaml: missing or failing their check
+  // each file, true when it is missing or fails its check
   readonly structures: boolean;
   readonly common: boolean;
+  readonly protocol: boolean;
   readonly interfaces: readonly InterfaceLeft[];
 };
 
@@ -36,16 +45,19 @@ export type Left = {
 export function interfaceLeft(
   files: readonly SourceFile[],
   bound: Interface,
+  callables: readonly Callable[] = callablesOf(files),
 ): InterfaceLeft {
   const name = bound.interface;
-  const built = builtOf(files, bound);
+  const built = builtOf(files, bound, { callables });
   if (built === undefined) return { interface: name, reading: "to-do" };
   const withEvidence = built.scenarios.map(({ slug, scenario }) => {
     const evidence = evidenceAt(files, name, slug);
     return {
       slug,
       evidence:
-        evidence !== undefined && isAsWritten(scenario, evidence) ? evidence : undefined,
+        evidence !== undefined && isAsWritten(scenario, evidence, callables)
+          ? evidence
+          : undefined,
     };
   });
   const references = withEvidence.flatMap(({ slug, evidence }) =>
@@ -85,9 +97,11 @@ export function leftOf({
   readonly files: readonly SourceFile[];
   readonly interfaces: readonly Interface[];
 }): Left {
+  const callables = callablesOf(files);
   return {
     structures: checkStructuresFile(textAt(files, "structures.yaml")).findings.length > 0,
     common: checkCommon(textAt(files, "roles/common.yaml")).findings.length > 0,
-    interfaces: interfaces.map((bound) => interfaceLeft(files, bound)),
+    protocol: checkProtocol(textAt(files, "roles/protocol.yaml")).findings.length > 0,
+    interfaces: interfaces.map((bound) => interfaceLeft(files, bound, callables)),
   };
 }

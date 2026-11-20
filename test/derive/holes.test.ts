@@ -47,7 +47,11 @@ test("the holes a request cites, and those inside a longer string outside the pa
       query: { q: "x{{m.body.id}}" },
       body: { a: ["{{p.body.id}}", "id {{p.body.id}}"] },
     }),
-  ).toEqual({ cited: ["m", "n", "p"], misplaced: ["query.q", "body.a.1"] });
+  ).toEqual({
+    cited: ["m", "n", "p"],
+    holes: ["m.body.id", "n.body.k", "m.body.id", "p.body.id", "p.body.id"],
+    misplaced: ["query.q", "body.a.1"],
+  });
 });
 
 test("a hole in a form's value is filled, its type kept as in a body", () => {

@@ -1,6 +1,7 @@
 import type { Trigger } from "../shapes/bindings.ts";
 import type { Extraction, Problem } from "../shapes/extraction.ts";
 import type { Interface, NamedShape } from "../shapes/target.ts";
+import { acceptedStatuses } from "./accepted.ts";
 import { fieldOf } from "./check-operations.ts";
 import { refusalsOf } from "./operation.ts";
 import { hasShapePath } from "./shape-path.ts";
@@ -42,27 +43,35 @@ export function checkBindings({
     at: string,
     shows: Trigger["answers"]["shows"],
     target: Interface | undefined,
-    status: string,
+    statuses: readonly string[],
   ): readonly Problem[] =>
     shows.flatMap((show, j) => {
       const unknown = structureNames.has(show.structure)
         ? []
         : [problem(`${at}.${j}.structure`, `unknown structure "${show.structure}"`)];
       if (target === undefined) return unknown;
-      const response = target.responses[status];
-      if (response === undefined) {
+      const answered = statuses.flatMap((status) => {
+        const response = target.responses[status];
+        return response === undefined ? [] : [{ status, response }];
+      });
+      if (answered.length === 0) {
         return [
           ...unknown,
-          problem(`${at}.${j}.at`, `"${target.interface}" has no response ${status}`),
+          problem(
+            `${at}.${j}.at`,
+            `"${target.interface}" has no response ${statuses.join(" or ")}`,
+          ),
         ];
       }
-      return hasShapePath(response.body, show.at, schemas)
+      return answered.some(({ response }) =>
+        hasShapePath(response.body, show.at, schemas),
+      )
         ? unknown
         : [
             ...unknown,
             problem(
               `${at}.${j}.at`,
-              `the response ${status} of "${target.interface}" has no ${show.at.join(".")}`,
+              `the response ${answered.map(({ status }) => status).join(" or ")} of "${target.interface}" has no ${show.at.join(".")}`,
             ),
           ];
     });
@@ -87,7 +96,7 @@ export function checkBindings({
       const shown = projection.shows.map(({ structure }) => structure);
       return [
         ...checkInterface(`projections.${i}.interface`, projection.interface),
-        ...checkShows(`projections.${i}.shows`, projection.shows, target, "200"),
+        ...checkShows(`projections.${i}.shows`, projection.shows, target, ["200"]),
         ...Object.entries(projection.locates ?? {}).flatMap(([field, place]) => [
           ...(shown.some((structure) => fieldOf(structures, [structure, field]))
             ? []
@@ -168,7 +177,7 @@ export function checkBindings({
           `${at}.answers.shows`,
           trigger.answers.shows,
           target,
-          String(trigger.answers.status),
+          acceptedStatuses(trigger).map(String),
         ),
       ];
     }),

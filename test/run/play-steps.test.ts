@@ -12,6 +12,7 @@ test("a get step that carries a body is unplayable, and the steps after it are n
     target,
     io,
     credentials: {},
+    callables: [],
     steps: [
       { when: "before", as: null, request: { method: "get", path: "/f/1" } },
       {
@@ -71,6 +72,7 @@ test("an observing io hands the side effects of each step to its exchange", asyn
     target,
     io: { ...io, takeSideEffects: async () => taken.shift() ?? [] },
     credentials: {},
+    callables: [],
     steps: [first, last],
   });
   expect(played.exchanges).toEqual([
@@ -96,6 +98,7 @@ test("a step whose side effects cannot be taken keeps its answer with no side-ef
       },
     },
     credentials: {},
+    callables: [],
     steps: [first, last],
   });
   expect({ exchanges: played.exchanges, notTaken: played.notTaken }).toEqual({
@@ -115,9 +118,61 @@ test("an io that observes nothing leaves the exchanges with no side-effects key"
     target,
     io,
     credentials: {},
+    callables: [],
     steps: [first, last],
   });
   expect(played.exchanges).toEqual([exchange(first, 1), exchange(last, 2)]);
+});
+
+test("a call step is sent as its operation's trigger says, a later hole reading the structure it answered", async () => {
+  const { target } = extract({});
+  if (target === undefined) throw new Error("the fixture declares a target");
+  const { io } = fakeIo({
+    "http://h/f/1": [{ status: 201, body: { data: { id: 5 } } }],
+    "http://h/g/5": [{ status: 200, body: null }],
+  });
+  const played = await playSteps({
+    dir: "/d",
+    target,
+    io,
+    credentials: {},
+    callables: [
+      {
+        operation: "f",
+        bound: {
+          interface: "f",
+          method: "post",
+          pattern: "/f/{x}",
+          request: { path: { x: "int" } },
+          responses: { "201": { body: { data: ["schema", "S"] } } },
+        },
+        takes: { x: { says: "an x" } },
+        places: { x: ["path", "x"] },
+        unplaced: [],
+        structure: "S",
+        fields: ["id"],
+        answer: { at: ["data"] },
+      },
+    ],
+    steps: [
+      { when: "arrange", as: null, name: "c", call: { operation: "f", with: { x: 1 } } },
+      { when: "call", as: null, request: { method: "get", path: "/g/{{c.id}}" } },
+    ],
+  });
+  expect(played.exchanges).toEqual([
+    {
+      when: "arrange",
+      as: null,
+      request: { method: "post", path: "/f/1" },
+      response: { status: 201, body: { data: { id: 5 } } },
+    },
+    {
+      when: "call",
+      as: null,
+      request: { method: "get", path: "/g/5" },
+      response: { status: 200, body: null },
+    },
+  ]);
 });
 
 const named: Step = { ...first, name: "m" };
@@ -158,6 +213,7 @@ test("a service step gives its condition with its holes filled, after the provid
       },
     },
     credentials: {},
+    callables: [],
     steps: [named, refuses, { when: "arrange", service: "s", is: "forgets-everything" }],
   });
   expect({ calls, exchanges: played.exchanges }).toEqual({
@@ -191,6 +247,7 @@ test("a service step not taken is unplayable with the reason, and the steps afte
       }),
     },
     credentials: {},
+    callables: [],
     steps: [named, refuses, last],
   });
   expect(played.exchanges).toEqual([
@@ -220,6 +277,7 @@ test("nothing is taken for a step that cannot be played", async () => {
       },
     },
     credentials: {},
+    callables: [],
     steps: [
       first,
       {

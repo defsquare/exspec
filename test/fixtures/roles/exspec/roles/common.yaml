@@ -1,80 +1,41 @@
 target: petclinic
-runs-with:
-  - setting: "security is on (HTTP Basic, every request authenticated)"
-    source: "exspec/target/compose.yaml:24"
-  - setting: "the database is PostgreSQL, the repository layer is Spring Data JPA"
-    source: "exspec/target/compose.yaml:22"
-  - setting: "the shipped default is security off and an in-memory database; the run overrides both"
-    source: "src/main/resources/application.properties:49"
-  - setting: "the service listens on 9966 inside the container, published as 18467, under the path /petclinic/"
-    source: "exspec/target/compose.yaml:20"
-  - setting: "three accounts exist: admin (owner admin, vet admin, admin roles), ann (owner admin), bob (vet admin)"
-    source: "src/main/resources/db/postgres/data.sql; exspec/target/seed.sh:13-14"
-rules:
+rules: 
   - rule: signed-in
-    applies-to: "every operation"
-    fact: the caller sends valid HTTP Basic credentials of a known, enabled account
-    otherwise: {refusal: unauthenticated, status: 401, body: "no problem-detail body is built by the application; the security filter answers before any controller"}
-    source: "src/main/java/org/springframework/samples/petclinic/security/BasicAuthenticationConfig.java:34-43"
+    applies-to: every operation
+    fact: "the caller sends valid HTTP Basic credentials of a known, enabled account"
+    otherwise: unauthenticated
+    source: src/main/java/org/springframework/samples/petclinic/security/BasicAuthenticationConfig.java:34-43
   - rule: owner-admin-role
     applies-to: "owners, pets and visits operations (v1 and v2)"
     fact: the caller holds the owner admin role
-    otherwise: {refusal: forbidden, status: 403, body: "not settled, see unsure"}
-    source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/OwnerRestControllerV1.java:74"
+    otherwise: forbidden
+    source: src/main/java/org/springframework/samples/petclinic/rest/controller/v1/OwnerRestControllerV1.java:74
   - rule: vet-admin-role
     applies-to: "vets and specialties operations, and creating, changing or deleting a pet type"
     fact: the caller holds the vet admin role
-    otherwise: {refusal: forbidden, status: 403, body: "not settled, see unsure"}
-    source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/VetRestControllerV1.java:56"
+    otherwise: forbidden
+    source: src/main/java/org/springframework/samples/petclinic/rest/controller/v1/VetRestControllerV1.java:56
   - rule: owner-or-vet-admin-role
-    applies-to: "listing and reading pet types"
+    applies-to: listing and reading pet types
     fact: the caller holds the owner admin role or the vet admin role
-    otherwise: {refusal: forbidden, status: 403, body: "not settled, see unsure"}
-    source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/PetTypeRestControllerV1.java:51"
+    otherwise: forbidden
+    source: src/main/java/org/springframework/samples/petclinic/rest/controller/v1/PetTypeRestControllerV1.java:51
   - rule: admin-role
-    applies-to: "creating a user"
+    applies-to: creating a user
     fact: the caller holds the admin role
-    otherwise: {refusal: forbidden, status: 403, body: "not settled, see unsure"}
-    source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/UserRestControllerV1.java:46"
+    otherwise: forbidden
+    source: src/main/java/org/springframework/samples/petclinic/rest/controller/v1/UserRestControllerV1.java:46
   - rule: user-has-a-role
-    applies-to: "creating a user"
+    applies-to: creating a user
     fact: the user to create carries at least one role
-    otherwise: {refusal: user-without-role, status: 500, body: "problem detail, title IllegalArgumentException, detail the generic unexpected-error text"}
-    source: "src/main/java/org/springframework/samples/petclinic/service/UserServiceImpl.java:20-22"
-errors:
-  - kind: "a field of the request body breaks a constraint (bean validation on the generated request types)"
-    status: 400
-    body: "problem detail: type is the request URL, title MethodArgumentNotValidException, detail 'The request contains invalid or missing parameters', a timestamp, and schemaValidationErrors, one entry per rejected field with message \"Field 'f' <constraint message> (rejected value: v)\" plus field, rejectedValue, defaultMessage"
-    source: "src/main/java/org/springframework/samples/petclinic/rest/advice/ExceptionControllerAdvice.java:117-148"
-  - kind: "a database constraint is violated while saving or deleting"
-    status: 404
-    body: "problem detail: title DataIntegrityViolationException, detail 'The requested resource could not be processed due to a data constraint violation', a timestamp, schemaValidationErrors empty"
-    source: "src/main/java/org/springframework/samples/petclinic/rest/advice/ExceptionControllerAdvice.java:97-108"
-  - kind: "any other exception raised while handling a call"
-    status: 500
-    body: "problem detail: title is the exception's class name, detail 'An unexpected error occurred while processing your request', a timestamp, schemaValidationErrors empty"
-    source: "src/main/java/org/springframework/samples/petclinic/rest/advice/ExceptionControllerAdvice.java:80-87"
-  - kind: "the thing asked for does not exist (read, update, delete by id; or a list that is empty)"
-    status: 404
-    body: "empty: the controller answers the status alone, no problem detail"
-    source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/OwnerRestControllerV1.java:81-95"
-  - kind: "the credentials are missing or wrong"
-    status: 401
-    body: "answered by the security filter, not by the advice; no problem detail"
-    source: "src/main/java/org/springframework/samples/petclinic/security/BasicAuthenticationConfig.java:38-40"
-contract:
-  - "the contract (openapi.yml) declares no security scheme and no 401 or 403 answer on any operation; the code answers 401 to every unauthenticated call"
-  - "the contract says an update answers 200 with the updated resource; the code answers 204, with the updated resource in the body"
-  - "the contract says a creation answers 201; the code does the same, with a Location header on creations of owners, pets, visits, pet types, vets and specialties; creating a user has none"
-  - "the contract declares a 404 only for a missing resource; the code also answers 404 for a database constraint violation and for an empty list of owners"
-  - "the contract declares a 500 on nearly every operation as a problem detail; the code builds it, and also builds it for what the contract has not planned"
-  - "the contract bounds fields (length, pattern); the code enforces them through bean validation on the generated request types, plus a birth-date rule on pets (not in the future, not over 50 years old)"
-unsure:
-  - about: "a caller signed in without the required role"
+    otherwise: user-without-role
+    source: src/main/java/org/springframework/samples/petclinic/service/UserServiceImpl.java:20-22
+unsure: 
+  - about: a caller signed in without the required role
     what: "403 or 500: the role check throws an access-denied exception inside the controller method, and the advice handler for any exception may take it first and answer 500 instead"
   - about: "a request body that cannot be read (malformed JSON, wrong type)"
     what: "no handler for it was read; the advice's catch-all handler might answer 500, or the framework default 400 may apply"
   - about: "a path id that is not an integer, or below the contract's minimum"
-    what: "no specific handler was read; the answer depends on framework defaults and on the catch-all"
-  - about: "the path id disagreeing with the id in the body on an update"
+    what: no specific handler was read; the answer depends on framework defaults and on the catch-all
+  - about: the path id disagreeing with the id in the body on an update
     what: "a helper can build such an error, but whether any controller uses it was not read"

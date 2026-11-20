@@ -28,11 +28,14 @@ export const reading: Files = {
   ...declared,
   "structures.yaml": "- {structure: S, identity: a, fields: {a: {type: string}}}",
   "roles/common.yaml": "target: t",
+  "roles/protocol.yaml": "target: t",
+  "roles/f/trigger.yaml":
+    "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
   "roles/f/rules.yaml": `
 operation: f
 requires:
-  - {rule: exists, fact: the item exists, otherwise: {refusal: not-found, status: 404, body: empty}, source: "F.java:1"}
-answers: {says: "200", structure: null}
+  - {rule: exists, fact: the item exists, otherwise: not-found, source: "F.java:1"}
+answers: {says: "the item", structure: null}
 `,
   "roles/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",

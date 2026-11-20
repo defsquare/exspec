@@ -69,7 +69,12 @@ export function phasesOf(examined: Examined, left: Left): Phases {
   const interfaces = staticFindings("interfaces", examined).length === 0;
   // as today, the interfaces are told done without the target; what follows needs both
   const reading =
-    target && interfaces && !left.structures && !left.common && every(() => true);
+    target &&
+    interfaces &&
+    !left.structures &&
+    !left.common &&
+    !left.protocol &&
+    every(() => true);
   const evidence =
     reading &&
     every(

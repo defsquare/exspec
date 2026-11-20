@@ -84,10 +84,7 @@ const events: readonly Event[] = [
     type: "gate-checked",
     ...reader("delete-pet"),
     ok: false,
-    findings: [
-      "rules.yaml: requires.0.otherwise: a refusal has a status",
-      "hints.yaml: missing",
-    ],
+    findings: ["trigger.yaml: missing", "hints.yaml: missing"],
   },
   { type: "agent-ended", ...reader("create-pet"), turns: 14, seconds: 55, cost: 0.7 },
   { type: "gate-checked", ...reader("create-pet"), ok: true, findings: [] },

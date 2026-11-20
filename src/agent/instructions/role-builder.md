@@ -12,7 +12,16 @@ requests of your scenarios and the system's answers.
   `effects`, and under `common` the names of the shared rules that apply to it) and
   `hints.yaml` (the reader's hints on how to reach each situation). You may not change a
   rule, drop one, or reword one.
-- `exspec/roles/common.yaml`: the shared rules, and what holds for the whole system.
+- In the same folder, `trigger.yaml`: how the system answers this operation on its wire —
+  the statuses an accepted call is answered with, and the status of each refusal the rules
+  name (`refuses`); under `protocol`, the names of the system's rules about its wire alone
+  that hold on this operation. A status tells you whether your scenario reached the case
+  you meant.
+- `exspec/roles/common.yaml`: the shared rules. `exspec/roles/protocol.yaml`: what holds for
+  the whole system on its wire — its rules about the wire alone, how a shared rule's
+  refusal is answered, how it is started.
+- In your task, the operations a step may call: for each, its inputs by name with what
+  each says, and the structure it answers with its fields.
 - `exspec/interfaces.yaml`: the system's HTTP interfaces, with the shape of what each
   accepts and answers. It may be large: search it.
 - The actors, named in your task. You never see their credentials: a step says who sends
@@ -33,17 +42,18 @@ One file per scenario, `scenarios/<slug>.yaml`, in the folder your task names; `
 the rule's name, or the rule's name and a suffix (`exists-2`) when a rule gets several:
 
 ```yaml
-rule: exists                    # the rule this scenario exercises: one of rules.yaml, or of its `common`; or `answers`
+rule: exists                    # the rule this scenario exercises: one of rules.yaml, of its `common`, of its trigger's `protocol`; or `answers`
 situation: an id that no item has
 reached: yes                    # or "no — <what stopped you>"
 steps:
-  - {when: arrange, as: ann, name: made, request: {method: post, path: /items, body: {name: "a"}}}
-  - {when: before, as: ann, request: {method: get, path: "/items/{{made.body.id}}"}}
-  - {when: call, as: bob, request: {method: put, path: "/items/{{made.body.id}}", body: {name: "b"}}}
-  - {when: after, as: ann, request: {method: get, path: "/items/{{made.body.id}}"}}
+  - {when: arrange, as: ann, name: made, call: {operation: add-item, with: {name: "a"}}}
+  - {when: before, as: ann, call: {operation: get-item, with: {id: "{{made.id}}"}}}
+  - {when: call, as: bob, call: {operation: rename-item, with: {id: "{{made.id}}", name: "b"}}}
+  - {when: after, as: ann, call: {operation: get-item, with: {id: "{{made.id}}"}}}
 ```
 
-- `call` is the one call to the operation under trial. Exactly one per scenario.
+- `call` is the one call to the operation under trial, the operation your task names.
+  Exactly one per scenario.
 - `arrange`: the calls that bring the system from its starting state to the situation.
 - `before`: the calls that **show the situation the rule is about is in place** just before
   the call — what a caller can see of it. For "the item has parts": reading the item and
@@ -52,11 +62,24 @@ steps:
   shows was not shown.
 - `after`: the calls that show what the call changed or left alone.
 - `as` is an actor's name, or `null` for a call by nobody (no credentials).
-- `request`: `method` (lower case), `path` (relative to the base URL), and when needed
-  `query` (a map) and `body`. An interface whose description has `form` takes its inputs
-  as a form: write `form`, a flat map of field to scalar, never `body`, for it
-  (`request: {method: post, path: /a, form: {to: "x", copy: true}}`). You write requests only, never an answer: the tool plays the
-  scenario and records what the system answered.
+- A step calls an operation of your task's list by its inputs' names: `call: {operation,
+  with}`, `with` a value for each input you give — those you need, none it does not take.
+  The tool sends it as the system expects it: the method, the path, where each input goes.
+  You write calls only, never an answer: the tool plays the scenario and records what the
+  system answered.
+- A step may have a `name`; a later step reads a field of what that step's operation
+  answered: `{{made.id}}` is the field `id` of the structure `add-item` answers, as your
+  task lists its fields — an identifier the system generated, for instance. Alone in a
+  string, the value keeps its type (a number stays a number). An operation that answers no
+  structure a hole can read is named by no hole.
+- A `request` is written only for what no call says: a rule about the wire (a body that is
+  a list where an object is due), a page or a route no operation covers, a body no input
+  names. `request`: `method` (lower case), `path` (relative to the base URL), and when
+  needed `query` (a map) and `body`; an interface whose description has `form` takes a
+  `form`, a flat map of field to scalar, never a `body`
+  (`request: {method: post, path: /a, form: {to: "x", copy: true}}`). A hole that names a
+  request reads its answer as it is: `{{page.body.data.id}}`, `{{page.status}}`. The tool
+  tells you when a request could have been a call, and gives the call: write it instead.
 - A step may give a **service** the judged system rests on one of its **conditions**: a
   service and its file are named in your task, and the file lists its conditions, each
   with what it says and the parameters it `takes`. Such a step is an `arrange` step, with
@@ -65,19 +88,16 @@ steps:
   A value of `with` may cite an earlier answer, as a request does.
 
   ```yaml
-  - {when: arrange, as: ann, name: sent, request: {method: post, path: /letters, body: {to: "u@x"}}}
-  - {when: arrange, service: s, is: refuses, with: {address: "{{sent.body.to}}"}}
+  - {when: arrange, as: ann, name: sent, call: {operation: send-letter, with: {to: "u@x"}}}
+  - {when: arrange, service: s, is: refuses, with: {address: "{{sent.to}}"}}
   - {when: arrange, service: s, is: forgets-everything}
   ```
 
   Conditions are given in the order written, each on top of the ones before. Every `play`
   starts each service with none of its conditions. What the judged system sends to the
   systems it calls is recorded with each step; you do not write it.
-- A step may have a `name`; a later step cites a value of its answer with
-  `{{name.body.key.key}}` or `{{name.body.list.0.key}}` — an identifier the system
-  generated, for instance. Alone in a string, the value keeps its type (a number stays a
-  number).
-- Every rule of `requires` and `effects`, and every name under `common`, gets at least one
+- Every rule of `requires` and `effects`, every name under `common` and under the
+  trigger's `protocol`, gets at least one
   scenario. A rule with several situations (its `when`, its hint, or a doubt of the reader
   under `unsure` names more than one) gets one scenario per situation. A scenario about
   what an accepted call answers, or about a doubt of the reader on it, has `rule: answers`.

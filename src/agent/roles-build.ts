@@ -1,7 +1,10 @@
+import type { Callable } from "../derive/callables.ts";
 import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
 import { isAsWritten } from "../derive/evidence.ts";
+import { operationsTold } from "../derive/operations-told.ts";
 import {
   builtOf,
+  callablesOf,
   evidenceAt,
   folderOf,
   slugsIn,
@@ -47,9 +50,10 @@ const hasEvidenceAsWritten = (
   files: readonly SourceFile[],
   name: string,
   { slug, scenario }: { readonly slug: string; readonly scenario: RoleScenario },
+  callables: readonly Callable[],
 ) => {
   const evidence = evidenceAt(files, name, slug);
-  return evidence !== undefined && isAsWritten(scenario, evidence);
+  return evidence !== undefined && isAsWritten(scenario, evidence, callables);
 };
 
 // A scenario file no rule can own is removed: the builder cannot. Its evidence follows in
@@ -79,7 +83,8 @@ async function* buildGate(
   // what the check then finds.
   const removed = await removeUnownedScenarios(rolesRun, name);
   const files = await readFiles(dir);
-  const built = builtOf(files, bound, Object.keys(credentials));
+  const callables = callablesOf(files);
+  const built = builtOf(files, bound, { actors: Object.keys(credentials), callables });
   if (built === undefined) return ["rules.yaml or hints.yaml no longer pass their check"];
   if (built.findings.length > 0) {
     return [
@@ -91,7 +96,9 @@ async function* buildGate(
     ];
   }
   const findings: string[] = [];
-  const toPlay = built.scenarios.filter((one) => !hasEvidenceAsWritten(files, name, one));
+  const toPlay = built.scenarios.filter(
+    (one) => !hasEvidenceAsWritten(files, name, one, callables),
+  );
   for (const { slug, scenario } of toPlay) {
     const { run, exchanges, notTaken } = await play(scenario.steps);
     const evidence: Evidence = { rule: scenario.rule, run, exchanges };
@@ -148,14 +155,23 @@ export function builderPrompt({
   readonly files: readonly SourceFile[];
 }): string {
   const folder = folderOf(name);
+  const told = operationsTold(callablesOf(files));
+  // what every builder of a target is told comes first, word for word the same: a prefix
+  // the provider of the model may serve again from one builder to the next
   return [
-    `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
-    `Your folder: exspec/${folder}/ — rules.yaml and hints.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
     `The actors: ${actors.length === 0 ? "none" : actors.join(", ")}; null for a call by nobody.`,
     ...servicesIn(files).map(
       ({ service, says }) =>
         `A service: ${service} — ${says}. Its conditions: exspec/${serviceFileOf(service)}.`,
     ),
+    ...(told.length === 0
+      ? []
+      : [
+          "The operations a step may call, by their inputs, and what each answers:",
+          ...told,
+        ]),
+    `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
+    `Your folder: exspec/${folder}/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
   ].join("\n");
 }
 
@@ -179,8 +195,10 @@ async function* builder(
     [
       "interfaces.yaml",
       "roles/common.yaml",
+      "roles/protocol.yaml",
       `${folder}/rules.yaml`,
       `${folder}/hints.yaml`,
+      `${folder}/trigger.yaml`,
     ].includes(path) ||
     under(`${folder}/scenarios`)(path) ||
     serviceReading(path);
@@ -198,7 +216,7 @@ async function* builder(
         tools,
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
-        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, in exspec/${folder}/, rules.yaml, hints.yaml and scenarios/, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
+        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, exspec/roles/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
         play: async (steps) => JSON.stringify((await play(steps)).exchanges, null, 2),
       },
       gate: () => buildGate(building, bound),
@@ -231,10 +249,13 @@ export async function* runBuilders(
     yield* startTarget(lifecycle);
     const credentials = await io.readCredentials(dir, target);
     const lock = oneAtATime();
+    // a builder writes scenarios, never a reading: the operations it may call stay as read
+    const callables = callablesOf(await readFiles(dir));
     const building: Building = {
       rolesRun,
       credentials,
-      play: (steps) => lock(() => playSteps({ dir, target, io, credentials, steps })),
+      play: (steps) =>
+        lock(() => playSteps({ dir, target, io, credentials, callables, steps })),
     };
     const done = yield* inParallel(
       interfaces.map((bound) => () => builder(building, bound)),
@@ -278,6 +299,7 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
         target,
         io,
         credentials,
+        callables: callablesOf(await readFiles(dir)),
         steps,
       });
       for (const message of notTaken) {

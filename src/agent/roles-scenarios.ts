@@ -1,4 +1,5 @@
-import { builtOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
+import type { Callable } from "../derive/callables.ts";
+import { builtOf, callablesOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
 import { playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence, RoleScenario } from "../shapes/roles.ts";
@@ -12,6 +13,8 @@ export type CheckedScenario = {
   readonly path: string;
   readonly scenario: RoleScenario;
   readonly evidence: Evidence | undefined;
+  // the operations its steps may call
+  readonly callables: readonly Callable[];
 };
 
 // The scenarios of the interfaces whose rules and scenarios pass the builder's check, by
@@ -26,11 +29,12 @@ export async function* checkedScenariosOf(
   { readonly scenarios: readonly CheckedScenario[]; readonly passed: boolean }
 > {
   const files = await rolesRun.readFiles(rolesRun.dir);
+  const callables = callablesOf(files);
   const considered: CheckedScenario[] = [];
   let passed = true;
   for (const bound of interfaces) {
     const name = bound.interface;
-    const built = builtOf(files, bound, actors);
+    const built = builtOf(files, bound, { actors, callables });
     const findings =
       built === undefined
         ? ["rules.yaml or hints.yaml no longer pass their check"]
@@ -48,7 +52,14 @@ export async function* checkedScenariosOf(
     }
     for (const { slug, scenario } of built.scenarios) {
       const evidence = evidenceAt(files, name, slug);
-      considered.push({ name, slug, path: `${name}/${slug}`, scenario, evidence });
+      considered.push({
+        name,
+        slug,
+        path: `${name}/${slug}`,
+        scenario,
+        evidence,
+        callables,
+      });
     }
   }
   const scenarios = considered.toSorted(
@@ -66,13 +77,14 @@ type Stack = {
 // a reset and the scenario's steps, the copy shown
 export async function* playOnce(
   { rolesRun: { dir, io }, target, credentials }: Stack,
-  { name, slug, scenario }: CheckedScenario,
+  { name, slug, scenario, callables }: CheckedScenario,
 ): AsyncGenerator<Event, Evidence> {
   const { run, exchanges, notTaken } = await playSteps({
     dir,
     target,
     io,
     credentials,
+    callables,
     steps: scenario.steps,
   });
   for (const message of notTaken) {

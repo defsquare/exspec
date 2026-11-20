@@ -305,6 +305,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
       ...declared,
       "structures.yaml": reading["structures.yaml"] ?? "",
       "roles/common.yaml": reading["roles/common.yaml"] ?? "",
+      "roles/protocol.yaml": reading["roles/protocol.yaml"] ?? "",
     },
     [{ writes: {} }, { writes: {} }, { writes: {} }, { writes: {} }],
   );

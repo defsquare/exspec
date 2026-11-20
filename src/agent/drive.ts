@@ -63,23 +63,33 @@ const toolInput = z
     path: z.string(),
     pattern: z.string(),
     glob: z.string(),
-    steps: z.array(z.object({ when: z.string(), request: stepRequestSchema.optional() })),
+    steps: z.array(
+      z.object({
+        when: z.string(),
+        request: stepRequestSchema.optional(),
+        call: z.object({ operation: z.string() }).optional(),
+      }),
+    ),
   })
   .partial();
 
 const playName = "mcp__exspec__play";
 
 // the shell command's first line, the path or pattern a tool works on, or the call a play
-// sends (its first step's when there is none); 120 characters
+// sends (its first step's when there is none) — a request, or the operation called;
+// 120 characters
 function aboutOf(input: unknown): string {
   const parsed = toolInput.safeParse(input);
   const { command, file_path, pattern, steps } = parsed.success ? parsed.data : {};
-  const sent = steps?.flatMap(({ when, request }) =>
-    request === undefined ? [] : [{ when, request }],
+  const sent = steps?.flatMap(({ when, request, call }) =>
+    request !== undefined
+      ? [{ when, said: `${request.method} ${request.path}` }]
+      : call !== undefined
+        ? [{ when, said: call.operation }]
+        : [],
   );
   const step = sent?.find(({ when }) => when === "call") ?? sent?.[0];
-  const played =
-    step === undefined ? undefined : `${step.request.method} ${step.request.path}`;
+  const played = step?.said;
   return (command ?? file_path ?? pattern ?? played ?? "")
     .replace(/\n[\s\S]*/, "")
     .slice(0, 120);

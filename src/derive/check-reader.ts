@@ -3,6 +3,8 @@ import {
   type Common,
   commonSchema,
   hintsSchema,
+  type Protocol,
+  protocolSchema,
   type Rules,
   readYaml,
   rulesSchema,
@@ -13,14 +15,55 @@ import { checkStructures } from "./check-structures.ts";
 const findingsOf = (read: { readonly findings: readonly string[] } | object) =>
   "findings" in read ? read.findings : [];
 
-// undefined text: the file is not there
+// undefined text: the file is not there; common: as it parses, findings or not
 export function checkCommon(text: string | undefined): {
   readonly common?: Common;
   readonly findings: readonly string[];
 } {
   if (text === undefined) return { findings: ["common.yaml: missing"] };
   const read = readYaml("common.yaml", text, commonSchema);
-  return "value" in read ? { common: read.value, findings: [] } : read;
+  if (!("value" in read)) return read;
+  return { common: read.value, findings: [] };
+}
+
+// undefined text: the file is not there
+export function checkProtocol(text: string | undefined): {
+  readonly protocol?: Protocol;
+  readonly findings: readonly string[];
+} {
+  if (text === undefined) return { findings: ["protocol.yaml: missing"] };
+  const read = readYaml("protocol.yaml", text, protocolSchema);
+  if (!("value" in read)) return read;
+  return { protocol: read.value, findings: refusalsSaidTwice(read.value) };
+}
+
+// A refusal said by two places of the file, with a status or a body that differ:
+//   rules [{rule: a, otherwise: {refusal: r, status: 400, body: "x"}}], refuses {r: {status: 422, body: "x"}}
+//   -> 'protocol.yaml: the refusal "r" is said by the rule "a" and by refuses with another status'
+function refusalsSaidTwice({ rules, refuses }: Protocol): readonly string[] {
+  const said = [
+    ...rules.flatMap(({ rule, otherwise }) =>
+      otherwise === undefined ? [] : [{ by: `the rule "${rule}"`, ...otherwise }],
+    ),
+    ...Object.entries(refuses).map(([refusal, wire]) => ({
+      refusal,
+      by: "refuses",
+      ...wire,
+    })),
+  ];
+  return said.flatMap((one) => {
+    const first = said.find(({ refusal }) => refusal === one.refusal);
+    if (first === undefined || first === one) return [];
+    const differs = [
+      ...(first.status === one.status ? [] : ["status"]),
+      ...(first.body === one.body ? [] : ["body"]),
+    ];
+    return differs.length === 0
+      ? []
+      : [
+          `protocol.yaml: the refusal "${one.refusal}" is said by ${first.by} and by ${one.by} with another ${differs.join(" and ")}`,
+        ];
+  });
 }
 
 const bounds = ["min-length", "max-length", "min", "max"] as const;

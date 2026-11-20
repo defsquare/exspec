@@ -5,7 +5,7 @@ common: [signed-in, owner-admin-role]
 requires:
   - rule: pet-exists
     fact: a pet with the given id exists
-    otherwise: {refusal: not-found, status: 404, body: "empty: the status alone, no problem detail"}
+    otherwise: not-found
     source: "src/main/java/org/springframework/samples/petclinic/rest/controller/v1/PetRestControllerV1.java:89-93"
 effects:
   - rule: pet-removed
@@ -24,7 +24,7 @@ effects:
     when: "other pets share the pet's type"
     says: The pet's type still exists.
     source: "src/main/java/org/springframework/samples/petclinic/model/Pet.java:37"
-answers: {says: "204 with an empty body", structure: null}
+answers: {says: "an empty body", structure: null}
 unsure:
   - rule: pet-type-kept
     what: "the pet's type relation cascades all operations, so deleting the pet may try to delete its type: refused by a constraint (404 problem detail, nothing deleted) when other pets use it, or the type deleted when none does"

@@ -55,7 +55,7 @@ test("a file that is not YAML, breaks its schema or is missing is said so", () =
       operation: "delete-pet",
       common,
       structures,
-      rules: rulesText.replace("status: 404", 'status: "404"'),
+      rules: rulesText.replace("otherwise: not-found", "otherwise: {refusal: not-found}"),
       hints: "- [",
     }),
     checkRulesAndHints({
@@ -69,7 +69,7 @@ test("a file that is not YAML, breaks its schema or is missing is said so", () =
   ]).toEqual([
     {
       findings: [
-        "rules.yaml: requires.0.otherwise.status: Invalid input: expected number, received string",
+        "rules.yaml: requires.0.otherwise: Invalid input: expected string, received object",
         "hints.yaml: not YAML: YAML Parse error: Unexpected token",
       ],
     },
@@ -109,7 +109,7 @@ test("structures with a bound, an identity no field holds, or none at all give a
 
 test("a requirement on an input its operation does not take gives a finding", () => {
   const requirement = (on: string) =>
-    `  - {rule: r-${on}, on: ${on}, fact: f, otherwise: {refusal: bad, status: 400, body: b}, source: "F.java:1"}`;
+    `  - {rule: r-${on}, on: ${on}, fact: f, otherwise: bad, source: "F.java:1"}`;
   expect(
     checkRulesAndHints({
       operation: "f",

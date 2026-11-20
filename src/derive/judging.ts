@@ -2,6 +2,7 @@ import type { Trigger } from "../shapes/bindings.ts";
 import type { Extraction } from "../shapes/extraction.ts";
 import type { Look, Noise, PlayedScenario, Reading } from "../shapes/scenario.ts";
 import type { Operation } from "../shapes/specification.ts";
+import { acceptedStatuses } from "./accepted.ts";
 import { deepEqual } from "./json.ts";
 import { termsOf } from "./reading.ts";
 import { type Judged, judgeFact } from "./truth.ts";
@@ -16,13 +17,13 @@ export type Judging = {
   readonly trigger: Trigger;
 };
 
-// accepted: the trigger's status; refused: a 4xx; anything else is neither
+// accepted: one of the trigger's statuses; refused: a 4xx; anything else is neither
 export function outcomeOf({
   played,
   trigger,
 }: Pick<Judging, "played" | "trigger">): "accepted" | "refused" | "neither" {
   const { status } = played.act.response;
-  if (status === trigger.answers.status) return "accepted";
+  if (acceptedStatuses(trigger).includes(status)) return "accepted";
   return status >= 400 && status < 500 ? "refused" : "neither";
 }
 

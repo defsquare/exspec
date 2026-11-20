@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { judgeTask } from "../../src/derive/judge-task.ts";
-import type { Common, Evidence, Rules } from "../../src/shapes/roles.ts";
+import type { Trigger } from "../../src/shapes/bindings.ts";
+import type { Common, Evidence, Protocol, Rules } from "../../src/shapes/roles.ts";
 import type { Interface } from "../../src/shapes/target.ts";
 
 const bound: Interface = {
@@ -13,19 +14,50 @@ const bound: Interface = {
 
 const common: Common = {
   target: "t",
-  "runs-with": [{ setting: "security is on", source: "c.yaml:1" }],
   rules: [
     {
       rule: "signed-in",
       "applies-to": "every operation",
       fact: "the caller is signed in",
-      otherwise: { refusal: "unauthenticated", status: 401, body: "nothing" },
+      otherwise: "unauthenticated",
       source: "S.java:1",
     },
   ],
+  unsure: [],
+};
+
+const protocol: Protocol = {
+  target: "t",
+  "runs-with": [{ setting: "security is on", source: "c.yaml:1" }],
+  rules: [
+    {
+      rule: "no-store",
+      "applies-to": "every answer",
+      fact: "the answer is not to be cached",
+      source: "P.java:1",
+    },
+    {
+      rule: "json-body",
+      "applies-to": "every write",
+      fact: "the body is a JSON object",
+      otherwise: { refusal: "malformed", status: 400, body: "an error" },
+      source: "P.java:2",
+    },
+  ],
+  refuses: { unauthenticated: { status: 401, body: "nothing" } },
   errors: [],
   contract: [],
   unsure: [],
+};
+
+const trigger: Trigger = {
+  trigger: "f",
+  interface: "f",
+  operation: "f",
+  sends: {},
+  answers: { status: 204, shows: [] },
+  refuses: { "not-found": { status: 404, body: "empty" } },
+  protocol: ["no-store"],
 };
 
 const rules: Rules = {
@@ -36,7 +68,7 @@ const rules: Rules = {
     {
       rule: "exists",
       fact: "the item exists",
-      otherwise: { refusal: "not-found", status: 404, body: "empty" },
+      otherwise: "not-found",
       source: "F.java:2",
     },
   ],
@@ -64,7 +96,7 @@ const recordings = [
 ];
 
 test("the judge's task: the operation, its requirements once, each recording in slug order", () => {
-  expect(judgeTask({ bound, common, rules, recordings }).text).toEqual(
+  expect(judgeTask({ bound, common, protocol, rules, trigger, recordings }).text).toEqual(
     `The operation: f, DELETE /a/{id}
 
 What the system under trial runs with:
@@ -76,13 +108,39 @@ ${Bun.YAML.stringify(
     {
       rule: "exists",
       fact: "the item exists",
-      otherwise: { refusal: "not-found", status: 404, body: "empty" },
+      otherwise: "not-found",
     },
     {
       rule: "signed-in",
       "applies-to": "every operation",
       fact: "the caller is signed in",
-      otherwise: { refusal: "unauthenticated", status: 401, body: "nothing" },
+      otherwise: "unauthenticated",
+    },
+  ],
+  null,
+  2,
+).trimEnd()}
+
+How this target answers the operation:
+${Bun.YAML.stringify(
+  {
+    accepted: [204],
+    refuses: {
+      unauthenticated: { status: 401, body: "nothing" },
+      "not-found": { status: 404, body: "empty" },
+    },
+  },
+  null,
+  2,
+).trimEnd()}
+
+The target's rules about its wire on this operation:
+${Bun.YAML.stringify(
+  [
+    {
+      rule: "no-store",
+      "applies-to": "every answer",
+      fact: "the answer is not to be cached",
     },
   ],
   null,
@@ -99,7 +157,7 @@ ${Bun.YAML.stringify(
       requirement: {
         rule: "exists",
         fact: "the item exists",
-        otherwise: { refusal: "not-found", status: 404, body: "empty" },
+        otherwise: "not-found",
       },
     },
     exchanges: evidence("exists", 404).exchanges,
@@ -123,11 +181,13 @@ ${Bun.YAML.stringify(
 });
 
 test("a recording's hash changes with its own part only", () => {
-  const before = judgeTask({ bound, common, rules, recordings }).of;
+  const before = judgeTask({ bound, common, protocol, rules, trigger, recordings }).of;
   const after = judgeTask({
     bound,
     common,
+    protocol,
     rules,
+    trigger,
     recordings: [
       { slug: "removed", evidence: evidence("removed", 204) },
       { slug: "exists", evidence: evidence("exists", 400) },
@@ -140,14 +200,16 @@ test("a recording's hash changes with its own part only", () => {
 });
 
 test("every recording's hash changes with what all of them are judged with", () => {
-  const before = judgeTask({ bound, common, rules, recordings }).of;
+  const before = judgeTask({ bound, common, protocol, rules, trigger, recordings }).of;
   const after = judgeTask({
     bound,
-    common: {
-      ...common,
+    common,
+    protocol: {
+      ...protocol,
       "runs-with": [{ setting: "security is off", source: "c.yaml:1" }],
     },
     rules,
+    trigger,
     recordings,
   }).of;
   expect({
@@ -162,8 +224,8 @@ test("the judge is given nothing of the input a requirement is on", () => {
     takes: { a: { says: "s" } },
     requires: rules.requires.map((r) => ({ ...r, on: "a" })),
   };
-  const a = judgeTask({ bound, common, rules: on, recordings });
-  const b = judgeTask({ bound, common, rules, recordings });
+  const a = judgeTask({ bound, common, protocol, rules: on, trigger, recordings });
+  const b = judgeTask({ bound, common, protocol, rules, trigger, recordings });
   expect(a).toEqual(b);
 });
 
@@ -172,15 +234,45 @@ test("a recording's hash does not move with the noise beside its evidence", () =
     ...evidence("removed", 204),
     noise: [{ at: ["exchanges", 0, "response", "body"], class: 1 }],
   };
-  const before = judgeTask({ bound, common, rules, recordings }).of;
+  const before = judgeTask({ bound, common, protocol, rules, trigger, recordings }).of;
   const after = judgeTask({
     bound,
     common,
+    protocol,
     rules,
+    trigger,
     recordings: [
       { slug: "removed", evidence: withNoise },
       { slug: "exists", evidence: evidence("exists", 404) },
     ],
   }).of;
   expect(after).toEqual(before);
+});
+
+test("a recording of a rule of the target's wire is given that rule", () => {
+  const { text } = judgeTask({
+    bound,
+    common,
+    protocol,
+    rules,
+    trigger,
+    recordings: [{ slug: "no-store", evidence: evidence("no-store", 204) }],
+  });
+  expect(text.split("---\n")[1]).toEqual(
+    Bun.YAML.stringify(
+      {
+        recording: "no-store",
+        rule: {
+          protocol: {
+            rule: "no-store",
+            "applies-to": "every answer",
+            fact: "the answer is not to be cached",
+          },
+        },
+        exchanges: evidence("no-store", 204).exchanges,
+      },
+      null,
+      2,
+    ).trimEnd(),
+  );
 });

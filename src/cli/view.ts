@@ -1,12 +1,17 @@
 import { basename, join } from "node:path";
 import { checkBuilt } from "../derive/check-built.ts";
 import { checkProvider, providerFolderOf } from "../derive/check-provider.ts";
-import { checkCommon, checkStructuresFile } from "../derive/check-reader.ts";
+import {
+  checkCommon,
+  checkProtocol,
+  checkStructuresFile,
+} from "../derive/check-reader.ts";
 import { checkService, servicesIn } from "../derive/check-service.ts";
 import { placeOperations } from "../derive/placing.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
 import {
   actorsNamed,
+  callablesOf,
   folderOf,
   judgementsIn,
   readerFilesOf,
@@ -15,6 +20,7 @@ import {
 } from "../derive/roles-files.ts";
 import { actorsOf, type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
 import { type ReadProvider, viewOfServices } from "../derive/services-view.ts";
+import { triggerSchema } from "../shapes/bindings.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 import { providerSchema } from "../shapes/provider.ts";
 import { evidenceSchema, readYaml, rulesSchema } from "../shapes/roles.ts";
@@ -72,8 +78,10 @@ function readingsOf(files: readonly SourceFile[]) {
     ),
   );
   const common = checkCommon(textAt(files, "roles/common.yaml"));
+  const protocol = checkProtocol(textAt(files, "roles/protocol.yaml"));
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
   const { providers, findings } = readAndCheckProviders(files);
+  const callables = callablesOf(files);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
     const folder = folderOf(name);
@@ -82,6 +90,11 @@ function readingsOf(files: readonly SourceFile[]) {
       text === undefined
         ? undefined
         : parsedValue(readYaml("rules.yaml", text, rulesSchema));
+    const triggerText = textAt(files, `${folder}/trigger.yaml`);
+    const trigger =
+      triggerText === undefined
+        ? undefined
+        : parsedValue(readYaml("trigger.yaml", triggerText, triggerSchema));
     const written = slugsIn(files, `${folder}/scenarios`);
     const built =
       rules === undefined || written.length === 0
@@ -89,13 +102,16 @@ function readingsOf(files: readonly SourceFile[]) {
         : checkBuilt({
             bound,
             rules,
+            protocol: trigger?.protocol ?? [],
             actors: actorsNamed(written),
             services: servicesIn(files),
+            callables,
             files: written,
           });
     return {
       bound,
       rules,
+      trigger,
       findings:
         text === undefined
           ? []
@@ -112,9 +128,10 @@ function readingsOf(files: readonly SourceFile[]) {
     target: extraction.target,
     structures: extraction.structures,
     common: common.common,
+    protocol: protocol.protocol,
     findings: [
       ...structures.findings,
-      ...common.findings.map((f) => `roles/${f}`),
+      ...[...common.findings, ...protocol.findings].map((f) => `roles/${f}`),
       ...findings,
     ],
     interfaces,

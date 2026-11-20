@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import type { Callable } from "../../src/derive/callables.ts";
 import {
   compareEvidence,
   evidenceAnswers,
@@ -300,6 +301,61 @@ const scenarioOf = (steps: readonly Step[]): RoleScenario => ({
   steps,
 });
 
+const callables: readonly Callable[] = [
+  {
+    operation: "f",
+    bound: {
+      interface: "f",
+      method: "post",
+      pattern: "/s/{x}",
+      request: { path: { x: "string" }, body: { n: "int" } },
+      responses: { "201": { body: { data: ["schema", "S"] } } },
+    },
+    takes: { x: { says: "the s" }, n: { says: "a number" } },
+    places: { x: ["path", "x"], n: ["body", "n"] },
+    unplaced: [],
+    structure: "S",
+    fields: ["id"],
+    answer: { at: ["data"] },
+  },
+];
+
+const asWritten = (scenario: RoleScenario, evidence: Evidence) =>
+  isAsWritten(scenario, evidence, callables);
+
+const calls = scenarioOf([
+  {
+    when: "arrange",
+    as: "a",
+    name: "c",
+    call: { operation: "f", with: { x: "p", n: 1 } },
+  },
+  { when: "call", as: "a", call: { operation: "f", with: { x: "{{c.id}}", n: 2 } } },
+]);
+const sentAs = (id: number, path: string) =>
+  evidenceOf([
+    {
+      when: "arrange",
+      as: "a",
+      request: { method: "post", path: "/s/p", body: { n: 1 } },
+      response: { status: 201, body: { data: { id } } },
+    },
+    {
+      when: "call",
+      as: "a",
+      request: { method: "post", path, body: { n: 2 } },
+      response: { status: 201, body: { data: { id: 8 } } },
+    },
+  ]);
+
+test("a call step is of it as written when its exchange sent the request its trigger gives, a hole read in the structure answered", () => {
+  expect([
+    asWritten(calls, sentAs(7, "/s/7")),
+    asWritten(calls, sentAs(7, "/s/8")),
+    isAsWritten(calls, sentAs(7, "/s/7"), []),
+  ]).toEqual([true, false, false]);
+});
+
 const written = scenarioOf([step("/a"), step("/b")]);
 const given = evidenceOf([
   exchange({ status: 200, body: null }, "/a"),
@@ -307,25 +363,25 @@ const given = evidenceOf([
 ]);
 
 test("the evidence a scenario gives is of it as written", () => {
-  expect(isAsWritten(written, given)).toEqual(true);
+  expect(asWritten(written, given)).toEqual(true);
 });
 
 test("another rule is not of it as written", () => {
-  expect(isAsWritten({ ...written, rule: "q" }, given)).toEqual(false);
+  expect(asWritten({ ...written, rule: "q" }, given)).toEqual(false);
 });
 
 test("a step's request changed is not of it as written", () => {
-  expect(isAsWritten(scenarioOf([step("/a"), step("/c")]), given)).toEqual(false);
+  expect(asWritten(scenarioOf([step("/a"), step("/c")]), given)).toEqual(false);
 });
 
 test("a step added is not of it as written", () => {
-  expect(isAsWritten(scenarioOf([step("/a"), step("/b"), step("/c")]), given)).toEqual(
+  expect(asWritten(scenarioOf([step("/a"), step("/b"), step("/c")]), given)).toEqual(
     false,
   );
 });
 
 test("another actor is not of it as written", () => {
-  expect(isAsWritten(scenarioOf([step("/a"), step("/b", { as: "z" })]), given)).toEqual(
+  expect(asWritten(scenarioOf([step("/a"), step("/b", { as: "z" })]), given)).toEqual(
     false,
   );
 });
@@ -338,11 +394,11 @@ const answered = (id: number, path: string) =>
   ]);
 
 test("a hole filled from an earlier answer of the evidence is of it as written", () => {
-  expect(isAsWritten(withHole, answered(7, "/items/7"))).toEqual(true);
+  expect(asWritten(withHole, answered(7, "/items/7"))).toEqual(true);
 });
 
 test("a hole not filled from the earlier answer of the evidence is not of it as written", () => {
-  expect(isAsWritten(withHole, answered(8, "/items/7"))).toEqual(false);
+  expect(asWritten(withHole, answered(8, "/items/7"))).toEqual(false);
 });
 
 const givenS = scenarioOf([
@@ -356,13 +412,13 @@ const gave = (is: string, address: string) =>
   ]);
 
 test("a service step is of it as written when its exchange gave the condition with its holes filled", () => {
-  expect(isAsWritten(givenS, gave("refuses", "u@x"))).toEqual(true);
+  expect(asWritten(givenS, gave("refuses", "u@x"))).toEqual(true);
 });
 
 test("a service step is not of it as written when its exchange gave another condition or another value", () => {
   expect([
-    isAsWritten(givenS, gave("forgets-everything", "u@x")),
-    isAsWritten(givenS, gave("refuses", "v@x")),
+    asWritten(givenS, gave("forgets-everything", "u@x")),
+    asWritten(givenS, gave("refuses", "v@x")),
   ]).toEqual([false, false]);
 });
 
@@ -394,7 +450,7 @@ test("what a service step gave is in the classes of noise, and never a differenc
 
 test("an evidence ending on an unplayable exchange is not of it as written", () => {
   expect(
-    isAsWritten(
+    asWritten(
       written,
       evidenceOf([exchange({ status: 200, body: null }, "/a"), unplayable]),
     ),
@@ -415,7 +471,7 @@ const formEvidence = (to: string) =>
 
 test("an exchange that sent the step's form is of it as written, another value is not", () => {
   expect([
-    isAsWritten(scenarioOf([formStep("x")]), formEvidence("x")),
-    isAsWritten(scenarioOf([formStep("x")]), formEvidence("y")),
+    asWritten(scenarioOf([formStep("x")]), formEvidence("x")),
+    asWritten(scenarioOf([formStep("x")]), formEvidence("y")),
   ]).toEqual([true, false]);
 });

@@ -6,5 +6,7 @@ const roles = join(extraction, "roles");
 
 export const structuresText = await Bun.file(join(extraction, "structures.yaml")).text();
 export const commonText = await Bun.file(join(roles, "common.yaml")).text();
+export const protocolText = await Bun.file(join(roles, "protocol.yaml")).text();
 export const rulesText = await Bun.file(join(roles, "delete-pet/rules.yaml")).text();
 export const hintsText = await Bun.file(join(roles, "delete-pet/hints.yaml")).text();
+export const triggerText = await Bun.file(join(roles, "delete-pet/trigger.yaml")).text();

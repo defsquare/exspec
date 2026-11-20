@@ -7,7 +7,12 @@ import { declared, type Files, filesOf, points } from "../roles-left-fixture.ts"
 const sourceOf = (files: Files) =>
   Object.entries(files).map(([path, text]) => ({ path, text }));
 
-const nothingLeft: Left = { structures: false, common: false, interfaces: [] };
+const nothingLeft: Left = {
+  structures: false,
+  common: false,
+  protocol: false,
+  interfaces: [],
+};
 
 function phasesAt(files: ReturnType<typeof filesOf>) {
   const examined = declaredIn(files);
@@ -108,6 +113,7 @@ test("a phase is done only when the one before it is", () => {
   const left: Left = {
     structures: true,
     common: false,
+    protocol: false,
     interfaces: [
       {
         interface: "f",

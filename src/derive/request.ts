@@ -62,6 +62,10 @@ export function fillRequest({
       body = setIn(body, keys, value);
     } else if (place[0] === "query") {
       query.append(place[1], text(value));
+    } else if (place[0] === "form") {
+      return {
+        refused: `"${name}" is sent in a form by "${by}", which a call does not send`,
+      };
     } else {
       path = path.replaceAll(`{${place[1]}}`, encodeURIComponent(text(value)));
     }
