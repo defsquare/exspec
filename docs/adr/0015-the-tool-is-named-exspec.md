@@ -1,6 +1,7 @@
 # ADR-0015 — The tool is named exspec; an extraction is `<dir>/exspec/`
 
 Status: Accepted (2026-11-19) — the name, the directory and the mark settled by the user.
+The mark superseded by [ADR-0017](0017-the-mark-is-a-cloche-over-ex.md).
 
 ## Context
 

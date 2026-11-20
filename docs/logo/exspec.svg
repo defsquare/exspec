@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -84 348 108" role="img" aria-label="exspec" font-family="Menlo, 'DejaVu Sans Mono', Consolas, monospace" font-size="80">
+  <!-- origin = start of the baseline of "ex"; one letter is 48 wide, whatever the font -->
+  <style>
+    :root { color-scheme: light dark; }
+    .ink { fill: #1a2a36; }
+    @media (prefers-color-scheme: dark) { .ink { fill: #fff; } }
+  </style>
+  <path d="M-16 0V-76H112V0" fill="none" stroke="#f65e5e" stroke-width="10"/>
+  <text class="ink" textLength="96">ex</text>
+  <text class="ink" x="128" textLength="192">spec</text>
+</svg>

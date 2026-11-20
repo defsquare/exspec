@@ -1,4 +1,4 @@
-# exspec
+<img src="docs/logo/exspec.svg" alt="exspec" width="260">
 
 The behavioural contract of a software, extracted from what the software is seen to do.
 

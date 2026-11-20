@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -84 348 108" role="img" aria-label="exspec" font-family="Menlo, 'DejaVu Sans Mono', Consolas, monospace" font-size="80">
+  <!-- origin = start of the baseline of "ex"; one letter is 48 wide, whatever the font -->
+  <style>
+    :root { color-scheme: light dark; }
+    .ink { fill: #1a2a36; }
+    .wall { stroke: #1a2a36; }
+    @media (prefers-color-scheme: dark) { .ink { fill: #fff; } .wall { stroke: #fff; } }
+    /* the beam rests under the ceiling, sweeps down to the baseline, rests, comes back.
+       Not animated — a reader who asked for less motion — it lies on the baseline and
+       closes the cloche. */
+    @media (prefers-reduced-motion: no-preference) { .beam { animation: sweep 3.6s infinite; } }
+    @keyframes sweep {
+      0%, 8%, 100% { transform: translateY(-62px); animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+      50%, 58% { transform: translateY(-8px); animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+    }
+  </style>
+  <path class="wall" d="M-16 0V-76H112V0" fill="none" stroke-width="10"/>
+  <text class="ink" textLength="96">ex</text>
+  <text class="ink" x="128" textLength="192">spec</text>
+  <!-- it starts at the inner face of the left wall and leaves through the right one -->
+  <g class="beam" stroke="#f65e5e">
+    <path d="M-11 0H136" stroke-width="9" opacity=".22"/>
+    <path d="M-11 0H136" stroke-width="3"/>
+  </g>
+</svg>

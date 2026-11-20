@@ -622,6 +622,21 @@ them in; each of the first five is a branch of its own.
 - **Source.** `docs/branches/worktree-ux-audit-view.md` at `5c56498`, its Journal and
   Backlog.
 
+## Loose ends of the mark
+
+- **Seen.** Drawn on a board and thrown away: under 32 px the word under its cloche is
+  not read, the cloche over the `x` alone is, down to 16 px. No file of it exists, and
+  the page of `view` has no icon. In a README, the ink of `docs/logo/exspec.svg` follows
+  the system's colour scheme: a forge set to dark on a light system shows navy letters on
+  a dark page, one set to light on a dark system white letters on a light page.
+- **Settled.** The mark and its animated form (ADR-0017). A tile never carries `ex`
+  (ADR-0015); whether the `x` alone may stand for the word is not decided — it is the
+  user's, and an ADR.
+- **Next.** When a page asks for an icon: put the `x` under its cloche to the user. When
+  the README is read on a forge: a `<picture>` with a file for each scheme, which a forge
+  maps to its own theme.
+- **Source.** ADR-0017, its alternatives and consequences.
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").
