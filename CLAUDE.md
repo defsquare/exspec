@@ -65,7 +65,7 @@ Four groups, and the direction of every reference (`docs/brief/metamodel.md`):
 proof           scenario, call, side effect          points at the specification
 specification   operation, rule, fact, structure, field, service, condition    points at nothing below it
 bindings        projection, trigger, detects, renders    the only shapes that know both sides
-target          target, interface, observable (a provider is one)    points at nothing above it
+target          target, interface, protocol, observable (a provider is one)    points at nothing above it
 ```
 
 **What survives the target being rewritten is of the specification; what may not is of the
@@ -127,8 +127,8 @@ lines, ask which step it is doing.
 - **Data is plain and immutable**: `readonly` objects and arrays, no class for a shape, no
   method on data. A variant is a discriminated union on a literal field, matched
   exhaustively (`never` in the default branch). One exception, decided by
-  ADR-0019: a scenario's step is a service's by its `service` key; no literal field
-  repeats the notation.
+  ADR-0019 and ADR-0024: a scenario's step is told by the key it alone has — `call`,
+  `request` or `service`; no literal field repeats the notation.
 - **No `any`, no non-null `!`, no `as` cast** outside a schema's parse boundary. What
   comes from outside (a file, an answer, the agent) is `unknown` until a schema parses it.
 - **Destructure by name.** A tuple wider than two is an object.

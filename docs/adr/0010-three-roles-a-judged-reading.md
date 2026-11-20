@@ -7,6 +7,10 @@ Amended 2026-11-19 by ADR-0014: the reader of the structures reads the code alon
 interfaces' description; the decision on the structures below is as it was written.
 Amended 2026-11-20 by ADR-0020: the reader and the builder read `exspec/services/`, and
 two roles are added, the provider reader and the twin writer.
+Amended 2026-11-20 by ADR-0023: a reader of an interface writes its trigger beside its
+rules, and the common reader writes `common.yaml` and `protocol.yaml`.
+Amended 2026-11-20 by ADR-0024: the builder is given, for each operation it may call, its
+inputs and the structure it answers, and writes a step as a call to an operation.
 
 ## Context
 

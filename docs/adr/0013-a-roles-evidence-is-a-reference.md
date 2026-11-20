@@ -4,6 +4,8 @@ Status: Accepted (2026-11-18) — the direction settled by the user (the specifi
 the roles' form, the evidence as a reference first); the design left to the main thread,
 the challenger's review taken. Amended 2026-11-19: the places under a side effect, another
 number of side effects as what makes a scenario unstable or different (ADR-0018).
+Amended 2026-11-20 by ADR-0024: an evidence is as written when each of its requests is the
+one its step gives — for a step that calls an operation, through that operation's trigger.
 
 ## Context
 

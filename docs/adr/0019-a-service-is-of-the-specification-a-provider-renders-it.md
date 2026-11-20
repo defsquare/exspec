@@ -3,6 +3,8 @@
 Status: Accepted (2026-11-20) — the rule and the two names settled by the user; the design
 read by the challenger before it was built, "build with changes", taken but for one point
 said below.
+Amended 2026-11-20 by ADR-0024: a third key tells a step — `call`, an operation called by
+its inputs' names — beside `request` and `service`.
 
 ## Context
 
