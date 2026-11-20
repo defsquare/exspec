@@ -676,7 +676,7 @@ them in; each of the first five is a branch of its own.
   provider no call was recorded for over a whole command, told at its end. For the
   page: a body past a size kept as its digest, or loaded when its scenario opens.
 - **Source.** ADR-0018, ADR-0021; `src/io/proxy.ts`, `src/derive/evidence.ts`;
-  `docs/branches/feat-calls-in-the-evidence.md` at the last commit that holds it, Journal.
+  `docs/branches/feat-calls-in-the-evidence.md` at `04d6a81`, Journal.
 
 ## A builder asked for one interface writes all its scenarios again
 
@@ -690,7 +690,7 @@ them in; each of the first five is a branch of its own.
   refuse, at the gate, the removal of a scenario whose judgement is `contradicted`. Decide
   with the item "A rule's identity from one run to the next".
 - **Source.** `src/agent/roles-build.ts` (`builderSkip`, `buildGate`);
-  `docs/branches/feat-calls-in-the-evidence.md` at the last commit that holds it, Journal.
+  `docs/branches/feat-calls-in-the-evidence.md` at `04d6a81`, Journal.
 
 ## A provider's reading set against the provider
 
@@ -726,8 +726,8 @@ them in; each of the first five is a branch of its own.
   first one's judgement does. To decide with the user: one level or a chain; whether the
   order is derived from what each operation requires. Not here: a state photographed to
   spare the replay of the first steps — exspec holds no driver (ADR-0004).
-- **Source.** `docs/branches/feat-calls-in-the-evidence.md` at the last commit that holds
-  it, Journal › "Not built, from the user".
+- **Source.** `docs/branches/feat-calls-in-the-evidence.md` at `04d6a81`, Journal ›
+  "Not built, from the user".
 
 ## A rule's status and a scenario's steps are the target's wire
 
