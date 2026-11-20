@@ -386,8 +386,10 @@ them in; each of the first five is a branch of its own.
 ## Two specifications side by side: the extraction's terms and the roles' reading
 
 - **Seen.** `exspec roles` writes its own files under `exspec/roles/` — rules as
-  sentences, scenarios as raw calls, evidence, judgements — beside `operations/`, the
-  facts' terms, the projections and the triggers, which serve nothing in the roles' path.
+  sentences, scenarios whose steps call an operation (ADR-0024), evidence, judgements —
+  beside `operations/`, the facts' terms and the projections, which serve nothing in the
+  roles' path. The trigger serves both: a roles' reading writes one per interface
+  (ADR-0023).
   Only `structures.yaml` is shared. `target up` and `status` refuse a checkout whose old
   files no longer parse while `roles` runs on it. Three whole targets through the roles:
   Petclinic 36 of 36 interfaces, Conduit 19 of 19, Kadai 93 of 93.
@@ -416,8 +418,10 @@ them in; each of the first five is a branch of its own.
   verified 103.
 - **Next.** In this order. (3) and the deprecations, concept
   by concept —
-  ADR-0007 and ADR-0008, the facts' conditions, the projections, the triggers, an input
-  rule's `violates`; and the items of this backlog that grow the computed terms are
+  ADR-0007 and ADR-0008, the facts' conditions, the projections, an input rule's
+  `violates` — not the triggers, nor `sends` and `shows`, which the roles' path rests on
+  since ADR-0024; the older path's own call (`{operation, with, caller}`) and its
+  judging by status go; and the items of this backlog that grow the computed terms are
   dropped with them, each with its reason. `status` goes with them: it prints the
   counts and the verdicts of the computed files beside the five phases — "0 operations"
   for "not looked at" in a checkout the roles read, 140 rules beside three phases to do in
@@ -475,6 +479,11 @@ them in; each of the first five is a branch of its own.
 - **Seen.** Two runs of a reader on one operation write the same rules in substance under
   different names; the lines of code a rule cites nearly do not move. Nothing in the tool
   matches a rule of one run, or of one version of the target, with a rule of another.
+  Measured on `trainings`: a reader given a reading whose check failed read it anew and
+  changed the name of 5 to 7 rules of each of four interfaces, their scenarios and
+  judgements left without a rule. And since a step calls an operation by its inputs'
+  names (ADR-0024), an input renamed in one reading makes stale the evidence of every
+  scenario that calls it, in any interface.
 - **Settled.** Nothing.
 - **Next.** Try `source` as the key on two runs of one target already kept: how many rules
   pair, how many split or merge. Needed before a reading can follow a change of the code.
@@ -727,20 +736,92 @@ them in; each of the first five is a branch of its own.
 - **Source.** `docs/branches/feat-calls-in-the-evidence.md` at `04d6a81`, Journal ›
   "Not built, from the user".
 
-## A rule's status and a scenario's steps are the target's wire
+## A command says what it is about to run, and may stop there
 
-- **Seen.** What survives the target being rewritten is of the specification (ADR-0019).
-  Read with that rule, two things of a roles' reading do not survive: a requirement says
-  the status and the body of its refusal (`otherwise: {status: 404, body: …}`), and a
-  scenario's steps are requests at the target's own interfaces (`POST /a/{id}/b`). A
-  target rewritten behind another interface keeps neither. A service and its conditions
-  were set apart from the provider's wire on that rule; the target's own wire was not.
-- **Settled.** The rule itself. A rule's `source` is a provenance, beside the rule.
-- **Next.** A design, challenged first: whether a scenario's step names an operation and
-  its inputs, the trigger giving the request — what the older path's scenarios do — and
-  where a refusal's status goes (the trigger's `refuses` has it there). Not before a
-  target is to be rewritten, or a second interface exposes the same operations.
-- **Source.** ADR-0019; `src/shapes/roles.ts` (`stepSchema`, `rulesSchema`).
+- **Seen.** `roles read` and `roles build`, run on `trainings` without `--only`, read 50
+  interfaces where four were meant and built 41 of them: 18 USD and 41 minutes before a
+  look at the files showed it. Nothing said it beforehand. `roles-queued` gives a count
+  when the agents start, and the same count — 50 — whether 50 roles run or 46 are skipped
+  and four run; no cost is said before an agent ends. And a reader given a reading whose
+  check fails reads it anew: 5 to 7 rules of each interface changed their name, their
+  scenarios and judgements left behind — a reach nothing announced either.
+- **Settled.** By the user: both a dry run and its use for a difference (the item below).
+  What a command would run is already computed, purely, to decide what to skip.
+- **Next.** An event before any agent, target or file is touched: the roles that will
+  run, each with its interface and why, and those skipped — and, for a reader, what its
+  reading puts back in play (its scenarios, its judgements). `--dry-run` on the roles'
+  commands stops after it. A new event and a flag: an ADR. Not asked for: a ceiling of
+  spending.
+- **Source.** `src/derive/roles-left.ts` (`interfaceLeft`, `leftOf`),
+  `src/agent/roles-build.ts` (`builderSkip`), `src/agent/roles-read.ts`;
+  `docs/branches/feat-operation-apart-from-interface.md` at the last commit that holds
+  it, Journal.
+
+## What a change of the target puts back in play, said before anything runs
+
+- **Seen.** An extraction is made whole each time. A rule says its `source` (a file and
+  its lines); a judgement holds the digest of its rule and of its evidence. Nothing sets
+  them against what changed in the target between two versions: which readings to make
+  again, which scenarios to replay, which hold as they are.
+- **Settled.** By the user: wanted, with the dry run above as its first use — the answer
+  given without running anything. What is said is what is stale, never what the target
+  will answer: nothing is predicted.
+- **Next.** A design, challenged first. From the target's own difference between two
+  versions and the rules' `source`: the interfaces whose sources changed (to read
+  again), the scenarios that go through them (to replay), the rest (untouched). To
+  decide: whether a `source` is reliable enough to rest on — never checked: a rule may
+  cite one line of a behaviour spread over several files; what a change outside every
+  `source` means; a scenario depends on every operation its steps call (ADR-0024), which
+  the list has to follow — settled; whether a scenario's arrange steps make it depend on interfaces other
+  than its own. First step, with no agent: on a target with two versions at hand, the
+  list computed, set against what a whole extraction of the second finds changed.
+- **Source.** `src/shapes/roles.ts` (`source`), `src/derive/judge-task.ts` (the digest a
+  judgement holds); ADR-0013.
+
+## What a call cannot say, and what a trigger says once
+
+- **Seen.** On `trainings`, after a step was made to call an operation (ADR-0024) and a
+  refusal's wire moved to the trigger (ADR-0023), of the 586 steps of the 80 scenarios
+  judged 22 stay requests, and three things have no place:
+  - *A page no interface describes.* 18 looks, before or after the judged call, at two
+    pages of the back office (`GET /admin/programs/{slug}/sessions/{id}`,
+    `GET /admin/sessions`): described, they would be calls.
+  - *An answer that is a list of a structure* has no place by default — 13 readings of
+    50 answer so, and no hole reads one yet. *An input sent once per element of a list*
+    (`import-learners`) has no place at all: `[each]` is a projection's.
+  - *A refusal that leaves several ways.* A rendering that fails is answered 503, 502 or
+    500 after what the provider said; the trigger says one status, the others are in the
+    evidence alone.
+  - *A body paraphrased.* Two contradictions of `admin-issue-convention` are a trigger
+    saying "Session not found." where the target answers "Session introuvable.": written
+    before the readers were told to quote. They stay until that interface is read again.
+  - *Every operation needs a scenario per rule of the protocol it lists*: four more by
+    interface on that target, the same four each time.
+- **Settled.** By the user: a refusal says one status; a refusal's body quotes the
+  target; an interface described with a form is always sent one. A request a call says
+  exactly is a finding, so a request left is one no call says.
+- **Next.** The two pages described in `interfaces.yaml`, then the builder on the
+  scenarios that look at them. A place for a list — decide whether a trigger's place may
+  step into every element, as a projection's does. For the protocol: whether a rule of
+  the wire is proven once for the target rather than once per operation.
+- **Source.** ADR-0023, ADR-0024; `src/derive/input-places.ts`,
+  `src/derive/answer-place.ts`, `src/derive/steps-as-calls.ts`;
+  `docs/branches/feat-operation-apart-from-interface.md` at the last commit that holds
+  it, Journal.
+
+## An actor is a set of headers behind a name
+
+- **Seen.** A step is called `as` an actor; the target's seed writes the headers each
+  name stands for (ADR-0004). Who may do what survives the target being rewritten
+  (ADR-0019) — the headers do not — and the specification declares no actor: a rule says
+  "the key has scope write" in a sentence, and the view draws the actors from the
+  scenarios' `as`. Two rules about authentication went to the protocol with the header
+  they are about (ADR-0023); "the caller is authenticated" is written nowhere.
+- **Settled.** Left open by ADR-0024.
+- **Next.** A design, challenged first: an actor declared in the specification — a name
+  and what it may do — and its credentials on the target's side, a binding between them;
+  which rules of a first target would name one.
+- **Source.** ADR-0004, ADR-0019, ADR-0024; `src/derive/roles-view.ts` (`actorsOf`).
 
 ## Loose ends of the mark
 
