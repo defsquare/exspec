@@ -754,8 +754,7 @@ them in; each of the first five is a branch of its own.
   spending.
 - **Source.** `src/derive/roles-left.ts` (`interfaceLeft`, `leftOf`),
   `src/agent/roles-build.ts` (`builderSkip`), `src/agent/roles-read.ts`;
-  `docs/branches/feat-operation-apart-from-interface.md` at the last commit that holds
-  it, Journal.
+  `docs/branches/feat-operation-apart-from-interface.md` at `cbab752`, Journal.
 
 ## What a change of the target puts back in play, said before anything runs
 
@@ -806,8 +805,7 @@ them in; each of the first five is a branch of its own.
   the wire is proven once for the target rather than once per operation.
 - **Source.** ADR-0023, ADR-0024; `src/derive/input-places.ts`,
   `src/derive/answer-place.ts`, `src/derive/steps-as-calls.ts`;
-  `docs/branches/feat-operation-apart-from-interface.md` at the last commit that holds
-  it, Journal.
+  `docs/branches/feat-operation-apart-from-interface.md` at `cbab752`, Journal.
 
 ## An actor is a set of headers behind a name
 
