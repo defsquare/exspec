@@ -501,7 +501,7 @@ them in; each of the first five is a branch of its own.
 ## Loose ends of the roles
 
 - **Seen.**
-  - *The evidence* records no header of an answer and no body other than JSON.
+  - *The evidence* records no header of an answer.
   - *"Not shown" on Kadai: 135 of 1 255.* 99 scenarios say their situation was not
     reached; the rest is not read: a setting no interface shows, or a rule no caller can
     reach.
@@ -518,6 +518,13 @@ them in; each of the first five is a branch of its own.
     would go unseen. Nothing settled. Next: an event that says which file was removed and
     why — a new event, so an ADR. Source: `docs/branches/feat-extract-runs-roles.md` at
     `0162c06`, "the readings made again"; `src/agent/roles-build.ts`.
+  - *A role's event may say both its interface and its provider.* The schema of the
+    events lets `interface` and `provider` stand together; a role has one or the other
+    (ADR-0016, ADR-0020). And the flow of the terminal passes over a role skipped that
+    has no interface. Source: `src/shapes/event.ts` (`bySchema`), `src/cli/flow.ts`.
+  - *A misused command stands its providers before its usage is printed*: a proxy and a
+    process started for a command that plays nothing. Next: the usage checked before
+    `standDeclaredProviders`. Source: `src/cli/main.ts`.
   - *A structure nothing is filed under.* A structure no operation takes or answers has
     no operation in `view`; nothing says a structure is shown, where the terms had a
     projection. Derivable: shown when an operation that answers it has `answers` judged
@@ -621,6 +628,121 @@ them in; each of the first five is a branch of its own.
   drawing them. The rest each on its own.
 - **Source.** `docs/branches/worktree-ux-audit-view.md` at `5c56498`, its Journal and
   Backlog.
+
+## An actor who signs in, and a file sent in a form
+
+- **Seen.** The back office of `trainings` is driven with what exspec has now: a form as
+  a request body, a redirection kept as the answer (ADR-0022). Its one actor holds a
+  cookie the target's seed got by signing in once per start. Not sent yet: a
+  `multipart/form-data` body, so no upload.
+- **Settled.** Nothing: the seed signing in was enough for one account.
+- **Next.** The first target with several accounts, or a session that expires during a
+  run: an actor whose header comes from a call. The first operation that takes a file: a
+  multipart body, its file as a digest in the evidence.
+- **Source.** ADR-0022; `src/io/http.ts`, `src/derive/step-request.ts`.
+
+## What an evidence does not hold of a provider, and holds wrongly
+
+- **Seen.** On `trainings`, four interfaces extracted against generated twins: 81
+  scenarios, 70 hold, 10 not shown, 1 contradicted.
+  - *No header is recorded.* The one contradicted and one of the not shown
+    are a `Location` and a `Cache-Control`: a rule about where a call redirects cannot be shown.
+    A provider's interface describes the headers the target reads (ADR-0020); the evidence
+    has none.
+  - *A call that arrives late.* A call is of the step during which it arrived, a step
+    ending after `quiet` ms of silence (ADR-0021). A call later than that after the last
+    step is lost, and that step records `[]` — read as "nothing is sent". A wrong proof,
+    with no signal.
+  - *A provider declared, the target not pointed at the proxy.* Its start lines still
+    call the real address, or none: every step records `[]`, read the same way.
+  - *A key in a query or a body.* No header is kept, so a key sent in one never reaches a
+    versioned file; one sent in a query or a body would.
+  - *What stood for each provider.* An evidence does not say whether a twin, and which,
+    answered. A twin rewritten changes what the target is answered, and the references
+    recorded before it are not told stale.
+  - *A form sent to a provider* is compared as one string: a field that is noise makes the
+    whole body noise.
+  - Between two executions a `query` or `body` absent on one side is noise; on a replay
+    it is a difference.
+  - *The page of `view`* embeds every body sent to a provider as recorded: on `trainings`
+    2.2 MB against 0.77, the sources of the documents rendered.
+- **Settled.** A response of a provider is kept, not compared (ADR-0018). "Stale" is not
+  guessed from a response that differs.
+- **Next.** Each is its own decision, the headers first — it is what most verdicts lack:
+  which headers of an answer are kept (a list per interface, from its description, rather
+  than all), and whether they are compared. For the late call: what the run can know (a
+  call recorded between two plays) and tell. For what stood for a provider: a fact of the
+  run — the twin's digest — checked before a replay. For the proxy never reached: a
+  provider no call was recorded for over a whole command, told at its end. For the
+  page: a body past a size kept as its digest, or loaded when its scenario opens.
+- **Source.** ADR-0018, ADR-0021; `src/io/proxy.ts`, `src/derive/evidence.ts`;
+  `docs/branches/feat-calls-in-the-evidence.md` at the last commit that holds it, Journal.
+
+## A builder asked for one interface writes all its scenarios again
+
+- **Seen.** `roles build --only <interface>`, asked for because six scenarios had lost
+  their evidence, went over every scenario of the interface. It dropped one that carried
+  a contradiction (a 500 while the session stays done): the 500 is still in another
+  scenario's evidence, whose rule holds. Contradictions fell from four to one with no
+  change in the target. About 4 $ of builders where six scenarios were missing.
+- **Settled.** Nothing.
+- **Next.** Tell the builder which scenarios are missing and that the others stand; or
+  refuse, at the gate, the removal of a scenario whose judgement is `contradicted`. Decide
+  with the item "A rule's identity from one run to the next".
+- **Source.** `src/agent/roles-build.ts` (`builderSkip`, `buildGate`);
+  `docs/branches/feat-calls-in-the-evidence.md` at the last commit that holds it, Journal.
+
+## A provider's reading set against the provider
+
+- **Seen.** A provider is read from its consumer and its twin written from that reading
+  (ADR-0020): on `trainings`, two providers, 0.05 to 0.20 $ a reading, 0.02 to 0.04 $ a
+  twin. The reading is the consumer's side of a contract; nothing sets it against the
+  real provider. A twin's gate checks only that it is served and that its state goes
+  round; that it answers as expected was shown once, by replaying references recorded
+  against twins written by hand.
+- **Settled.** By the user, for later: a twin derived from a whole specification of the
+  provider when one exists; the consumer's reading turned into a contract reconciled with
+  the provider, as contract testing does — its scenarios replayed against the real
+  provider standing behind the proxy, which no key declares any more (ADR-0021).
+- **Next.** Nothing before a target whose provider can be reached for a test. Smaller, and
+  first: a gate that sends a twin one call per interface of its reading and checks the
+  status and the headers described; a `bun test` of the providers stood by exspec, which
+  only a live check covers.
+- **Source.** ADR-0020, ADR-0021; `src/agent/providers.ts`, `src/io/providers.ts`,
+  `live/providers.live.ts`.
+
+## A scenario that starts from the end of another one, judged to hold
+
+- **Seen.** On a target whose operations need a long arrangement every scenario of an
+  interface writes the same eight steps before its call: the builder is half of what an
+  extraction costs, and a judge's cost follows the size of the evidence (0.18 to 1.15 $
+  an interface). A richer seed would shorten them, and write in the database states the
+  target may not allow.
+- **Settled.** By the user: a state others start from is first proven — reached through
+  the interfaces by a scenario, and that scenario judged to hold. So an extraction has an
+  order: what creates is read, built and judged first.
+- **Next.** A design, challenged before it is proposed: a scenario names the one it starts
+  from and cites its answers; its evidence keeps its own steps only; what falls when the
+  first one's judgement does. To decide with the user: one level or a chain; whether the
+  order is derived from what each operation requires. Not here: a state photographed to
+  spare the replay of the first steps — exspec holds no driver (ADR-0004).
+- **Source.** `docs/branches/feat-calls-in-the-evidence.md` at the last commit that holds
+  it, Journal › "Not built, from the user".
+
+## A rule's status and a scenario's steps are the target's wire
+
+- **Seen.** What survives the target being rewritten is of the specification (ADR-0019).
+  Read with that rule, two things of a roles' reading do not survive: a requirement says
+  the status and the body of its refusal (`otherwise: {status: 404, body: …}`), and a
+  scenario's steps are requests at the target's own interfaces (`POST /a/{id}/b`). A
+  target rewritten behind another interface keeps neither. A service and its conditions
+  were set apart from the provider's wire on that rule; the target's own wire was not.
+- **Settled.** The rule itself. A rule's `source` is a provenance, beside the rule.
+- **Next.** A design, challenged first: whether a scenario's step names an operation and
+  its inputs, the trigger giving the request — what the older path's scenarios do — and
+  where a refusal's status goes (the trigger's `refuses` has it there). Not before a
+  target is to be rewritten, or a second interface exposes the same operations.
+- **Source.** ADR-0019; `src/shapes/roles.ts` (`stepSchema`, `rulesSchema`).
 
 ## Loose ends of the mark
 
