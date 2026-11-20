@@ -10,13 +10,13 @@ specification, what holds it.
 
 ## Install
 
-No release is published yet: the executable is built from the sources, with
-[Bun](https://bun.sh).
+```
+curl -fsSL https://raw.githubusercontent.com/defsquare/exspec/main/install.sh | sh
+```
 
-```
-bun install
-bun run build        # dist/exspec, one executable: put it on the PATH
-```
+One executable for macOS or Linux, arm64 or x64, checked against the release's checksums
+and put in `~/.local/bin` (`EXSPEC_INSTALL` to put it elsewhere). Or from the sources, with
+[Bun](https://bun.sh): `bun install && bun run build` leaves `dist/exspec`.
 
 `extract`, `roles` and `providers` drive an agent: they need
 [Claude Code](https://claude.com/claude-code) — `claude` on the PATH, signed in — and the
@@ -103,3 +103,8 @@ bun run build all                 # dist/exspec-<platform>: darwin-arm64, darwin
 bun run demo:flow                 # the flow of extract drawn from events written by hand; `bun run demo:flow 21` stops after 21 events
 bun run live                      # record and replay Conduit's fixture (Docker)
 ```
+
+A release is a tag: the version of `src/cli/main.ts`, then `git tag v<version>` pushed —
+the workflow builds the four executables and publishes them with their checksums.
+
+exspec is under the [Apache License 2.0](LICENSE).

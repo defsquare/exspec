@@ -1,0 +1,42 @@
+# A tag `v<version>` pushed: the four executables and their checksums, as a release.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # a macOS runner: the executables for macOS are signed where they are built
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun test
+      - run: bun run build all
+      - name: The tag is the version the executable says
+        run: test "$(dist/exspec-darwin-arm64 --version | head -1)" = "exspec ${GITHUB_REF_NAME#v}"
+      - name: Checksums
+        run: cd dist && shasum -a 256 exspec-* > checksums.txt
+      - name: Release
+        run: gh release create "$GITHUB_REF_NAME" dist/exspec-* dist/checksums.txt --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # the script, run as a user runs it, on the other system and the other processor
+  install:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh release download "$GITHUB_REF_NAME" --dir release
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: EXSPEC_RELEASE="file://$PWD/release" EXSPEC_INSTALL="$PWD/bin" sh install.sh

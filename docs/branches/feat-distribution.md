@@ -7,8 +7,12 @@ of exspec: it says its version and its usage, `extract` has run whole from it, i
 for the four platforms Bun compiles to, and the README says first what one installs and
 types.
 
-**Non-goals.** Where the executables are published — a remote, a release workflow, an
-install script, a licence: the user decides them after this branch. A command removed or
+Then, the user having settled them — a public repository, `defsquare/exspec`, under
+Apache-2.0: the licence, a workflow that publishes the four executables on a tag, a script
+that installs the one of the machine.
+
+**Non-goals.** Creating the repository and pushing: the user said to push nothing for now,
+and whether the history is rewritten first is not decided. A command removed or
 merged: the README sorts the commands, it does not change them. Carrying `claude` inside
 the executable (ADR-0002).
 
@@ -47,7 +51,19 @@ runs to its end from `dist/exspec` on a target, and says which `claude` it found
   The user chose one interface over the whole run. Not seen: the last three phases through
   `extract` itself, and several sessions at once (`--jobs`).
 
+- `LICENSE` (Apache-2.0), `.github/workflows/release.yml`, `install.sh`. The script was
+  run against `dist/` as the release (`EXSPEC_RELEASE=file://…`): on darwin-arm64 and in a
+  `debian:stable-slim` container it installs and the executable answers; with a checksum
+  that does not match it installs nothing and exits 1. The workflow has not run: nothing
+  is pushed. It builds on a macOS runner, the one host the four were seen built from.
+
 ## Backlog
+
+- **Nothing is public yet.** `defsquare/exspec` does not exist; the README's install line
+  answers 404 until the repository is there with a first release. Before the push, the
+  user decides whether the history is rewritten: the 148 commits carry a personal address
+  and the links of the sessions. Then: create the repository, push `main`, tag `v0.1.0`,
+  watch the workflow run for the first time, run the install line for real.
 
 - **`extract` whole from the executable.** Every step has run from it, the roles for one
   interface. Left: `extract <dir>` with no `--phase` on the eighteen other interfaces, which
