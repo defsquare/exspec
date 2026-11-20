@@ -635,7 +635,8 @@ them in; each of the first five is a branch of its own.
 - **Next.** When a page asks for an icon: put the `x` under its cloche to the user. When
   the README is read on a forge: a `<picture>` with a file for each scheme, which a forge
   maps to its own theme.
-- **Source.** ADR-0017, its alternatives and consequences.
+- **Source.** ADR-0017, its alternatives and consequences; `docs/branches/feat-logo.md` at
+  `5038184`, its Journal.
 
 ## Open questions, no item yet
 
