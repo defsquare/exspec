@@ -8,6 +8,50 @@ what it answered. exspec records scenarios against the system, hangs a specifica
 them — operations, rules, facts, structures — and says, for every claim of that
 specification, what holds it.
 
+## Install
+
+No release is published yet: the executable is built from the sources, with
+[Bun](https://bun.sh).
+
+```
+bun install
+bun run build        # dist/exspec, one executable: put it on the PATH
+```
+
+`extract`, `roles` and `providers` drive an agent: they need
+[Claude Code](https://claude.com/claude-code) — `claude` on the PATH, signed in — and the
+installed `exspec --version` says which one it found. The system is started by commands
+of its own, kept in `exspec/target.yaml`; those `extract` writes go through a compose
+file, so Docker.
+
+## Use it
+
+exspec works in a checkout of the system, its **target**, and writes one directory there,
+`<dir>/exspec/`: YAML files, and nothing else is stored.
+
+```
+exspec extract <dir>            # read the code, start the target, play scenarios, judge each rule
+exspec status <dir>             # where the extraction stands; each claim that is not verified, and why
+exspec view <dir> > page.html   # one page, from a structure to its operations and their proof
+exspec roles replay <dir>       # later: every recorded scenario played on a fresh stack, the differences shown
+```
+
+`extract` runs five phases, each named for what it leaves in the files:
+
+```
+target      how the target starts, its starting state, its reset
+interfaces  the list of its interfaces
+reading     the structures, what holds for every operation, the rules
+evidence    the scenarios, played and recorded as references
+judgement   a judge's word on each rule and its reference
+```
+
+A phase does only what the files say is left of it, and is skipped when nothing is:
+stopped, `extract` goes on from where the files stand. On a terminal it draws a flow;
+piped, or with `--format json`, it prints every event.
+
+Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/commands.md).
+
 ## What it claims
 
 | claim | standing |
@@ -16,28 +60,6 @@ specification, what holds it.
 | A recording says what cannot be predicted (a hash, a slug, a page, a count) | built: what two executions disagree on is kept beside the reference, in classes of equal values |
 | A rule is declared, and scenarios verify or refute it | built, and it says when it cannot tell: on the two targets most rules are still declared only, for want of terms to say their facts and effects |
 | The system does what it should | out of reach by construction: a bug is recorded as it is. A declared rule that a scenario refutes is where intent and behaviour part, and a human decides |
-
-## Status
-
-`exspec extract <dir>` runs five phases, each named for what it leaves in the files:
-`target` (how the target starts, its starting state, its reset) and `interfaces`, one agent
-session each, closed by a check the tool runs itself; then what the roles run — `reading`
-(the structures, what holds for every operation, the rules), `evidence` (the scenarios,
-played and recorded as references) and `judgement` (the judge's word on each rule). A phase
-does only what the files say is left of it, and is skipped when nothing is. `exspec
-status <dir>` says where an extraction stands: its counts, its phases, how many rules and bindings are
-verified, refuted or only declared, each claim that is not verified with its reason, and
-the facts that block the most rules. The extraction is a directory of YAML files,
-`<dir>/exspec/`, and nothing else is stored.
-
-It has run end to end on three targets, a Conduit, a Petclinic and a trainings platform that calls providers. What it does not do yet
-is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
-Only what the target says outward is compared: what its interfaces answer and what it sends to a provider (ADR-0018).
-
-The project starts from a spike made in another project, whose record is in
-[`docs/brief/`](docs/brief/README.md): `framing.md` (what is kept, dropped, settled),
-`shapes.edn` (every data shape as one instance, in the spike's notation),
-`metamodel.md` (the concepts and what points at what).
 
 ## The idea in four groups
 
@@ -55,37 +77,29 @@ provider the system it calls to get it) is set up in this order: `proxy` and `ob
 written by hand in `target.yaml`; `exspec providers read`; `exspec providers write-twin`;
 then `extract` or the `roles` commands. `extract` reads no provider.
 
-## Working here
+## Status
+
+It has run end to end on three targets, a Conduit, a Petclinic and a trainings platform that calls providers. What it does not do yet
+is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
+Only what the target says outward is compared: what its interfaces answer and what it sends to a provider (ADR-0018).
+
+The project starts from a spike made in another project, whose record is in
+[`docs/brief/`](docs/brief/README.md): `framing.md` (what is kept, dropped, settled),
+`shapes.edn` (every data shape as one instance, in the spike's notation),
+`metamodel.md` (the concepts and what points at what).
+
+## Developing
 
 `CLAUDE.md` holds the project's conventions; `docs/adr/` the decisions. Enable the hooks
 once per clone: `git config core.hooksPath .githooks`.
-
-## Build and run
 
 ```
 bun install
 bun test
 bun run check
-bun run build                               # dist/exspec, one executable; extract then needs `claude` on the PATH
-# on a terminal, extract and roles read|build|record|judge draw a flow; piped (`| cat`) or with --format json they print every event — a skipped role's reason, each judgement
-bun run demo:flow                           # the flow of extract drawn from events written by hand, in a terminal; `bun run demo:flow 21` stops after 21 events
-bun src/cli/main.ts status <dir>            # --format json for one JSON object per line
-bun src/cli/main.ts check <dir>
-bun src/cli/main.ts verdicts <dir>          # every rule and trigger, judged by the references
-bun src/cli/main.ts view <dir> > page.html  # one page, from a structure to its operations and their proof: the roles' reading when there is one, else the extraction
-bun src/cli/main.ts target up <dir>         # start the target, wait until alive, seed
-bun src/cli/main.ts target play <dir> [<operation>/<slug>…]   # on a target up: reset, play once, judge
-bun src/cli/main.ts target down <dir>
-bun src/cli/main.ts record <dir> [<operation>/<slug>…] [--force]   # two fresh stacks -> references
-bun src/cli/main.ts replay <dir> [<operation>/<slug>…]   # one fresh stack, compared with the references
-bun src/cli/main.ts extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>]   # target, interfaces, reading, evidence, judgement: what is left of each
-bun src/cli/main.ts roles read <dir> [--only <interface>] [--jobs n]    # the structures, then a reader per interface -> exspec/roles/
-bun src/cli/main.ts roles build <dir> [--only <interface>] [--jobs n]   # target up, a scenario builder per interface, evidence played
-bun src/cli/main.ts roles judge <dir> [--only <interface>] [--jobs n]   # a judge per interface, no tool -> judgements.yaml
-bun src/cli/main.ts roles play <dir> <interface>/<slug>                  # on a target up: reset, play one written scenario
-bun src/cli/main.ts roles record <dir> [--only <interface>] [--force]   # each evidence played again on fresh stacks, its noise beside it
-bun src/cli/main.ts roles replay <dir> [--only <interface>]              # each reference played once on a fresh stack, compared outside its noise
-bun src/cli/main.ts providers read <dir> [--only <provider>] [--jobs n]        # a reader per provider the target calls -> exspec/services/<service>.yaml, exspec/providers/<name>/interfaces.yaml, provider.yaml
-bun src/cli/main.ts providers write-twin <dir> [--only <provider>] [--jobs n]  # serve.ts, then a twin writer per provider read -> exspec/providers/<name>/twin.ts, served, its state put back, each condition given
-bun run live                                # record and replay Conduit's fixture (Docker)
+bun src/cli/main.ts <command> …   # any command, from the sources
+bun run build                     # dist/exspec, for this machine
+bun run build all                 # dist/exspec-<platform>: darwin-arm64, darwin-x64, linux-x64, linux-arm64
+bun run demo:flow                 # the flow of extract drawn from events written by hand; `bun run demo:flow 21` stops after 21 events
+bun run live                      # record and replay Conduit's fixture (Docker)
 ```
