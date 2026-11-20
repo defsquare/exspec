@@ -69,6 +69,20 @@ runs to its end from `dist/exspec` on a target, and says which `claude` it found
   the executable. `test/io/twins.test.ts` timed out twice while the machine was loaded
   (load average 42), with and without the change; it passes since.
 
+- The challenger, on `git diff main...feat/distribution`: **sound with changes**. Taken:
+  `install.sh` starts the executable before it puts it in place — one that does not start
+  (Alpine, seen) is not installed; the README no longer says `extract` needs Docker of
+  itself, and says `roles` and `providers` need `claude` too. Put to the user: that
+  nothing exspec starts may call a `bun` of the PATH is a decision told in a commit only,
+  and ADR-0020 still says a twin "assumes Bun on the machine that starts the target".
+  Minor, for the backlog: an architecture test that refuses a spawn of `"bun"` in `src/`;
+  the `x64-baseline` targets and Rosetta, where the script picks x64 on an arm64 Mac; the
+  Linux executables started in the workflow; `--effort` mistyped exits 1 with zod's JSON,
+  `--format` mistyped is ignored; `claudeFound` does not say it runs `claude --version`
+  and repeats `claudeExecutable`'s search; the unknown-option test does not assert the
+  error; `docs/commands.md` lost what each role writes (`-> exspec/roles/`,
+  `-> judgements.yaml`).
+
 ## Backlog
 
 - **The providers from the executable.** `providers read` and `providers write-twin` have
