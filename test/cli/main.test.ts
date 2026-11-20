@@ -22,7 +22,7 @@ test("--help prints the usage and succeeds", () => {
 
 test("--version names the tool and succeeds", () => {
   const { exitCode, out, err } = exspec("--version");
-  expect({ exitCode, out: out?.replace(/\d+\.\d+\.\d+/, "x.y.z"), err }).toEqual({
+  expect({ exitCode, out: out?.replace(/\d+\.\d+\.\d+\S*/, "x.y.z"), err }).toEqual({
     exitCode: 0,
     out: "exspec x.y.z",
     err: "",

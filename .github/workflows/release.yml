@@ -25,6 +25,7 @@ jobs:
         run: test "$(dist/exspec-darwin-arm64 --version | head -1)" = "exspec ${GITHUB_REF_NAME#v}"
       - name: Checksums
         run: cd dist && shasum -a 256 exspec-* > checksums.txt
+      # not marked as a pre-release: `releases/latest`, which install.sh reads, skips those
       - name: Release
         run: gh release create "$GITHUB_REF_NAME" dist/exspec-* dist/checksums.txt --generate-notes
         env:

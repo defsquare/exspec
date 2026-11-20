@@ -10,6 +10,9 @@ specification, what holds it.
 
 ## Install
 
+exspec is in alpha: the commands and the notation of the files change from one version to
+the next, and an extraction made with one version may not be read by another.
+
 ```
 curl -fsSL https://raw.githubusercontent.com/defsquare/exspec/main/install.sh | sh
 ```

@@ -33,7 +33,7 @@ import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
 import { pageOf } from "./view.ts";
 
-const version = "0.1.0";
+const version = "0.1.0-alpha.1";
 
 const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
        exspec view <dir> > page.html

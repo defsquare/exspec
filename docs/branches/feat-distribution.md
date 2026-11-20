@@ -57,12 +57,16 @@ runs to its end from `dist/exspec` on a target, and says which `claude` it found
   that does not match it installs nothing and exits 1. The workflow has not run: nothing
   is pushed. It builds on a macOS runner, the one host the four were seen built from.
 
+- The user: exspec stays in alpha for now. The version says it, `0.1.0-alpha.1`, and the
+  README before the install line. A release is not marked as a pre-release on GitHub:
+  `releases/latest/download`, which the script reads, skips those.
+
 ## Backlog
 
 - **Nothing is public yet.** `defsquare/exspec` does not exist; the README's install line
   answers 404 until the repository is there with a first release. Before the push, the
   user decides whether the history is rewritten: the 148 commits carry a personal address
-  and the links of the sessions. Then: create the repository, push `main`, tag `v0.1.0`,
+  and the links of the sessions. Then: create the repository, push `main`, tag `v0.1.0-alpha.1`,
   watch the workflow run for the first time, run the install line for real.
 
 - **`extract` whole from the executable.** Every step has run from it, the roles for one
