@@ -54,3 +54,12 @@ test("shapes and derive import no node or bun module", async () => {
     });
   expect(violations).toEqual([]);
 });
+
+test("nothing starts a bun of the PATH: an installed exspec carries its own", async () => {
+  const starts = /spawn(?:Sync)?\(\s*\[\s*["']bun["']/;
+  const violations: string[] = [];
+  for await (const file of new Bun.Glob("src/**/*.{ts,tsx}").scan(root)) {
+    if (starts.test(await Bun.file(join(root, file)).text())) violations.push(file);
+  }
+  expect(violations).toEqual([]);
+});

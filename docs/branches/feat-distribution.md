@@ -61,7 +61,18 @@ runs to its end from `dist/exspec` on a target, and says which `claude` it found
   README before the install line. A release is not marked as a pre-release on GitHub:
   `releases/latest/download`, which the script reads, skips those.
 
+- Rebased on `main` after calls in the evidence. Its twins were served by `bun
+  exspec/providers/serve.ts`: a `bun` on the PATH, which a machine that installed the
+  executable does not have. They are served by the Bun exspec itself runs on
+  (`process.execPath`, `BUN_BE_BUN`). Seen: `BUN_BE_BUN=1 dist/exspec <file>.ts` runs a
+  file, here and in a Debian container with no Bun. Not seen: `providers write-twin` from
+  the executable. `test/io/twins.test.ts` timed out twice while the machine was loaded
+  (load average 42), with and without the change; it passes since.
+
 ## Backlog
+
+- **The providers from the executable.** `providers read` and `providers write-twin` have
+  not run from it, nor an `extract` on a target that calls providers.
 
 - **Nothing is public yet.** `defsquare/exspec` does not exist; the README's install line
   answers 404 until the repository is there with a first release. Before the push, the

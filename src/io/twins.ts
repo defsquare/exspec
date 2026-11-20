@@ -79,8 +79,8 @@ async function firstAnswer(
   return undefined;
 }
 
-// exspec/providers/serve.ts written from the text exspec carries, then `bun
-// exspec/providers/serve.ts` in dir on a free port, once GET /<name>/__state answers 200 for
+// exspec/providers/serve.ts written from the text exspec carries, then run by the Bun
+// exspec itself runs on, in dir on a free port, once GET /<name>/__state answers 200 for
 // each name: {at, stopTwins}. {failed: "…"} when it exits, answers nothing, or a twin
 // answers otherwise; the process is killed then.
 export async function serveTwins(
@@ -89,9 +89,10 @@ export async function serveTwins(
 ): Promise<ServedTwins | { readonly failed: string }> {
   await Bun.write(join(dir, "exspec/providers/serve.ts"), serve);
   const port = freePort();
-  const served = Bun.spawn(["bun", "exspec/providers/serve.ts"], {
+  // BUN_BE_BUN: a compiled exspec runs the file itself, no `bun` on the PATH needed
+  const served = Bun.spawn([process.execPath, "exspec/providers/serve.ts"], {
     cwd: dir,
-    env: { ...process.env, TWINS_PORT: String(port) },
+    env: { ...process.env, BUN_BE_BUN: "1", TWINS_PORT: String(port) },
     stdout: "ignore",
     stderr: "pipe",
   });
