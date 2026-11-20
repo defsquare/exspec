@@ -37,6 +37,17 @@ export function claudeExecutable(): string | undefined {
   return found;
 }
 
+// "claude 2.1.0 (Claude Code), /usr/local/bin/claude"   compiled, one on the PATH
+// "claude: none on the PATH"                             compiled, none
+// undefined                                              from the sources: the SDK's own
+export function askClaudeVersion(): string | undefined {
+  if (!compiled) return undefined;
+  const found = Bun.which("claude");
+  if (found === null) return "claude: none on the PATH";
+  const said = Bun.spawnSync([found, "--version"]).stdout.toString().trim();
+  return `claude ${said}, ${found}`;
+}
+
 // no exspec/ yet: no file
 async function readFiles(dir: string) {
   return (await directoryExists(join(dir, "exspec"))) ? readExtractionFiles(dir) : [];

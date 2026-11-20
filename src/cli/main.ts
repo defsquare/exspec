@@ -23,7 +23,7 @@ import { parseExtraction } from "../shapes/extraction.ts";
 import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
 import { askedOf } from "./command-line.ts";
-import { extractCommand } from "./extract.ts";
+import { askClaudeVersion, extractCommand } from "./extract.ts";
 import { phaseOfCommand } from "./flow.ts";
 import { renderFlow } from "./render-flow.tsx";
 import { renderJson } from "./render-json.ts";
@@ -32,6 +32,8 @@ import { rolesEvents } from "./roles.ts";
 import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
 import { pageOf } from "./view.ts";
+
+const version = "0.1.0";
 
 const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
        exspec view <dir> > page.html
@@ -44,20 +46,50 @@ const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
        exspec roles play <dir> <interface>/<slug>
        exspec roles record <dir> [--only <interface>] [--force]
        exspec roles replay <dir> [--only <interface>]
-       exspec providers <read|write-twin> <dir> [--only <provider>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]`;
+       exspec providers <read|write-twin> <dir> [--only <provider>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
+       exspec --help | --version`;
 
-const { positionals, values } = parseArgs({
-  allowPositionals: true,
-  options: {
-    format: { type: "string" },
-    force: { type: "boolean", default: false },
-    phase: { type: "string" },
-    model: { type: "string", default: "sonnet" },
-    effort: { type: "string" },
-    only: { type: "string" },
-    jobs: { type: "string", default: "4" },
-  },
-});
+// an option that is not one of these: its name, the usage, 2
+function commandLine() {
+  try {
+    return parseArgs({
+      allowPositionals: true,
+      options: {
+        format: { type: "string" },
+        force: { type: "boolean", default: false },
+        phase: { type: "string" },
+        model: { type: "string", default: "sonnet" },
+        effort: { type: "string" },
+        only: { type: "string" },
+        jobs: { type: "string", default: "4" },
+        help: { type: "boolean", short: "h", default: false },
+        version: { type: "boolean", default: false },
+      },
+    });
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    console.error(usage);
+    process.exit(2);
+  }
+}
+
+const { positionals, values } = commandLine();
+if (values.help) {
+  console.log(usage);
+  process.exit(0);
+}
+if (values.version) {
+  console.log(`exspec ${version}`);
+  const claude = askClaudeVersion();
+  if (claude !== undefined) console.log(claude);
+  process.exit(0);
+}
+// an option's value that is not one of its own: the usage, 2
+const effort = z.enum(["low", "medium", "high"]).optional().safeParse(values.effort);
+if (!effort.success || (values.format !== undefined && values.format !== "json")) {
+  console.error(usage);
+  process.exit(2);
+}
 const asked = askedOf(positionals, process.env[agentMark] !== undefined);
 if (asked.type === "refused-to-agent") {
   console.error(
@@ -154,8 +186,6 @@ const jobs =
   Number.isInteger(Number(values.jobs)) && Number(values.jobs) >= 1
     ? Number(values.jobs)
     : undefined;
-// parsed by the commands that take it alone
-const effortOf = () => z.enum(["low", "medium", "high"]).optional().parse(values.effort);
 
 async function eventsOf(
   providers: StoodProviders | undefined,
@@ -193,7 +223,7 @@ async function eventsOf(
         only: only.data,
         model: values.model,
         jobs,
-        effort: effortOf(),
+        effort: effort.data,
         io: await ioOf(providers),
       });
     }
@@ -219,7 +249,7 @@ async function eventsOf(
         force: values.force,
         jobs,
         model: values.model,
-        effort: effortOf(),
+        effort: effort.data,
         io: await ioOf(providers),
       });
     }
