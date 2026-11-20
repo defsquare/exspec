@@ -2,7 +2,8 @@
 
 Status: Accepted (2026-11-18) — the direction settled by the user (the specification takes
 the roles' form, the evidence as a reference first); the design left to the main thread,
-the challenger's review taken.
+the challenger's review taken. Amended 2026-11-19: the places under a side effect, another
+number of side effects as what makes a scenario unstable or different (ADR-0018).
 
 ## Context
 

@@ -1,7 +1,9 @@
 # ADR-0004 — The target's lifecycle is commands of the target; specimen holds no driver
 
 Status: Accepted (2026-11-13) — written by the main thread working alone, challenged,
-reviewed by the user.
+reviewed by the user. Amended 2026-11-19: an observable is built, a provider, and
+what the target sends to it is compared (ADR-0018); the providers' part of the starting
+state is exspec's, not the lifecycle lines' (ADR-0021).
 
 ## Context
 

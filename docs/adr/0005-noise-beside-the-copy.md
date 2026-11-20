@@ -1,7 +1,8 @@
 # ADR-0005 — A reference is a played copy, and its noise is kept beside it
 
 Status: Accepted (2026-11-13) — written by the main thread working alone, challenged,
-reviewed by the user.
+reviewed by the user. Amended 2026-11-19: what the target sends to a provider is walked too,
+and a status of a provider's response makes no scenario unstable (ADR-0018).
 
 ## Context
 

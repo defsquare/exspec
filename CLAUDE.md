@@ -63,17 +63,23 @@ Four groups, and the direction of every reference (`docs/brief/metamodel.md`):
 
 ```
 proof           scenario, call, side effect          points at the specification
-specification   operation, rule, fact, structure, field    points at nothing below it
-bindings        projection, trigger, detects         the only shapes that know both sides
-target          target, interface, observable        points at nothing above it
+specification   operation, rule, fact, structure, field, service, condition    points at nothing below it
+bindings        projection, trigger, detects, renders    the only shapes that know both sides
+target          target, interface, observable (a provider is one)    points at nothing above it
 ```
+
+**What survives the target being rewritten is of the specification; what may not is of the
+target** (ADR-0019). A service — what the system needs of someone else — is of the
+specification; the provider this target calls to get it is of the target.
 
 Three rules the design rests on — a change to one of them is an ADR:
 
 - **The specification is declared whole; a scenario is written with holes and an execution
   fills them.** Nothing is predicted.
-- **Only what the target's interfaces expose is compared.** An observable (a database, a
-  trace) detects and explains; it is never the reference.
+- **Only what the target says outward is compared**: what it answers at its interfaces and
+  what it sends to a provider. What a provider answers it is kept, not compared. An
+  observable inside the target (a database, a trace) detects and explains; it is never the
+  reference (ADR-0018).
 - **Nothing derivable is stored.** A verdict, a provenance, a report are computed from the
   scenarios and the specification, every time.
 
@@ -120,7 +126,9 @@ lines, ask which step it is doing.
   schema for the same shape.
 - **Data is plain and immutable**: `readonly` objects and arrays, no class for a shape, no
   method on data. A variant is a discriminated union on a literal field, matched
-  exhaustively (`never` in the default branch).
+  exhaustively (`never` in the default branch). One exception, decided by
+  ADR-0019: a scenario's step is a service's by its `service` key; no literal field
+  repeats the notation.
 - **No `any`, no non-null `!`, no `as` cast** outside a schema's parse boundary. What
   comes from outside (a file, an answer, the agent) is `unknown` until a schema parses it.
 - **Destructure by name.** A tuple wider than two is an object.

@@ -2,6 +2,8 @@
 
 Status: Accepted (2026-11-19) — by the user, the challenger's review of the design taken.
 Adds to ADR-0002 (events as data) and to ADR-0014 (the phases of the roles).
+Amended 2026-11-20 by ADR-0020: an event of the provider reader or the twin writer says
+its `provider` where a role of an interface says its `interface`.
 
 ## Context
 

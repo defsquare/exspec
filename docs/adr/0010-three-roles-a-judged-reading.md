@@ -5,6 +5,8 @@ roles. Amended 2026-11-18: the evidence is no longer played once — it becomes 
 reference, its noise beside it (ADR-0013); the consequence on it below is as it was written.
 Amended 2026-11-19 by ADR-0014: the reader of the structures reads the code alone, not the
 interfaces' description; the decision on the structures below is as it was written.
+Amended 2026-11-20 by ADR-0020: the reader and the builder read `exspec/services/`, and
+two roles are added, the provider reader and the twin writer.
 
 ## Context
 
