@@ -13,7 +13,7 @@ import {
   unownedScenarios,
 } from "../derive/roles-files.ts";
 import { type InterfaceLeft, interfaceLeft, leftOf } from "../derive/roles-left.ts";
-import { pathsOf, statesOf } from "../derive/states-files.ts";
+import { pathsOf, statesOf, statesWithPathIn } from "../derive/states-files.ts";
 import { stepsFromStates } from "../derive/steps-from-states.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
@@ -159,6 +159,8 @@ export function builderPrompt({
 }): string {
   const folder = folderOf(name);
   const told = operationsTold(callablesOf(files));
+  const { states } = statesOf(files);
+  const { paths } = pathsOf(files, states);
   // what every builder of a target is told comes first, word for word the same: a prefix
   // the provider of the model may serve again from one builder to the next
   return [
@@ -173,8 +175,19 @@ export function builderPrompt({
           "The operations a step may call, by their inputs, and what each answers:",
           ...told,
         ]),
+    ...(states.length === 0
+      ? []
+      : [
+          paths.length === 0
+            ? "No state is reached yet: a scenario starts from none."
+            : `The states reached now, a scenario may start from them: ${paths.map(({ state }) => state).join(", ")}.`,
+        ]),
     `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
     `Your folder: exspec/${folder}/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,
+    ...statesWithPathIn(states, name).map(
+      ({ state, path, seen }) =>
+        `Your scenario \`${partsOfPath(path).slug}\` is the path of the state "${state}": others will start from it. It starts from no state and ends with an \`after\` step that shows: ${seen}.`,
+    ),
   ].join("\n");
 }
 

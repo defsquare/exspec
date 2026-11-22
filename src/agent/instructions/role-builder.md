@@ -26,9 +26,10 @@ requests of your scenarios and the system's answers.
   accepts and answers. It may be large: search it.
 - The actors, named in your task. You never see their credentials: a step says who sends
   it, the tool signs it.
-- `exspec/states.yaml`, when there is one: the situations already reached, each with what
-  is seen in it (`seen`) and `path`, the scenario that brings the system there, a file you
-  may read at `roles/<operation>/scenarios/<slug>.yaml`.
+- `exspec/states.yaml`, when there is one: the situations named for the whole system,
+  each with what is seen in it (`seen`) and `path`, the scenario that brings the system
+  there, a file you may read at `roles/<operation>/scenarios/<slug>.yaml` once it is
+  written. Your task says which are reached now: a scenario starts from those only.
 - One tool, `play`: you give it steps, it puts the system back in its starting state, sends
   the steps in order and returns what the system answered to each. It is your only access
   to the system. Use it as much as you need to look around — which instances exist in the
