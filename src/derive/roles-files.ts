@@ -9,6 +9,7 @@ import {
   roleScenarioSchema,
   rulesSchema,
 } from "../shapes/roles.ts";
+import type { State } from "../shapes/state.ts";
 import { type Interface, interfacesFileSchema } from "../shapes/target.ts";
 import { type Callable, callableOf } from "./callables.ts";
 import { checkBuilt, ownersOf } from "./check-built.ts";
@@ -194,9 +195,10 @@ export function statesOf(files: readonly SourceFile[]) {
 //   {state: s, path: f/a}, a not judged    -> {state: s, why: "its path f/a is not judged to hold"}
 function pathsRead(
   files: readonly SourceFile[],
+  states: readonly State[],
 ): readonly ({ readonly state: string; readonly path: Path } | Unreached)[] {
   const interfaces = interfacesOf(files) ?? [];
-  return statesOf(files).states.map(({ state, path }) => {
+  return states.map(({ state, path }) => {
     const [name = "", slug = ""] = path.split("/");
     const unreached = { state, why: `its path ${path} is not judged to hold` };
     const bound = interfaces.find(({ interface: one }) => one === name);
@@ -222,12 +224,15 @@ function pathsRead(
 }
 
 // the states that are reached, the others with why, and that why as a finding of states.yaml
-export function pathsOf(files: readonly SourceFile[]): {
+export function pathsOf(
+  files: readonly SourceFile[],
+  states: readonly State[] = statesOf(files).states,
+): {
   readonly paths: readonly Path[];
   readonly unreached: readonly Unreached[];
   readonly findings: readonly string[];
 } {
-  const read = pathsRead(files);
+  const read = pathsRead(files, states);
   const unreached = read.flatMap((one) => ("why" in one ? [one] : []));
   return {
     paths: read.flatMap((one) => ("path" in one ? [one.path] : [])),

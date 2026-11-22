@@ -100,10 +100,11 @@ steps:
   starts each service with none of its conditions. What the judged system sends to the
   systems it calls is recorded with each step; you do not write it.
 - A scenario that needs a situation `states.yaml` lists starts from it: an `arrange` step
-  `{when: arrange, state: s, name: p}`, with no `as` — rather than calling what builds it. The
+  `{when: arrange, state: s, name: p}`, the step has no `as` key — rather than calling what builds it. The
   tool plays in its place the steps of that state's scenario. `{{p.c.id}}` is the field
   `id` of what the step `c` of that scenario answered; the file named by `path` shows its
-  steps. What that scenario wrote is in the system once the state is reached: create
+  steps. Only its steps up to its call are played: a `before` or an `after` step
+  there is not played, and no hole cites it. What that scenario wrote is in the system once the state is reached: create
   nothing under the same name or value. When no state fits, arrange as before.
 - Every rule of `requires` and `effects`, every name under `common` and under the
   trigger's `protocol`, gets at least one

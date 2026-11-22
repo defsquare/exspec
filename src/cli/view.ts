@@ -84,8 +84,8 @@ function readingsOf(files: readonly SourceFile[]) {
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
   const { providers, findings } = readAndCheckProviders(files);
   const callables = callablesOf(files);
-  const { paths, unreached, findings: ofPaths } = pathsOf(files);
   const states = statesOf(files);
+  const { paths, unreached, findings: ofPaths } = pathsOf(files, states.states);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
     const folder = folderOf(name);

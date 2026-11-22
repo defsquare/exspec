@@ -4,7 +4,9 @@ import { checkExtraction } from "../derive/check.ts";
 import { countExtraction } from "../derive/count.ts";
 import { declaredIn, phasesOf } from "../derive/phases.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
+import { pathsOf, statesOf } from "../derive/roles-files.ts";
 import { leftOf } from "../derive/roles-left.ts";
+import { problemOf } from "../derive/roles-view.ts";
 import type { Event } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 
@@ -18,7 +20,18 @@ export type Examination = {
 export function checkedExtraction(files: readonly SourceFile[]) {
   const { extraction, problems } = parseExtraction(files);
   const checked = checkExtraction(extraction);
-  return { extraction, problems: [...problems, ...checked.problems], gaps: checked.gaps };
+  const states = statesOf(files);
+  return {
+    extraction,
+    problems: [
+      ...problems,
+      ...checked.problems,
+      ...[...states.findings, ...pathsOf(files, states.states).findings].map((finding) =>
+        problemOf("", finding),
+      ),
+    ],
+    gaps: checked.gaps,
+  };
 }
 
 // What check, status and verdicts share. Status counts, shows the phases and every claim

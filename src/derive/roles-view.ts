@@ -147,7 +147,7 @@ function wordOf(verdicts: readonly Word[]): Word {
 
 // "rules.yaml: a" of roles/f -> {file: "roles/f/rules.yaml", at: "", message: "a"};
 // "no scenario for b" -> {file: "roles/f", at: "", message: "no scenario for b"}
-function problemOf(folder: string, finding: string): Problem {
+export function problemOf(folder: string, finding: string): Problem {
   const [, file, message] = /^([\w./-]+\.yaml): (.*)$/s.exec(finding) ?? [];
   return file === undefined || message === undefined
     ? { file: folder, at: "", message: finding }

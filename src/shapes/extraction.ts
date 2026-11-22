@@ -117,6 +117,8 @@ function readSourceFile(file: SourceFile): Outcome {
   // target expects of the systems it calls, and their twins
   if (path.startsWith("services/") || path.startsWith("providers/")) return nothing;
   switch (path) {
+    case "states.yaml":
+      return nothing;
     case "target.yaml":
       return parseFile(file, targetSchema, (target) => ({ target }));
     case "interfaces.yaml":

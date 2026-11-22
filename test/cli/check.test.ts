@@ -57,3 +57,35 @@ test("check of a directory with no extraction", async () => {
     { type: "command-finished", command: "check", ok: false },
   ]);
 });
+
+test("check of a states.yaml that names a state twice", async () => {
+  expect(
+    await Array.fromAsync(
+      check({
+        dir: "/abs/dir",
+        exists: async () => true,
+        readFiles: async () => [
+          {
+            path: "states.yaml",
+            text: "- {state: s, of: [], seen: x, path: f/a}\n- {state: s, of: [], seen: x, path: f/a}",
+          },
+        ],
+      }),
+    ),
+  ).toEqual<Event[]>([
+    { type: "command-started", command: "check", dir: "/abs/dir" },
+    ...[
+      '"s" is named twice',
+      's: the path f/a names "f", not an interface',
+      's: the path f/a names "f", not an interface',
+      "s: its path f/a is not judged to hold",
+      "s: its path f/a is not judged to hold",
+    ].map((message) => ({
+      type: "problem" as const,
+      file: "states.yaml",
+      at: "",
+      message,
+    })),
+    { type: "command-finished", command: "check", ok: false },
+  ]);
+});

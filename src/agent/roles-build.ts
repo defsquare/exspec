@@ -194,10 +194,10 @@ async function* builder(
   await removeUnownedScenarios(rolesRun, name);
   const actors = Object.keys(credentials);
   const folder = folderOf(name);
-  const pathsOfStates = statesOf(files).states.map(
-    ({ path }) =>
-      `${folderOf(path.split("/")[0] ?? "")}/scenarios/${path.split("/")[1]}.yaml`,
-  );
+  const pathsOfStates = statesOf(files).states.map(({ path }) => {
+    const [name = "", slug = ""] = path.split("/");
+    return `${folderOf(name)}/scenarios/${slug}.yaml`;
+  });
   const own = (path: string) =>
     [
       "interfaces.yaml",
