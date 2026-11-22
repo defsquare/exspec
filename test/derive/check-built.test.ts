@@ -63,6 +63,7 @@ test("a scenario per rule, each with one call to the operation, passes", () => {
           services: [],
           callables: [],
           paths: [],
+          unreached: [],
           files,
         });
   expect(built?.findings).toEqual([]);
@@ -101,6 +102,7 @@ steps:
           services: [],
           callables: [],
           paths: [],
+          unreached: [],
           files,
         }).findings,
   ).toEqual([
@@ -153,6 +155,7 @@ const findingsOfGiven = (steps: string) =>
         services: [service],
         callables: [],
         paths: [],
+        unreached: [],
         files: every.map((rule) => ({
           slug: rule,
           text: rule === "pet-exists" ? givenSteps(steps) : scenario(rule),
@@ -196,6 +199,7 @@ test("a rule of the target's wire its trigger lists is a rule a scenario may be 
           services: [],
           callables: [],
           paths: [],
+          unreached: [],
           files: rulesOf.map((rule) => ({ slug: rule, text: scenario(rule) })),
         }).findings;
   expect({
@@ -244,6 +248,7 @@ const findingsOfCalls = (steps: string) =>
         services: [],
         callables,
         paths: [],
+        unreached: [],
         files: every.map((rule) => ({
           slug: rule,
           text:
@@ -324,7 +329,7 @@ ${steps}
   - {when: call, as: ann, request: {method: delete, path: /api/pets/1}}
 `;
 
-const findingsOfState = (steps: string) =>
+const findingsOfState = (steps: string, path: Path = reached) =>
   rules === undefined
     ? undefined
     : checkBuilt({
@@ -334,7 +339,8 @@ const findingsOfState = (steps: string) =>
         actors: ["ann"],
         services: [],
         callables: [],
-        paths: [reached],
+        paths: [path],
+        unreached: [],
         files: every.map((rule) => ({
           slug: rule,
           text: rule === "pet-exists" ? startingFrom(steps) : scenario(rule),
@@ -345,7 +351,7 @@ test("a scenario starts from a state that is reached, its holes read in the path
   expect({
     passes: findingsOfState(`  - {when: arrange, state: s, name: p}
   - {when: before, as: ann, request: {method: get, path: "/api/pets/{{p.c.body.id}}"}}`),
-    unreached: findingsOfState("  - {when: arrange, state: t, name: p}"),
+    noState: findingsOfState("  - {when: arrange, state: t, name: p}"),
     colliding:
       findingsOfState(`  - {when: arrange, as: ann, name: p-c, request: {method: post, path: /api/pets}}
   - {when: arrange, state: s, name: p}`),
@@ -353,10 +359,33 @@ test("a scenario starts from a state that is reached, its holes read in the path
   - {when: before, as: ann, request: {method: get, path: "/api/pets/{{p.x.id}}"}}`),
   }).toEqual({
     passes: [],
-    unreached: ['scenarios/pet-exists.yaml: step 1: "t" is not a state that is reached'],
+    noState: ['scenarios/pet-exists.yaml: step 1: "t" is not a state of states.yaml'],
     colliding: ['scenarios/pet-exists.yaml: step 2: the names collide on "p-c"'],
     uncited: [
-      'scenarios/pet-exists.yaml: step 3: a hole cites "p-x", no step named before it',
+      'scenarios/pet-exists.yaml: step 2: a hole cites "p-x", no step named before it',
     ],
   });
+});
+
+test("a hole of a path's step citing a step the path leaves out is a finding on the state step", () => {
+  expect(
+    findingsOfState("  - {when: arrange, state: s, name: p}", {
+      state: "s",
+      steps: [
+        {
+          when: "before",
+          as: "ann",
+          name: "b",
+          request: { method: "get", path: "/api/pets" },
+        },
+        {
+          when: "call",
+          as: "ann",
+          request: { method: "get", path: "/api/pets/{{b.body.id}}" },
+        },
+      ],
+    }),
+  ).toEqual([
+    'scenarios/pet-exists.yaml: step 1: a hole cites "p-b", no step named before it',
+  ]);
 });

@@ -17,6 +17,7 @@ const at = (more: Files) => filesOf({ ...points["a reference"], ...states, ...mo
 
 const unreached = {
   paths: [],
+  unreached: [{ state: "s", why: "its path f/exists-a is not judged to hold" }],
   findings: ["states.yaml: s: its path f/exists-a is not judged to hold"],
 };
 
@@ -37,6 +38,7 @@ test("a state is reached when its path's judgement holds on the text its judge i
           steps: [{ when: "call", as: "u", request: { method: "get", path: "/f/x" } }],
         },
       ],
+      unreached: [],
       findings: [],
     },
   });
@@ -59,30 +61,42 @@ steps:
     ),
   ).toEqual({
     paths: [],
+    unreached: [
+      { state: "s", why: "its path f/exists-a: a path does not start from a state" },
+    ],
     findings: ["states.yaml: s: its path f/exists-a: a path does not start from a state"],
   });
 });
 
-const startingFromS: Files = {
+const startingFrom = (state: string): Files => ({
   "roles/f/scenarios/exists-b.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
 steps:
-  - {when: arrange, state: s, name: p}
+  - {when: arrange, state: ${state}, name: p}
   - {when: call, as: u, request: {method: get, path: /f/y}}
 `,
-};
+});
 
-test("a scenario that starts from a state not reached is told so, with why its path is not", () => {
+const notReached = [
+  'scenarios/exists-b.yaml: step 1: "s" is not a state that is reached: its path f/exists-a is not judged to hold',
+];
+
+test("a scenario that starts from a state not reached is told so in one line, with why its path is not", () => {
+  const findingsAt = (more: Files) =>
+    builtOf(at({ ...startingFrom("s"), ...more }), bound)?.findings;
   expect({
-    unreached: builtOf(at(startingFromS), bound)?.findings,
-    reached: builtOf(at({ ...startingFromS, ...judgedAs(hash) }), bound)?.findings,
+    none: findingsAt({}),
+    notShown: findingsAt(judgedAs(hash, "not-shown")),
+    stale: findingsAt(judgedAs("h")),
+    holds: findingsAt(judgedAs(hash)),
+    noState: builtOf(at({ ...startingFrom("t"), ...judgedAs(hash) }), bound)?.findings,
   }).toEqual({
-    unreached: [
-      'scenarios/exists-b.yaml: step 1: "s" is not a state that is reached',
-      "states.yaml: s: its path f/exists-a is not judged to hold",
-    ],
-    reached: [],
+    none: notReached,
+    notShown: notReached,
+    stale: notReached,
+    holds: [],
+    noState: ['scenarios/exists-b.yaml: step 1: "t" is not a state of states.yaml'],
   });
 });

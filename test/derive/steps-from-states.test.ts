@@ -34,6 +34,7 @@ test("a state step is the path's steps up to its call, as arrange, their names a
       [path],
     ),
   ).toEqual({
+    from: [1, 2, 2, 3],
     steps: [
       { when: "arrange", as: "a", name: "n", request: { method: "post", path: "/n" } },
       { when: "arrange", as: "a", name: "p-c", call: { operation: "f", with: { y: 1 } } },
@@ -57,10 +58,10 @@ test("steps with no state step come back as they are", () => {
     { when: "arrange", service: "v", is: "refuses", with: { a: "{{p.c.id}}" } },
     { when: "call", as: null, request: { method: "get", path: "/a/{{p.c.id}}" } },
   ];
-  expect(stepsFromStates(steps, [path])).toEqual({ steps });
+  expect(stepsFromStates(steps, [path])).toEqual({ steps, from: [1, 2] });
 });
 
-test("a state that is not reached and a name the path's steps take twice are findings", () => {
+test("a state not reached, with why, a state states.yaml lacks and a name the path's steps take twice are findings", () => {
   expect(
     stepsFromStates(
       [
@@ -72,14 +73,17 @@ test("a state that is not reached and a name the path's steps take twice are fin
         },
         { when: "arrange", state: "s", name: "p" },
         { when: "arrange", state: "t", name: "q" },
+        { when: "arrange", state: "u", name: "r" },
         call,
       ],
       [path],
+      [{ state: "t", why: "its path f/a is not judged to hold" }],
     ),
   ).toEqual({
     findings: [
       'step 2: the names collide on "p-c"',
-      'step 3: "t" is not a state that is reached',
+      'step 3: "t" is not a state that is reached: its path f/a is not judged to hold',
+      'step 4: "u" is not a state of states.yaml',
     ],
   });
 });

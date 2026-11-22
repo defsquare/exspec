@@ -22,7 +22,7 @@ import { servicesIn } from "./check-service.ts";
 import { checkStates } from "./check-states.ts";
 import { checkTrigger } from "./check-trigger.ts";
 import { judgeTask } from "./judge-task.ts";
-import type { Path } from "./steps-from-states.ts";
+import type { Path, Unreached } from "./steps-from-states.ts";
 
 // "delete-item" -> "roles/delete-item"
 export const folderOf = (name: string) => `roles/${name}`;
@@ -163,39 +163,17 @@ export function builtOf(
   const { rules, trigger } = readerFilesOf(files, bound.interface);
   if (rules === undefined || trigger === undefined) return undefined;
   const written = slugsIn(files, `${folderOf(bound.interface)}/scenarios`);
-  const read = pathsRead(files);
-  const built = checkBuilt({
+  const { paths, unreached } = pathsOf(files);
+  return checkBuilt({
     bound,
     rules,
     protocol: trigger.protocol ?? [],
     actors: actors ?? actorsNamed(written),
     services: servicesIn(files),
     callables,
-    paths: read.flatMap((one) => ("path" in one ? [one.path] : [])),
+    paths,
+    unreached,
     files: written,
-  });
-  // why a state its scenarios start from is not reached, once each
-  const cited = statesNamed(written);
-  return {
-    ...built,
-    findings: [
-      ...built.findings,
-      ...read.flatMap((one) =>
-        "finding" in one && cited.includes(one.state) ? [one.finding] : [],
-      ),
-    ],
-  };
-}
-
-// the states the scenarios start from
-function statesNamed(
-  written: readonly { readonly slug: string; readonly text: string }[],
-): readonly string[] {
-  return written.flatMap(({ slug, text }) => {
-    const read = readYaml(slug, text, roleScenarioSchema);
-    return "value" in read
-      ? read.value.steps.flatMap((step) => ("state" in step ? [step.state] : []))
-      : [];
   });
 }
 
@@ -213,20 +191,14 @@ export function statesOf(files: readonly SourceFile[]) {
 // Each state of states.yaml, with its path when it is reached: the scenario its entry names
 // parses, starts from no state, and its judgement holds on the text its judge is given today.
 //   {state: s, path: f/a}, a judged holds  -> {state: s, path: {state: s, steps: […]}}
-//   {state: s, path: f/a}, a not judged    -> {state: s, finding: "states.yaml: s: …"}
+//   {state: s, path: f/a}, a not judged    -> {state: s, why: "its path f/a is not judged to hold"}
 function pathsRead(
   files: readonly SourceFile[],
-): readonly (
-  | { readonly state: string; readonly path: Path }
-  | { readonly state: string; readonly finding: string }
-)[] {
+): readonly ({ readonly state: string; readonly path: Path } | Unreached)[] {
   const interfaces = interfacesOf(files) ?? [];
   return statesOf(files).states.map(({ state, path }) => {
     const [name = "", slug = ""] = path.split("/");
-    const unreached = {
-      state,
-      finding: `states.yaml: ${state}: its path ${path} is not judged to hold`,
-    };
+    const unreached = { state, why: `its path ${path} is not judged to hold` };
     const bound = interfaces.find(({ interface: one }) => one === name);
     const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
     const text = textAt(files, file);
@@ -235,10 +207,7 @@ function pathsRead(
     if (bound === undefined || read === undefined || !("value" in read)) return unreached;
     const steps = read.value.steps.flatMap((step) => ("state" in step ? [] : [step]));
     if (steps.length < read.value.steps.length) {
-      return {
-        state,
-        finding: `states.yaml: ${state}: its path ${path}: a path does not start from a state`,
-      };
+      return { state, why: `its path ${path}: a path does not start from a state` };
     }
     const evidence = evidenceAt(files, name, slug);
     const of =
@@ -252,15 +221,18 @@ function pathsRead(
   });
 }
 
-// the states that are reached, and why each other is not
+// the states that are reached, the others with why, and that why as a finding of states.yaml
 export function pathsOf(files: readonly SourceFile[]): {
   readonly paths: readonly Path[];
+  readonly unreached: readonly Unreached[];
   readonly findings: readonly string[];
 } {
   const read = pathsRead(files);
+  const unreached = read.flatMap((one) => ("why" in one ? [one] : []));
   return {
     paths: read.flatMap((one) => ("path" in one ? [one.path] : [])),
-    findings: read.flatMap((one) => ("finding" in one ? [one.finding] : [])),
+    unreached,
+    findings: unreached.map(({ state, why }) => `states.yaml: ${state}: ${why}`),
   };
 }
 

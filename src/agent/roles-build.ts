@@ -228,7 +228,8 @@ async function* builder(
         confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, exspec/roles/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, exspec/states.yaml and the scenario file each state of it names, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
         // a state step replaced by its path's steps; one that cannot be: nothing is played
         play: async (steps) => {
-          const replaced = stepsFromStates(steps, pathsOf(await readFiles(dir)).paths);
+          const { paths, unreached } = pathsOf(await readFiles(dir));
+          const replaced = stepsFromStates(steps, paths, unreached);
           return "findings" in replaced
             ? replaced.findings.join("\n")
             : JSON.stringify((await play(replaced.steps)).exchanges, null, 2);
@@ -308,7 +309,8 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
         for (const message of read.findings) yield { type: "command-failed", message };
         return false;
       }
-      const replaced = stepsFromStates(read.value.steps, pathsOf(files).paths);
+      const { paths, unreached } = pathsOf(files);
+      const replaced = stepsFromStates(read.value.steps, paths, unreached);
       if ("findings" in replaced) {
         for (const finding of replaced.findings) {
           yield { type: "command-failed", message: `${file}: ${finding}` };

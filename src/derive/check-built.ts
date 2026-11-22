@@ -14,7 +14,7 @@ import { flowYaml } from "./flow-yaml.ts";
 import { holesOf, holesOfGiven } from "./holes.ts";
 import { sentOfCall } from "./sent-of-call.ts";
 import { stepsAsCalls } from "./steps-as-calls.ts";
-import { type Path, stepsFromStates } from "./steps-from-states.ts";
+import { type Path, stepsFromStates, type Unreached } from "./steps-from-states.ts";
 
 // "/a/{id}/b" and "/a/7/b" or "/a/{{m.body.id}}/b" -> true; "/a/7" -> false
 function pathMatches(pattern: string, path: string): boolean {
@@ -126,19 +126,23 @@ const holesOfStep = (step: Step) =>
       ? holesOfGiven(step.call.with)
       : holesOf(step.request);
 
-// a scenario its state steps replaced: the holes' checks read the path's steps
+// a scenario its state steps replaced: the holes' checks read the path's steps, a finding
+// numbers the step as written (from: the position each step played comes from); one said
+// twice of a path's steps is said once
 function checkScenario(
   { rule, steps }: PlayableScenario,
   {
     slug,
+    from,
     bound,
     rules,
     protocol,
     actors,
     services,
     callables,
-  }: Checking & { readonly slug: string },
+  }: Checking & { readonly slug: string; readonly from: readonly number[] },
 ): readonly string[] {
+  const at = (i: number) => from[i] ?? i + 1;
   const calls = steps.flatMap((step) =>
     !("service" in step) && step.when === "call" ? [step] : [],
   );
@@ -152,7 +156,7 @@ function checkScenario(
       ? callables.find(({ operation }) => operation === named.call.operation)
       : undefined;
   };
-  return [
+  const findings = [
     ...(ownersOf(rules, protocol).includes(rule)
       ? []
       : [
@@ -179,13 +183,13 @@ function checkScenario(
       const earlier = steps.slice(0, i);
       return [
         ...("service" in step
-          ? checkServiceStep(step, services).map((finding) => `step ${i + 1}: ${finding}`)
+          ? checkServiceStep(step, services).map((finding) => `step ${at(i)}: ${finding}`)
           : step.as === null || actors.includes(step.as)
             ? []
-            : [`step ${i + 1}: "${step.as}" is not an actor (${actors.join(", ")})`]),
+            : [`step ${at(i)}: "${step.as}" is not an actor (${actors.join(", ")})`]),
         ...("call" in step
           ? checkCallStep(step.call, callables).map(
-              (finding) => `step ${i + 1}: ${finding}`,
+              (finding) => `step ${at(i)}: ${finding}`,
             )
           : []),
         ...[...new Set(holes)].flatMap((hole) => {
@@ -193,27 +197,28 @@ function checkScenario(
           return callable === undefined
             ? []
             : checkHoleOnCall(hole, callable).map(
-                (finding) => `step ${i + 1}: ${finding}`,
+                (finding) => `step ${at(i)}: ${finding}`,
               );
         }),
         ...cited
           .filter((name) => !before.has(name))
           .map(
-            (name) => `step ${i + 1}: a hole cites "${name}", no step named before it`,
+            (name) => `step ${at(i)}: a hole cites "${name}", no step named before it`,
           ),
         ...misplaced.map(
-          (at) =>
-            `step ${i + 1}: ${at} holds a hole inside a longer string; a hole outside the path is a whole string`,
+          (place) =>
+            `step ${at(i)}: ${place} holds a hole inside a longer string; a hole outside the path is a whole string`,
         ),
       ];
     }),
     // a request a call says exactly is written as that call, whatever the rule proved
     ...stepsAsCalls(steps, callables).flatMap((one, i) =>
       one !== undefined && "call" in one
-        ? [`step ${i + 1} is the call ${flowYaml(one.call)}: write it as a call`]
+        ? [`step ${at(i)} is the call ${flowYaml(one.call)}: write it as a call`]
         : [],
     ),
   ];
+  return [...new Set(findings)];
 }
 
 type Checking = {
@@ -230,12 +235,14 @@ type Checking = {
 };
 
 // What a builder wrote, checked before it is played: each scenario file, then the folder.
-// files: [{slug: "exists", text}] for scenarios/exists.yaml; paths: the states reached.
-// A scenario comes back its state steps replaced; one whose state steps cannot be replaced
-// is told by those findings alone, and still exercises its rule.
+// files: [{slug: "exists", text}] for scenarios/exists.yaml; paths: the states reached;
+// unreached: the others, with why. A scenario comes back its state steps replaced; one
+// whose state steps cannot be replaced is told by those findings alone, and still
+// exercises its rule.
 export function checkBuilt(
   checking: Checking & {
     readonly paths: readonly Path[];
+    readonly unreached: readonly Unreached[];
     readonly files: readonly { readonly slug: string; readonly text: string }[];
   },
 ): {
@@ -245,13 +252,13 @@ export function checkBuilt(
   }[];
   readonly findings: readonly string[];
 } {
-  const { files, rules, protocol, paths } = checking;
+  const { files, rules, protocol, paths, unreached } = checking;
   const read = files.map(({ slug, text }) => {
     const file = `scenarios/${slug}.yaml`;
     const parsed = readYaml(file, text, roleScenarioSchema);
     if (!("value" in parsed)) return { slug, findings: parsed.findings };
     const { rule } = parsed.value;
-    const replaced = stepsFromStates(parsed.value.steps, paths);
+    const replaced = stepsFromStates(parsed.value.steps, paths, unreached);
     if ("findings" in replaced) {
       return {
         slug,
@@ -264,7 +271,7 @@ export function checkBuilt(
       slug,
       rule,
       scenario,
-      findings: checkScenario(scenario, { ...checking, slug }).map(
+      findings: checkScenario(scenario, { ...checking, slug, from: replaced.from }).map(
         (finding) => `${file}: ${finding}`,
       ),
     };
