@@ -42,6 +42,7 @@ export const roleSchema = z.enum([
   "structures-reader",
   "common-reader",
   "reader",
+  "states-reader",
   "builder",
   "judge",
   "provider-reader",

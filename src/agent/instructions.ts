@@ -7,6 +7,7 @@ import commonReader from "./instructions/role-common-reader.md" with { type: "te
 import judge from "./instructions/role-judge.md" with { type: "text" };
 import providerReader from "./instructions/role-provider-reader.md" with { type: "text" };
 import reader from "./instructions/role-reader.md" with { type: "text" };
+import statesReader from "./instructions/role-states-reader.md" with { type: "text" };
 import structuresReader from "./instructions/role-structures-reader.md" with {
   type: "text",
 };
@@ -35,6 +36,7 @@ export const roleInstructions: Readonly<Record<Role, string>> = {
   "structures-reader": structuresReader,
   "common-reader": commonReader,
   reader,
+  "states-reader": statesReader,
   builder,
   judge,
   "provider-reader": providerReader,

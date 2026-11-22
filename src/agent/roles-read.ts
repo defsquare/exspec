@@ -1,12 +1,16 @@
+import { ownersOf } from "../derive/check-built.ts";
+import { checkGathered } from "../derive/check-gathered.ts";
 import {
   checkCommon,
   checkProtocol,
   checkStructuresFile,
 } from "../derive/check-reader.ts";
 import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
-import { folderOf, readerFilesOf, textAt } from "../derive/roles-files.ts";
+import { folderOf, interfacesOf, readerFilesOf, textAt } from "../derive/roles-files.ts";
 import { interfaceLeft, leftOf } from "../derive/roles-left.ts";
+import { statesOf } from "../derive/states-files.ts";
 import type { Event } from "../shapes/event.ts";
+import type { SourceFile } from "../shapes/extraction.ts";
 import type { Interface } from "../shapes/target.ts";
 import { readsOf, under, writesOf } from "./access.ts";
 import { inParallel } from "./pool.ts";
@@ -139,8 +143,70 @@ async function* reader(
   );
 }
 
+// what the states' reader wrote, checked: the file's own findings, then what is asked of a
+// gathered state against the rules of every operation read
+function gatheredFindings(files: readonly SourceFile[]): readonly string[] {
+  if (textAt(files, "states.yaml") === undefined) return ["states.yaml is not written"];
+  const { states, findings } = statesOf(files);
+  const rules = (interfacesOf(files) ?? []).flatMap(({ interface: name }) => {
+    const { rules, trigger } = readerFilesOf(files, name);
+    return rules === undefined || trigger === undefined
+      ? []
+      : ownersOf(rules, trigger.protocol ?? []).map((rule) => `${name}/${rule}`);
+  });
+  return [...findings, ...checkGathered({ states, rules })];
+}
+
+// roles/<operation>/rules.yaml and hints.yaml
+const ruleOrHints = (path: string) => /^roles\/[^/]+\/(rules|hints)\.yaml$/.test(path);
+
+// The states' reader reads exspec/ alone, never the code, and writes states.yaml once:
+// when it is missing and every interface of interfaces.yaml is read, the selection or not.
+async function* statesReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
+  const { dir, readFiles } = rolesRun;
+  const files = await readFiles(dir);
+  const left = leftOf({ files, interfaces: interfacesOf(files) ?? [] });
+  const unread = left.interfaces.filter(({ reading }) => reading !== "done").length;
+  if (!left.states) {
+    return yield* roleSkipped("states-reader", undefined, "states.yaml is written");
+  }
+  if (unread > 0) {
+    return yield* roleSkipped(
+      "states-reader",
+      undefined,
+      `${unread} operations are not read yet`,
+    );
+  }
+  const own = "states.yaml";
+  return yield* roleJob("states-reader", undefined, () =>
+    roleRounds({
+      rolesRun,
+      role: "states-reader",
+      name: undefined,
+      rounds,
+      session: {
+        prompt:
+          "Read exspec/structures.yaml, exspec/interfaces.yaml and the rules.yaml and hints.yaml of every folder of exspec/roles/, and write exspec/states.yaml.",
+        tools,
+        mayRead: readsOf(dir, {
+          checkout: false,
+          allowed: (path) =>
+            ["structures.yaml", "interfaces.yaml", own, "roles/common.yaml"].includes(
+              path,
+            ) || ruleOrHints(path),
+        }),
+        mayWrite: writesOf(dir, (path) => path === own),
+        confinement:
+          "This session reads nothing of the code; of exspec/ it reads only structures.yaml, interfaces.yaml, states.yaml, roles/common.yaml and the rules.yaml and hints.yaml of each folder of roles/; it writes only exspec/states.yaml.",
+      },
+      gate: async () => gatheredFindings(await readFiles(dir)),
+    }),
+  );
+}
+
 // The structures first, then the common reading, each when it is missing or does not pass
-// its check; then one reader per interface, `jobs` at a time. The target is not started.
+// its check; then one reader per interface, `jobs` at a time; then the states' reader. The
+// target is not started.
 export async function* runReaders(
   rolesRun: RolesRun,
   { interfaces }: RolesSetting,
@@ -163,7 +229,8 @@ export async function* runReaders(
     interfaces.map((bound) => () => reader(rolesRun, bound)),
     jobs,
   );
-  return done.every(Boolean);
+  if (!done.every(Boolean)) return false;
+  return yield* statesReader(rolesRun);
 }
 
 export function rolesRead(rolesRun: RolesRun): AsyncGenerator<Event> {
