@@ -17,6 +17,7 @@ import {
   pathsOf,
   readerFilesOf,
   slugsIn,
+  statesOf,
   textAt,
 } from "../derive/roles-files.ts";
 import { actorsOf, type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
@@ -83,7 +84,8 @@ function readingsOf(files: readonly SourceFile[]) {
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
   const { providers, findings } = readAndCheckProviders(files);
   const callables = callablesOf(files);
-  const { paths } = pathsOf(files);
+  const { paths, findings: ofPaths } = pathsOf(files);
+  const states = statesOf(files);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
     const folder = folderOf(name);
@@ -134,6 +136,8 @@ function readingsOf(files: readonly SourceFile[]) {
     protocol: protocol.protocol,
     findings: [
       ...structures.findings,
+      ...states.findings,
+      ...ofPaths,
       ...[...common.findings, ...protocol.findings].map((f) => `roles/${f}`),
       ...findings,
     ],

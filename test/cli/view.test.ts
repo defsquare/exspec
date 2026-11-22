@@ -385,3 +385,43 @@ test("view hands the page a scenario with no service step and no side effect as 
     ],
   });
 });
+
+test("view lists what states.yaml says wrong, and each state whose path is not judged to hold", () => {
+  const data = dataOf("/d/t", [
+    { path: "target.yaml", text: target },
+    { path: "interfaces.yaml", text: interfaces },
+    { path: "structures.yaml", text: structures },
+    { path: "roles/common.yaml", text: common },
+    { path: "roles/protocol.yaml", text: protocol },
+    { path: "roles/f/rules.yaml", text: rules },
+    { path: "roles/f/trigger.yaml", text: trigger },
+    { path: "roles/f/hints.yaml", text: hints },
+    { path: "roles/f/scenarios/exists.yaml", text: scenario },
+    {
+      path: "states.yaml",
+      text: `
+- {state: s, of: [B], seen: a, path: f/exists}
+- {state: t, of: [A], seen: a, path: h/exists}
+`,
+    },
+  ]);
+  expect(data.problems).toEqual([
+    { file: "states.yaml", at: "", message: 's: "B" is not a structure' },
+    {
+      file: "states.yaml",
+      at: "",
+      message: 't: the path h/exists names "h", not an interface',
+    },
+    {
+      file: "states.yaml",
+      at: "",
+      message: "s: its path f/exists is not judged to hold",
+    },
+    {
+      file: "states.yaml",
+      at: "",
+      message: "t: its path h/exists is not judged to hold",
+    },
+    { file: "roles/f", at: "", message: 'no scenario for the rule "signed-in"' },
+  ]);
+});
