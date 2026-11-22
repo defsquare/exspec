@@ -3,9 +3,9 @@ import type { Problem } from "../shapes/extraction.ts";
 import type {
   Common,
   Evidence,
-  Judgement,
   PlayableScenario,
   Protocol,
+  RuleJudgement,
   Rules,
   SideEffect,
   StepCall,
@@ -27,7 +27,7 @@ export type ReadInterface = {
     readonly scenario: PlayableScenario;
   }[];
   readonly evidence: readonly { readonly slug: string; readonly evidence: Evidence }[];
-  readonly judgements: readonly Judgement[];
+  readonly judgements: readonly RuleJudgement[];
 };
 
 export type Word =
@@ -373,7 +373,15 @@ export function viewOfRoles({
       const { of } =
         evidence.length === 0 || trigger === undefined
           ? { of: new Map<string, string>() }
-          : judgeTask({ bound, common, protocol, rules, trigger, recordings: evidence });
+          : judgeTask({
+              bound,
+              common,
+              protocol,
+              rules,
+              trigger,
+              recordings: evidence,
+              states: [],
+            });
       const slugs = [
         ...new Set([
           ...scenarios.map(({ slug }) => slug),

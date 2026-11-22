@@ -278,11 +278,21 @@ export const eventSchema = z.union([
     scenario: z.string(),
     evidence: evidenceSchema,
   }),
+  // a judgement written, of a scenario on its rule or of a state on its path: its key
+  // tells which, as the judgement's does
   z.object({
     type: z.literal("judgement-written"),
     interface: z.string(),
     scenario: z.string(),
     rule: z.string(),
+    verdict: verdictSchema,
+    confidence: z.number(),
+  }),
+  z.object({
+    type: z.literal("judgement-written"),
+    interface: z.string(),
+    scenario: z.string(),
+    state: z.string(),
     verdict: verdictSchema,
     confidence: z.number(),
   }),

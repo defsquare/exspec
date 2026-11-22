@@ -3,13 +3,14 @@ import { type Judged, judgedSchema } from "../shapes/roles.ts";
 
 const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n?```$/;
 
-// The judge's last message -> one entry per recording, in the order of slugs; or what is
-// wrong with it, a line the judge can fix:
+// The judge's last message -> one entry per part of its task — a recording, or a state
+// judged on one: "a", "state:s" — in the order of the parts; or what is wrong with it, a
+// line the judge can fix:
 //   '```json\n[{"scenario": "a", …}]\n```', [a] -> {judged: [{scenario: "a", …}]}
 //   '[]', [a]                                  -> {findings: ['no entry for "a"']}
 export function parseJudgeAnswer(
   said: string | undefined,
-  slugs: readonly string[],
+  parts: readonly string[],
 ): { readonly judged: readonly Judged[] } | { readonly findings: readonly string[] } {
   if (said === undefined) return { findings: ["no answer: one JSON array is expected"] };
   const trimmed = said.trim();
@@ -34,20 +35,20 @@ export function parseJudgeAnswer(
   }
   const named = parsed.data.map(({ scenario }) => scenario);
   const findings = [
-    ...slugs
-      .filter((slug) => !named.includes(slug))
-      .map((slug) => `no entry for "${slug}"`),
+    ...parts
+      .filter((part) => !named.includes(part))
+      .map((part) => `no entry for "${part}"`),
     ...[...new Set(named.filter((name, i) => named.indexOf(name) !== i))].map(
       (name) => `two entries for "${name}"`,
     ),
     ...named
-      .filter((name) => !slugs.includes(name))
-      .map((name) => `an entry for "${name}", which is not a recording`),
+      .filter((name) => !parts.includes(name))
+      .map((name) => `an entry for "${name}", which is not a part`),
   ];
   if (findings.length > 0) return { findings };
   return {
-    judged: slugs.flatMap((slug) =>
-      parsed.data.filter(({ scenario }) => scenario === slug),
+    judged: parts.flatMap((part) =>
+      parsed.data.filter(({ scenario }) => scenario === part),
     ),
   };
 }

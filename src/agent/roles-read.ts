@@ -6,9 +6,14 @@ import {
   checkStructuresFile,
 } from "../derive/check-reader.ts";
 import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
-import { folderOf, interfacesOf, readerFilesOf, textAt } from "../derive/roles-files.ts";
+import {
+  folderOf,
+  interfacesOf,
+  readerFilesOf,
+  statesOf,
+  textAt,
+} from "../derive/roles-files.ts";
 import { interfaceLeft, leftOf } from "../derive/roles-left.ts";
-import { statesOf } from "../derive/states-files.ts";
 import type { Event } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Interface } from "../shapes/target.ts";

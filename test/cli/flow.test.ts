@@ -327,6 +327,14 @@ test("a role's event outside any running phase changes nothing", () => {
       verdict: "holds",
       confidence: 1,
     },
+    {
+      type: "judgement-written",
+      interface: "f",
+      scenario: "a",
+      state: "s",
+      verdict: "holds",
+      confidence: 1,
+    },
   ];
   expect(
     events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow),

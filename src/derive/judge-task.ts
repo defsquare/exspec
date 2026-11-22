@@ -94,8 +94,12 @@ function ruleEntry(
 // The text a judge is given for one operation, and per recording the hash of its part:
 //   the operation, what the system runs with, every requirement once, how this target
 //   answers it, the target's rules about its wire on it, then per recording (slug order)
-//   its name, its rule, the reader's doubts about it, its exchanges.
-// Nothing of the builder's words — situation, reached, step names — nor the hints.
+//   its name, its rule, the reader's doubts about it, its exchanges; after it, per state
+//   whose path it is (state order), the recording again with the state's sentence:
+//     {recording: "state:s", state: "reading the a shows …", exchanges: […]}
+// Nothing of the builder's words — situation, reached, step names — nor the hints. A
+// state's hash is of the shared text, its sentence and the exchanges: a state renamed
+// stales nothing.
 export function judgeTask({
   bound,
   common,
@@ -103,6 +107,7 @@ export function judgeTask({
   rules,
   trigger,
   recordings,
+  states,
 }: {
   readonly bound: Interface;
   readonly common: Common | undefined;
@@ -110,7 +115,16 @@ export function judgeTask({
   readonly rules: Rules;
   readonly trigger: Trigger;
   readonly recordings: readonly { readonly slug: string; readonly evidence: Evidence }[];
-}): { readonly text: string; readonly of: ReadonlyMap<string, string> } {
+  readonly states: readonly {
+    readonly state: string;
+    readonly seen: string;
+    readonly slug: string;
+  }[];
+}): {
+  readonly text: string;
+  readonly of: ReadonlyMap<string, string>;
+  readonly ofStates: ReadonlyMap<string, string>;
+} {
   const sorted = [...recordings].sort((a, b) => (a.slug < b.slug ? -1 : 1));
   const wire = protocolOf(trigger, protocol);
   const parts = sorted.map(({ slug, evidence: { rule, exchanges } }) => {
@@ -123,6 +137,14 @@ export function judgeTask({
         ...(unsure.length === 0 ? {} : { unsure }),
         exchanges,
       }),
+      states: states
+        .filter((s) => s.slug === slug)
+        .sort((a, b) => (a.state < b.state ? -1 : 1))
+        .map(({ state, seen }) => ({
+          state,
+          hashed: yaml({ state: seen, exchanges }),
+          text: yaml({ recording: `state:${state}`, state: seen, exchanges }),
+        })),
     };
   });
   const requirements = [
@@ -147,13 +169,25 @@ export function judgeTask({
     "The target's rules about its wire on this operation:",
     yaml(wire.map(withoutSource)),
   ].join("\n");
+  const texts = parts.flatMap(({ text, states }) => [
+    text,
+    ...states.map(({ text }) => text),
+  ]);
   const text = [
     shared,
     "",
-    `${parts.length} recordings, in this order:`,
-    ...parts.flatMap(({ text }) => ["", "---", text]),
+    `${texts.length} recordings, in this order:`,
+    ...texts.flatMap((text) => ["", "---", text]),
   ].join("\n");
   const hashOf = (part: string) =>
     new Bun.CryptoHasher("sha256").update(`${shared}\n---\n${part}`).digest("hex");
-  return { text, of: new Map(parts.map(({ slug, text }) => [slug, hashOf(text)])) };
+  return {
+    text,
+    of: new Map(parts.map(({ slug, text }) => [slug, hashOf(text)])),
+    ofStates: new Map(
+      parts.flatMap(({ states }) =>
+        states.map(({ state, hashed }) => [state, hashOf(hashed)] as const),
+      ),
+    ),
+  };
 }

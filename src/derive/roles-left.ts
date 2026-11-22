@@ -9,6 +9,7 @@ import {
   evidenceAt,
   judgementsIn,
   judgeTaskOf,
+  stateJudgementsIn,
   textAt,
 } from "./roles-files.ts";
 
@@ -19,7 +20,7 @@ import {
 //   record  the slugs whose evidence is of them as written and has no noise; none while the
 //           builder's check finds something
 //   judge   the slugs whose evidence is a reference of them as written, with no judgement of
-//           the same hash
+//           the same hash on their rule, or, when one is the path of a state, on its sentence
 export type InterfaceLeft =
   | { readonly interface: string; readonly reading: "to-do" }
   | {
@@ -65,8 +66,20 @@ export function interfaceLeft(
   const references = withEvidence.flatMap(({ slug, evidence }) =>
     evidence?.noise === undefined ? [] : [{ slug, evidence }],
   );
-  const hashes = judgeTaskOf(files, bound, references)?.of;
+  const task = judgeTaskOf(files, bound, references);
   const judged = judgementsIn(files, name);
+  const statesJudged = stateJudgementsIn(files, name);
+  const stateLeft = (slug: string) =>
+    (task?.states ?? []).some(
+      ({ state, slug: path }) =>
+        path === slug &&
+        !statesJudged.some(
+          (j) =>
+            j.scenario === slug &&
+            j.state === state &&
+            j.of === task?.ofStates.get(state),
+        ),
+    );
   return {
     interface: name,
     reading: "done",
@@ -83,7 +96,8 @@ export function interfaceLeft(
             evidence !== undefined && evidence.noise === undefined ? [slug] : [],
           ),
     judge: references.flatMap(({ slug }) =>
-      judged.some(({ scenario, of }) => scenario === slug && of === hashes?.get(slug))
+      judged.some(({ scenario, of }) => scenario === slug && of === task?.of.get(slug)) &&
+      !stateLeft(slug)
         ? []
         : [slug],
     ),

@@ -42,7 +42,7 @@ test("what is wrong with an answer, for the judge to fix", () => {
       findings: [
         'no entry for "b"',
         'two entries for "a"',
-        'an entry for "c", which is not a recording',
+        'an entry for "c", which is not a part',
       ],
     },
   ]);

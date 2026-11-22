@@ -96,7 +96,9 @@ const recordings = [
 ];
 
 test("the judge's task: the operation, its requirements once, each recording in slug order", () => {
-  expect(judgeTask({ bound, common, protocol, rules, trigger, recordings }).text).toEqual(
+  expect(
+    judgeTask({ bound, common, protocol, rules, trigger, recordings, states: [] }).text,
+  ).toEqual(
     `The operation: f, DELETE /a/{id}
 
 What the system under trial runs with:
@@ -181,13 +183,22 @@ ${Bun.YAML.stringify(
 });
 
 test("a recording's hash changes with its own part only", () => {
-  const before = judgeTask({ bound, common, protocol, rules, trigger, recordings }).of;
+  const before = judgeTask({
+    bound,
+    common,
+    protocol,
+    rules,
+    trigger,
+    recordings,
+    states: [],
+  }).of;
   const after = judgeTask({
     bound,
     common,
     protocol,
     rules,
     trigger,
+    states: [],
     recordings: [
       { slug: "removed", evidence: evidence("removed", 204) },
       { slug: "exists", evidence: evidence("exists", 400) },
@@ -200,7 +211,15 @@ test("a recording's hash changes with its own part only", () => {
 });
 
 test("every recording's hash changes with what all of them are judged with", () => {
-  const before = judgeTask({ bound, common, protocol, rules, trigger, recordings }).of;
+  const before = judgeTask({
+    bound,
+    common,
+    protocol,
+    rules,
+    trigger,
+    recordings,
+    states: [],
+  }).of;
   const after = judgeTask({
     bound,
     common,
@@ -210,6 +229,7 @@ test("every recording's hash changes with what all of them are judged with", () 
     },
     rules,
     trigger,
+    states: [],
     recordings,
   }).of;
   expect({
@@ -224,8 +244,24 @@ test("the judge is given nothing of the input a requirement is on", () => {
     takes: { a: { says: "s" } },
     requires: rules.requires.map((r) => ({ ...r, on: "a" })),
   };
-  const a = judgeTask({ bound, common, protocol, rules: on, trigger, recordings });
-  const b = judgeTask({ bound, common, protocol, rules, trigger, recordings });
+  const a = judgeTask({
+    bound,
+    common,
+    protocol,
+    rules: on,
+    trigger,
+    recordings,
+    states: [],
+  });
+  const b = judgeTask({
+    bound,
+    common,
+    protocol,
+    rules,
+    trigger,
+    recordings,
+    states: [],
+  });
   expect(a).toEqual(b);
 });
 
@@ -234,13 +270,22 @@ test("a recording's hash does not move with the noise beside its evidence", () =
     ...evidence("removed", 204),
     noise: [{ at: ["exchanges", 0, "response", "body"], class: 1 }],
   };
-  const before = judgeTask({ bound, common, protocol, rules, trigger, recordings }).of;
+  const before = judgeTask({
+    bound,
+    common,
+    protocol,
+    rules,
+    trigger,
+    recordings,
+    states: [],
+  }).of;
   const after = judgeTask({
     bound,
     common,
     protocol,
     rules,
     trigger,
+    states: [],
     recordings: [
       { slug: "removed", evidence: withNoise },
       { slug: "exists", evidence: evidence("exists", 404) },
@@ -256,6 +301,7 @@ test("a recording of a rule of the target's wire is given that rule", () => {
     protocol,
     rules,
     trigger,
+    states: [],
     recordings: [{ slug: "no-store", evidence: evidence("no-store", 204) }],
   });
   expect(text.split("---\n")[1]).toEqual(
@@ -275,4 +321,50 @@ test("a recording of a rule of the target's wire is given that rule", () => {
       2,
     ).trimEnd(),
   );
+});
+
+const yaml = (value: unknown) => Bun.YAML.stringify(value, null, 2).trimEnd();
+
+const onState = (state: string, seen: string) =>
+  judgeTask({
+    bound,
+    common,
+    protocol,
+    rules,
+    trigger,
+    recordings: [{ slug: "removed", evidence: evidence("removed", 204) }],
+    states: [{ state, seen, slug: "removed" }],
+  });
+
+test("a state whose path is a recording is judged on it again, after its own part, with its sentence in place of the rule", () => {
+  const [head = "", ...parts] = onState("s", "reading the a shows it").text.split(
+    "\n\n---\n",
+  );
+  expect({ count: head.split("\n").at(-1), parts }).toEqual({
+    count: "2 recordings, in this order:",
+    parts: [
+      yaml({
+        recording: "removed",
+        rule: { effect: { rule: "removed", says: "The item is gone." } },
+        unsure: ["maybe 200"],
+        exchanges: evidence("removed", 204).exchanges,
+      }),
+      yaml({
+        recording: "state:s",
+        state: "reading the a shows it",
+        exchanges: evidence("removed", 204).exchanges,
+      }),
+    ],
+  });
+});
+
+test("a state's hash changes with its sentence, not with its name, and moves no recording's", () => {
+  const before = onState("s", "reading the a shows it");
+  const renamed = onState("t", "reading the a shows it");
+  const reworded = onState("s", "reading the a shows it gone");
+  expect({
+    renamed: renamed.ofStates.get("t") === before.ofStates.get("s"),
+    reworded: reworded.ofStates.get("s") === before.ofStates.get("s"),
+    recording: reworded.of.get("removed") === before.of.get("removed"),
+  }).toEqual({ renamed: true, reworded: false, recording: true });
 });

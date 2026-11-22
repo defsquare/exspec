@@ -371,14 +371,26 @@ export const judgedSchema = z
 
 export type Judged = z.infer<typeof judgedSchema>;
 
-// of: the hash of the text the judge was given for that scenario; another text, a stale
+// A judgement of a scenario on its rule, or of a state's sentence on the scenario that is
+// its path; its key tells which:
+//   {scenario: a, rule: r,  situation: "yes", verdict: contradicted, …, of: h}
+//   {scenario: a, state: s, situation: "yes", verdict: holds,        …, of: k}
+// of: the hash of the text the judge was given for that part; another text, a stale
 // judgement
-export const judgementSchema = judgedSchema
+export const ruleJudgementSchema = judgedSchema
   .unwrap()
   .extend({ rule: z.string(), of: z.string() })
   .readonly();
 
-export type Judgement = z.infer<typeof judgementSchema>;
+export const stateJudgementSchema = judgedSchema
+  .unwrap()
+  .extend({ state: z.string(), of: z.string() })
+  .readonly();
+
+export const judgementSchema = z.union([ruleJudgementSchema, stateJudgementSchema]);
+
+export type RuleJudgement = z.infer<typeof ruleJudgementSchema>;
+export type StateJudgement = z.infer<typeof stateJudgementSchema>;
 
 export const judgementsSchema = z
   .strictObject({

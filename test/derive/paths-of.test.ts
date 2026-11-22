@@ -3,11 +3,12 @@ import { builtOf } from "../../src/derive/built-of.ts";
 import { pathsOf } from "../../src/derive/states-files.ts";
 import {
   bound,
+  evidenceOf,
   type Files,
   filesOf,
-  hash,
   judgedAs,
   points,
+  stateHashIn,
 } from "../roles-left-fixture.ts";
 
 const states: Files = {
@@ -20,24 +21,62 @@ steps:
   - {when: call, as: u, request: {method: get, path: /f/x}}
   - {when: after, as: u, request: {method: get, path: /f/x}}
 `,
+  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(
+    evidenceOf({
+      noise: [],
+      exchanges: [
+        {
+          when: "call",
+          as: "u",
+          request: { method: "get", path: "/f/x" },
+          response: { status: 404, body: null },
+        },
+        {
+          when: "after",
+          as: "u",
+          request: { method: "get", path: "/f/x" },
+          response: { status: 404, body: null },
+        },
+      ],
+    }),
+  ),
 };
 
 const at = (more: Files) => filesOf({ ...points["a reference"], ...states, ...more });
 
+const hash = stateHashIn({ ...points["a reference"], ...states });
+
 const awaited = (path: string) => ({
   paths: [],
-  unreached: [{ state: "s", awaited: true, why: `its path ${path} is not judged yet` }],
+  unreached: [
+    { state: "s", awaited: true, why: `it is not judged on its path ${path} yet` },
+  ],
   findings: [],
   gaps: [
     {
       kind: "state-not-reached" as const,
       name: "s",
-      message: `its path ${path} is not judged yet`,
+      message: `it is not judged on its path ${path} yet`,
     },
   ],
 });
 
-test("a state is reached when its path's judgement holds on today's text, awaited while it is not judged on it", () => {
+const reached: ReturnType<typeof pathsOf> = {
+  paths: [
+    {
+      state: "s",
+      steps: [
+        { when: "call", as: "u", request: { method: "get", path: "/f/x" } },
+        { when: "after", as: "u", request: { method: "get", path: "/f/x" } },
+      ],
+    },
+  ],
+  unreached: [],
+  findings: [],
+  gaps: [],
+};
+
+test("a state is reached when its sentence's judgement on its path holds on today's text, awaited while it is not judged on it", () => {
   expect({
     noInterface: pathsOf(
       at({ "states.yaml": "- {state: s, of: [S], seen: x, path: g/exists-a}" }),
@@ -47,47 +86,55 @@ test("a state is reached when its path's judgement holds on today's text, awaite
     ),
     unparsed: pathsOf(at({ "roles/f/scenarios/exists-a.yaml": "rule: [" })),
     noEvidence: pathsOf(at({ "roles/f/evidence/exists-a.yaml": "" })),
+    playedOnce: pathsOf(
+      at({
+        ...judgedAs("h", "holds", { of: hash, verdict: "holds" }),
+        "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidenceOf()),
+      }),
+    ),
     none: pathsOf(at({})),
-    stale: pathsOf(at(judgedAs("h"))),
-    notShown: pathsOf(at(judgedAs(hash, "not-shown"))),
-    holds: pathsOf(at(judgedAs(hash))),
+    ruleOnly: pathsOf(at(judgedAs("h"))),
+    stale: pathsOf(at(judgedAs("h", "holds", { of: "k", verdict: "holds" }))),
+    notShown: pathsOf(at(judgedAs("h", "holds", { of: hash, verdict: "not-shown" }))),
+    holds: pathsOf(at(judgedAs("h", "holds", { of: hash, verdict: "holds" }))),
   }).toEqual({
     noInterface: awaited("g/exists-a"),
     notWritten: awaited("f/exists-b"),
     unparsed: awaited("f/exists-a"),
     noEvidence: awaited("f/exists-a"),
+    playedOnce: awaited("f/exists-a"),
     none: awaited("f/exists-a"),
+    ruleOnly: awaited("f/exists-a"),
     stale: awaited("f/exists-a"),
     notShown: {
       paths: [],
       unreached: [
-        { state: "s", awaited: false, why: "its path f/exists-a is judged not-shown" },
-      ],
-      findings: ["states.yaml: s: its path f/exists-a is judged not-shown"],
-      gaps: [],
-    },
-    holds: {
-      paths: [
         {
           state: "s",
-          steps: [
-            { when: "call", as: "u", request: { method: "get", path: "/f/x" } },
-            { when: "after", as: "u", request: { method: "get", path: "/f/x" } },
-          ],
+          awaited: false,
+          why: "its path f/exists-a does not show it: judged not-shown",
         },
       ],
-      unreached: [],
-      findings: [],
+      findings: [
+        "states.yaml: s: its path f/exists-a does not show it: judged not-shown",
+      ],
       gaps: [],
     },
+    holds: reached,
   });
+});
+
+test("a state whose path's own rule is judged contradicted is reached when its sentence holds on it", () => {
+  expect(
+    pathsOf(at(judgedAs("h", "contradicted", { of: hash, verdict: "holds" }))),
+  ).toEqual(reached);
 });
 
 test("a path whose steps start from a state is a finding", () => {
   expect(
     pathsOf(
       at({
-        ...judgedAs(hash),
+        ...judgedAs("h", "holds", { of: hash, verdict: "holds" }),
         "roles/f/scenarios/exists-a.yaml": `
 rule: exists
 situation: an id no item has
@@ -132,14 +179,20 @@ test("a scenario that starts from a state not reached is told so in one line, wi
     builtOf(at({ ...startingFrom("s"), ...more }), bound)?.findings;
   expect({
     none: findingsAt({}),
-    notShown: findingsAt(judgedAs(hash, "not-shown")),
-    stale: findingsAt(judgedAs("h")),
-    holds: findingsAt(judgedAs(hash)),
-    noState: builtOf(at({ ...startingFrom("t"), ...judgedAs(hash) }), bound)?.findings,
+    notShown: findingsAt(judgedAs("h", "holds", { of: hash, verdict: "not-shown" })),
+    stale: findingsAt(judgedAs("h", "holds", { of: "k", verdict: "holds" })),
+    holds: findingsAt(judgedAs("h", "holds", { of: hash, verdict: "holds" })),
+    noState: builtOf(
+      at({
+        ...startingFrom("t"),
+        ...judgedAs("h", "holds", { of: hash, verdict: "holds" }),
+      }),
+      bound,
+    )?.findings,
   }).toEqual({
-    none: notReached("its path f/exists-a is not judged yet"),
-    notShown: notReached("its path f/exists-a is judged not-shown"),
-    stale: notReached("its path f/exists-a is not judged yet"),
+    none: notReached("it is not judged on its path f/exists-a yet"),
+    notShown: notReached("its path f/exists-a does not show it: judged not-shown"),
+    stale: notReached("it is not judged on its path f/exists-a yet"),
     holds: [],
     noState: ['scenarios/exists-b.yaml: step 1: "t" is not a state of states.yaml'],
   });

@@ -4,9 +4,10 @@ import { checkExtraction } from "../derive/check.ts";
 import { countExtraction } from "../derive/count.ts";
 import { declaredIn, phasesOf } from "../derive/phases.ts";
 import { countJudged, judgeExtraction } from "../derive/provenance.ts";
+import { statesOf } from "../derive/roles-files.ts";
 import { leftOf } from "../derive/roles-left.ts";
 import { problemOf } from "../derive/roles-view.ts";
-import { pathsOf, statesOf } from "../derive/states-files.ts";
+import { pathsOf } from "../derive/states-files.ts";
 import type { Event } from "../shapes/event.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 

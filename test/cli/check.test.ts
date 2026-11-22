@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { check } from "../../src/cli/check.ts";
 import type { Event } from "../../src/shapes/event.ts";
-import { filesOf, hash, judgedAs, points } from "../roles-left-fixture.ts";
+import { filesOf, hash, judgedAs, points, stateHashIn } from "../roles-left-fixture.ts";
 
 test("check of an extraction with gaps only", async () => {
   expect(
@@ -89,25 +89,24 @@ test("check of a states.yaml that names a state twice", async () => {
       type: "gap" as const,
       kind: "state-not-reached" as const,
       name: "s",
-      message: "its path f/a is not judged yet",
+      message: "it is not judged on its path f/a yet",
     })),
     { type: "command-finished", command: "check", ok: false },
   ]);
 });
 
 test("check tells a state whose path is not judged yet a gap, one judged not-shown a problem", async () => {
+  const states = {
+    ...points["a reference"],
+    "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-a}",
+  };
   const checked = async (more: Record<string, string>) =>
     (
       await Array.fromAsync(
         check({
           dir: "/abs/dir",
           exists: async () => true,
-          readFiles: async () =>
-            filesOf({
-              ...points["a reference"],
-              "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-a}",
-              ...more,
-            }),
+          readFiles: async () => filesOf({ ...states, ...more }),
         }),
       )
     ).filter(({ type }) => type === "problem" || type === "gap");
@@ -127,7 +126,9 @@ test("check tells a state whose path is not judged yet a gap, one judged not-sho
   ];
   expect({
     notJudged: await checked({}),
-    notShown: await checked(judgedAs(hash, "not-shown")),
+    notShown: await checked(
+      judgedAs(hash, "holds", { of: stateHashIn(states), verdict: "not-shown" }),
+    ),
   }).toEqual({
     notJudged: [
       ...ofExtraction,
@@ -135,7 +136,7 @@ test("check tells a state whose path is not judged yet a gap, one judged not-sho
         type: "gap",
         kind: "state-not-reached",
         name: "s",
-        message: "its path f/exists-a is not judged yet",
+        message: "it is not judged on its path f/exists-a yet",
       },
     ],
     notShown: [
@@ -143,7 +144,7 @@ test("check tells a state whose path is not judged yet a gap, one judged not-sho
         type: "problem",
         file: "states.yaml",
         at: "",
-        message: "s: its path f/exists-a is judged not-shown",
+        message: "s: its path f/exists-a does not show it: judged not-shown",
       },
       ...ofExtraction,
     ],

@@ -9,11 +9,12 @@ import {
   evidenceAt,
   folderOf,
   slugsIn,
+  statesOf,
   textAt,
   unownedScenarios,
 } from "../derive/roles-files.ts";
 import { type InterfaceLeft, interfaceLeft, leftOf } from "../derive/roles-left.ts";
-import { pathsOf, statesOf, statesWithPathIn } from "../derive/states-files.ts";
+import { pathsOf, statesWithPathIn } from "../derive/states-files.ts";
 import { stepsFromStates } from "../derive/steps-from-states.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";

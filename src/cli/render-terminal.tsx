@@ -172,7 +172,7 @@ export function describeEvent(event: Event): string {
         )
         .join(", ")}`;
     case "judgement-written":
-      return `[${event.interface}] judged   ${event.scenario}  ${event.rule} ${event.verdict} (${event.confidence})`;
+      return `[${event.interface}] judged   ${event.scenario}  ${"rule" in event ? event.rule : `state ${event.state}`} ${event.verdict} (${event.confidence})`;
     case "roles-counted":
       return `judged   ${verdictLine(event.verdicts)}`;
     case "command-failed":

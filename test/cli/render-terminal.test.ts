@@ -218,3 +218,28 @@ test("describeEvent words a role's failure and a roles' step queued", () => {
     "[common-reader] role     common-reader failed: m",
   ]);
 });
+
+test("describeEvent words a judgement written of a scenario on its rule and of a state on its path", () => {
+  const events: readonly Event[] = [
+    {
+      type: "judgement-written",
+      interface: "f",
+      scenario: "a",
+      rule: "r",
+      verdict: "contradicted",
+      confidence: 0.5,
+    },
+    {
+      type: "judgement-written",
+      interface: "f",
+      scenario: "a",
+      state: "s",
+      verdict: "holds",
+      confidence: 0.9,
+    },
+  ];
+  expect(events.map(describeEvent)).toEqual([
+    "[f] judged   a  r contradicted (0.5)",
+    "[f] judged   a  state s holds (0.9)",
+  ]);
+});

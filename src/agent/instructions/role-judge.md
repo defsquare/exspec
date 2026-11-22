@@ -38,6 +38,15 @@ A recording's rule is a requirement, an effect, `answers` — what the reader sa
 accepted call answers —, or `protocol`: a rule about the wire alone, judged on the
 exchanges it applies to.
 
+A recording may be given a second time, named `state:<name>`, with a `state` in place
+of its rule: one sentence that says what reading the system shows once the recording's
+call was accepted. Judge the sentence alone, on what the `after` exchanges answered —
+never the rule the recording was judged on the first time. `situation`: `yes` when the
+call was accepted, `no` when it was refused. `holds` — everything the sentence says is
+in what the `after` exchanges answered; `contradicted` — an `after` exchange shows
+otherwise; `not-shown` — the call was refused, or no `after` exchange reads what the
+sentence speaks of. Never `refused-unexpectedly`.
+
 A rule may carry `unsure`: the reader's own doubt about it. It is not evidence. Where a
 recording settles the doubt one way, say which in `evidence`.
 

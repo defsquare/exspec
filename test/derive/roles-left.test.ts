@@ -1,6 +1,15 @@
 import { expect, test } from "bun:test";
 import { type Left, leftOf } from "../../src/derive/roles-left.ts";
-import { bound, declared, filesOf, points } from "../roles-left-fixture.ts";
+import {
+  bound,
+  declared,
+  type Files,
+  filesOf,
+  hash,
+  judgedAs,
+  points,
+  stateHashIn,
+} from "../roles-left-fixture.ts";
 
 const done = (
   left: Partial<{
@@ -65,4 +74,25 @@ test("a scenario edited after its evidence is left to build, not to record or ju
 
 test("a scenario as an actor no credentials hold, played unplayable, is left to build", () => {
   expect(leftAt("as an unknown actor")).toEqual(done({ scenarios: ["exists-a"] }));
+});
+
+test("a reference judged on its rule is left to judge while the state it is the path of is not judged on it", () => {
+  const written = {
+    ...points.judged,
+    "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-a}",
+  };
+  const at = (more: Files) =>
+    leftOf({ files: filesOf({ ...written, ...more }), interfaces: [bound] });
+  const findings = [
+    '"exists-a" is the path of the state "s": it ends with no after step, which shows what is seen in the state',
+  ];
+  expect({
+    ruleOnly: at({}),
+    stale: at(judgedAs(hash, "holds", { of: "k", verdict: "holds" })),
+    both: at(judgedAs(hash, "holds", { of: stateHashIn(written), verdict: "not-shown" })),
+  }).toEqual({
+    ruleOnly: done({ findings, judge: ["exists-a"] }),
+    stale: done({ findings, judge: ["exists-a"] }),
+    both: done({ findings }),
+  });
 });

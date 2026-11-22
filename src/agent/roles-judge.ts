@@ -54,8 +54,9 @@ async function* judge(
       "no evidence, or a reading that does not pass",
     );
   }
-  const { text, of, recordings } = task;
-  const slugs = [...of.keys()];
+  const { text, of, ofStates, recordings, states } = task;
+  // a part is a recording, or a state judged on its path: "a", "state:s"
+  const parts = [...of.keys(), ...states.map(({ state }) => `state:${state}`)];
   const left = interfaceLeft(files, bound);
   const waiting = left.reading === "done" ? left.judge : [];
   if (only === undefined && waiting.length === 0) {
@@ -84,9 +85,9 @@ async function* judge(
         confinement: "This session has no tool.",
       },
       gate: async function* (said) {
-        const answer = parseJudgeAnswer(said, slugs);
+        const answer = parseJudgeAnswer(said, parts);
         if ("findings" in answer) return answer.findings;
-        // every entry is of a recording: the answer was parsed against their slugs
+        // every entry is of a part: the answer was parsed against their names
         const judgements = answer.judged.flatMap((judged) => {
           const recording = recordings.find(({ slug }) => slug === judged.scenario);
           const hash = of.get(judged.scenario);
@@ -94,10 +95,22 @@ async function* judge(
             ? []
             : [{ ...judged, rule: recording.evidence.rule, of: hash }];
         });
+        //   {scenario: "state:s", …} -> {scenario: a, state: s, …, of: k}, a the path of s
+        const stateJudgements = answer.judged.flatMap((judged) => {
+          const one = states.find(({ state }) => `state:${state}` === judged.scenario);
+          const hash = one === undefined ? undefined : ofStates.get(one.state);
+          return one === undefined || hash === undefined
+            ? []
+            : [{ ...judged, scenario: one.slug, state: one.state, of: hash }];
+        });
         await writeFile(
           dir,
           `${folderOf(name)}/judgements.yaml`,
-          Bun.YAML.stringify({ model, at: io.now(), judgements }, null, 2),
+          Bun.YAML.stringify(
+            { model, at: io.now(), judgements: [...judgements, ...stateJudgements] },
+            null,
+            2,
+          ),
         );
         for (const { scenario, rule, verdict, confidence } of judgements) {
           yield {
@@ -105,6 +118,16 @@ async function* judge(
             interface: name,
             scenario,
             rule,
+            verdict,
+            confidence,
+          };
+        }
+        for (const { scenario, state, verdict, confidence } of stateJudgements) {
+          yield {
+            type: "judgement-written",
+            interface: name,
+            scenario,
+            state,
             verdict,
             confidence,
           };

@@ -84,6 +84,7 @@ const of =
         protocol: protocolSchema.parse(Bun.YAML.parse(protocol)),
         rules: rulesSchema.parse(Bun.YAML.parse(rules)),
         trigger: triggerSchema.parse(Bun.YAML.parse(trigger)),
+        states: [],
         recordings: [
           { slug: "exists", evidence: evidenceSchema.parse(Bun.YAML.parse(evidence)) },
         ],
@@ -266,6 +267,27 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
   });
 });
 
+test("view draws a scenario's verdict the same with a state's judgement on it beside", () => {
+  const files = (judged: string) => [
+    { path: "target.yaml", text: target },
+    { path: "interfaces.yaml", text: interfaces },
+    { path: "structures.yaml", text: structures },
+    { path: "roles/common.yaml", text: common },
+    { path: "roles/protocol.yaml", text: protocol },
+    { path: "roles/f/rules.yaml", text: rules },
+    { path: "roles/f/trigger.yaml", text: trigger },
+    { path: "roles/f/hints.yaml", text: hints },
+    { path: "roles/f/scenarios/exists.yaml", text: scenario },
+    { path: "roles/f/evidence/exists.yaml", text: evidence },
+    { path: "roles/f/judgements.yaml", text: judged },
+  ];
+  const withState = judgements.replace(
+    "judgements:\n",
+    `judgements:\n  - {scenario: exists, state: s, situation: "yes", verdict: contradicted, confidence: 0.5, evidence: e, of: k}\n`,
+  );
+  expect(dataOf("/d/t", files(withState))).toEqual(dataOf("/d/t", files(judgements)));
+});
+
 const service = `
 service: s
 says: keeps a
@@ -424,12 +446,12 @@ test("view lists what states.yaml says wrong, and each state whose path is not j
     {
       kind: "state-not-reached",
       name: "s",
-      message: "its path f/exists is not judged yet",
+      message: "it is not judged on its path f/exists yet",
     },
     {
       kind: "state-not-reached",
       name: "t",
-      message: "its path h/exists is not judged yet",
+      message: "it is not judged on its path h/exists yet",
     },
   ]);
 });

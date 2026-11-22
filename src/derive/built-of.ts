@@ -9,8 +9,9 @@ import {
   folderOf,
   readerFilesOf,
   slugsIn,
+  statesOf,
 } from "./roles-files.ts";
-import { pathsOf, statesOf, statesWithPathIn } from "./states-files.ts";
+import { pathsOf, statesWithPathIn } from "./states-files.ts";
 
 // what the builder wrote for one interface, checked against the actors given, or those its
 // scenarios name; undefined when its reading does not pass. callables: those of the files,

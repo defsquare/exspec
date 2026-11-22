@@ -1,4 +1,4 @@
-import { judgeTaskOf } from "../src/derive/roles-files.ts";
+import { evidenceAt, judgeTaskOf } from "../src/derive/roles-files.ts";
 import type { SourceFile } from "../src/shapes/extraction.ts";
 import type { Evidence } from "../src/shapes/roles.ts";
 import type { Interface } from "../src/shapes/target.ts";
@@ -53,7 +53,7 @@ steps:
   - {when: call, as: ${as}, request: {method: get, path: ${path}}}
 `;
 
-const evidenceOf = (more: Partial<Evidence> = {}): Evidence => ({
+export const evidenceOf = (more: Partial<Evidence> = {}): Evidence => ({
   rule: "exists",
   run: { target: "t", version: "v", at: "2026-11-01T10:00:00.000Z", clock: null },
   exchanges: [
@@ -72,20 +72,26 @@ const recorded = (evidence: Evidence): Files => ({
   "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidence, null, 2),
 });
 
-export const judgedAs = (of: string, verdict = "holds"): Files => ({
+const judgementOf = (more: Readonly<Record<string, string>>) => ({
+  scenario: "exists-a",
+  situation: "yes",
+  verdict: "holds",
+  confidence: 1,
+  evidence: "e",
+  ...more,
+});
+
+export const judgedAs = (
+  of: string,
+  verdict = "holds",
+  state?: { readonly of: string; readonly verdict: string },
+): Files => ({
   "roles/f/judgements.yaml": Bun.YAML.stringify({
     model: "m",
     at: "2026-11-01T10:00:00.000Z",
     judgements: [
-      {
-        scenario: "exists-a",
-        situation: "yes",
-        verdict,
-        confidence: 1,
-        evidence: "e",
-        rule: "exists",
-        of,
-      },
+      judgementOf({ verdict, rule: "exists", of }),
+      ...(state === undefined ? [] : [judgementOf({ ...state, state: "s" })]),
     ],
   }),
 });
@@ -96,6 +102,16 @@ export const hash =
   judgeTaskOf(filesOf(recorded(reference)), bound, [
     { slug: "exists-a", evidence: reference },
   ])?.of.get("exists-a") ?? "";
+
+// the hash of the state s judged on the evidence of exists-a, in these files
+export function stateHashIn(more: Files): string {
+  const files = filesOf(more);
+  const evidence = evidenceAt(files, "f", "exists-a");
+  return evidence === undefined
+    ? ""
+    : (judgeTaskOf(files, bound, [{ slug: "exists-a", evidence }])?.ofStates.get("s") ??
+        "");
+}
 
 export const points = {
   "no scenario": {},

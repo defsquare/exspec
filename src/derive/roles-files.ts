@@ -3,11 +3,12 @@ import type { SourceFile } from "../shapes/extraction.ts";
 import {
   type Evidence,
   evidenceSchema,
-  type Judgement,
   judgementsSchema,
+  type RuleJudgement,
   readYaml,
   roleScenarioSchema,
   rulesSchema,
+  type StateJudgement,
 } from "../shapes/roles.ts";
 import { type Interface, interfacesFileSchema } from "../shapes/target.ts";
 import { type Callable, callableOf } from "./callables.ts";
@@ -19,6 +20,7 @@ import {
   checkStructuresFile,
 } from "./check-reader.ts";
 import { servicesIn } from "./check-service.ts";
+import { checkStates, partsOfPath } from "./check-states.ts";
 import { checkTrigger } from "./check-trigger.ts";
 import { judgeTask } from "./judge-task.ts";
 
@@ -164,14 +166,36 @@ export function unownedScenarios(
 
 // the judgements of a folder as they are written, none when there is no file or it does
 // not parse
-export function judgementsIn(
-  files: readonly SourceFile[],
-  name: string,
-): readonly Judgement[] {
+function judgementsRead(files: readonly SourceFile[], name: string) {
   const file = `${folderOf(name)}/judgements.yaml`;
   const text = textAt(files, file);
   const read = text === undefined ? undefined : readYaml(file, text, judgementsSchema);
   return read !== undefined && "value" in read ? read.value.judgements : [];
+}
+
+// the judgements of scenarios on their rules: a state's judgement is no scenario's
+export const judgementsIn = (
+  files: readonly SourceFile[],
+  name: string,
+): readonly RuleJudgement[] =>
+  judgementsRead(files, name).flatMap((judged) => ("rule" in judged ? [judged] : []));
+
+// the judgements of states' sentences on their paths
+export const stateJudgementsIn = (
+  files: readonly SourceFile[],
+  name: string,
+): readonly StateJudgement[] =>
+  judgementsRead(files, name).flatMap((judged) => ("state" in judged ? [judged] : []));
+
+// the states as written, with the findings of their entries
+export function statesOf(files: readonly SourceFile[]) {
+  const interfaces = interfacesOf(files) ?? [];
+  const { structures = [] } = checkStructuresFile(textAt(files, "structures.yaml"));
+  return checkStates({
+    text: textAt(files, "states.yaml"),
+    structures: structures.map(({ structure }) => structure),
+    interfaces: interfaces.map(({ interface: name }) => name),
+  });
 }
 
 // every evidence file of a folder, read: [{slug: "a", evidence}, {slug: "b", findings}]
@@ -189,7 +213,8 @@ export function recordingsRead(
 }
 
 // the task of one interface's judge on these recordings, when its reading passes and there
-// is one at least
+// is one at least; each state whose path is one of them is judged on it too:
+//   {state: s, path: f/a}, a given -> states: [{state: s, seen: "…", slug: a}]
 export function judgeTaskOf(
   files: readonly SourceFile[],
   bound: Interface,
@@ -198,6 +223,12 @@ export function judgeTaskOf(
   const { common, protocol, rules, trigger } = readerFilesOf(files, bound.interface);
   if (rules === undefined || trigger === undefined || recordings.length === 0)
     return undefined;
-  const task = judgeTask({ bound, common, protocol, rules, trigger, recordings });
-  return { ...task, recordings };
+  const states = statesOf(files).states.flatMap(({ state, seen, path }) => {
+    const { operation, slug } = partsOfPath(path);
+    return operation === bound.interface && recordings.some((r) => r.slug === slug)
+      ? [{ state, seen, slug }]
+      : [];
+  });
+  const task = judgeTask({ bound, common, protocol, rules, trigger, recordings, states });
+  return { ...task, recordings, states };
 }

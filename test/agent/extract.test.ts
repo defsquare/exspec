@@ -384,7 +384,7 @@ const rolesOf = (events: readonly Event[]) =>
 
 test("in the evidence, the interfaces a path of a state not reached names go first, as far as their judgement", async () => {
   const answer = JSON.stringify(
-    ["answers", "exists-a"].map((scenario) => ({
+    ["answers", "exists-a", "state:s"].map((scenario) => ({
       scenario,
       situation: "yes",
       verdict: "holds",

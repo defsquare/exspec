@@ -1,14 +1,25 @@
 import { expect, test } from "bun:test";
 import { builderPrompt } from "../../src/agent/roles-build.ts";
-import { bound, filesOf, hash, judgedAs, points } from "../roles-left-fixture.ts";
+import {
+  bound,
+  filesOf,
+  hash,
+  judgedAs,
+  points,
+  stateHashIn,
+} from "../roles-left-fixture.ts";
 
-const files = filesOf({
+const written = {
   ...points["a reference"],
-  ...judgedAs(hash),
   "states.yaml": `
 - {state: s, of: [S], seen: reading the a shows it, path: f/exists-a}
 - {state: t, of: [S], seen: reading the a shows it gone, path: f/answers}
 `,
+};
+
+const files = filesOf({
+  ...written,
+  ...judgedAs(hash, "holds", { of: stateHashIn(written), verdict: "holds" }),
 });
 
 const toldWith = (reached: string) => [
