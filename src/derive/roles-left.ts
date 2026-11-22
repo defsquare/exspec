@@ -1,10 +1,10 @@
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Interface } from "../shapes/target.ts";
+import { builtOf } from "./built-of.ts";
 import type { Callable } from "./callables.ts";
 import { checkCommon, checkProtocol, checkStructuresFile } from "./check-reader.ts";
 import { isAsWritten } from "./evidence.ts";
 import {
-  builtOf,
   callablesOf,
   evidenceAt,
   judgementsIn,

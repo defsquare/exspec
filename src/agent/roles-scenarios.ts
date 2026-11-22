@@ -1,5 +1,6 @@
+import { builtOf } from "../derive/built-of.ts";
 import type { Callable } from "../derive/callables.ts";
-import { builtOf, callablesOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
+import { callablesOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
 import { playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence, PlayableScenario } from "../shapes/roles.ts";

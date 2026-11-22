@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { builtOf, pathsOf } from "../../src/derive/roles-files.ts";
+import { builtOf } from "../../src/derive/built-of.ts";
+import { pathsOf } from "../../src/derive/states-files.ts";
 import {
   bound,
   type Files,
