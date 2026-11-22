@@ -718,24 +718,6 @@ them in; each of the first five is a branch of its own.
 - **Source.** ADR-0020, ADR-0021; `src/agent/providers.ts`, `src/io/providers.ts`,
   `live/providers.live.ts`.
 
-## A scenario that starts from the end of another one, judged to hold
-
-- **Seen.** On a target whose operations need a long arrangement every scenario of an
-  interface writes the same eight steps before its call: the builder is half of what an
-  extraction costs, and a judge's cost follows the size of the evidence (0.18 to 1.15 $
-  an interface). A richer seed would shorten them, and write in the database states the
-  target may not allow.
-- **Settled.** By the user: a state others start from is first proven — reached through
-  the interfaces by a scenario, and that scenario judged to hold. So an extraction has an
-  order: what creates is read, built and judged first.
-- **Next.** A design, challenged before it is proposed: a scenario names the one it starts
-  from and cites its answers; its evidence keeps its own steps only; what falls when the
-  first one's judgement does. To decide with the user: one level or a chain; whether the
-  order is derived from what each operation requires. Not here: a state photographed to
-  spare the replay of the first steps — exspec holds no driver (ADR-0004).
-- **Source.** `docs/branches/feat-calls-in-the-evidence.md` at `04d6a81`, Journal ›
-  "Not built, from the user".
-
 ## A command says what it is about to run, and may stop there
 
 - **Seen.** `roles read` and `roles build`, run on `trainings` without `--only`, read 50
