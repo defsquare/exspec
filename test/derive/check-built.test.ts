@@ -64,6 +64,7 @@ test("a scenario per rule, each with one call to the operation, passes", () => {
           callables: [],
           paths: [],
           unreached: [],
+          states: [],
           files,
         });
   expect(built?.findings).toEqual([]);
@@ -103,6 +104,7 @@ steps:
           callables: [],
           paths: [],
           unreached: [],
+          states: [],
           files,
         }).findings,
   ).toEqual([
@@ -156,6 +158,7 @@ const findingsOfGiven = (steps: string) =>
         callables: [],
         paths: [],
         unreached: [],
+        states: [],
         files: every.map((rule) => ({
           slug: rule,
           text: rule === "pet-exists" ? givenSteps(steps) : scenario(rule),
@@ -200,6 +203,7 @@ test("a rule of the target's wire its trigger lists is a rule a scenario may be 
           callables: [],
           paths: [],
           unreached: [],
+          states: [],
           files: rulesOf.map((rule) => ({ slug: rule, text: scenario(rule) })),
         }).findings;
   expect({
@@ -249,6 +253,7 @@ const findingsOfCalls = (steps: string) =>
         callables,
         paths: [],
         unreached: [],
+        states: [],
         files: every.map((rule) => ({
           slug: rule,
           text:
@@ -341,6 +346,7 @@ const findingsOfState = (steps: string, path: Path = reached) =>
         callables: [],
         paths: [path],
         unreached: [],
+        states: [],
         files: every.map((rule) => ({
           slug: rule,
           text: rule === "pet-exists" ? startingFrom(steps) : scenario(rule),

@@ -1,8 +1,8 @@
-import type { SourceFile } from "../shapes/extraction.ts";
+import type { Gap, SourceFile } from "../shapes/extraction.ts";
 import { readYaml, roleScenarioSchema } from "../shapes/roles.ts";
 import type { State } from "../shapes/state.ts";
 import { checkStructuresFile } from "./check-reader.ts";
-import { checkStates } from "./check-states.ts";
+import { checkStates, partsOfPath } from "./check-states.ts";
 import {
   evidenceAt,
   folderOf,
@@ -15,7 +15,7 @@ import type { Path, Unreached } from "./steps-from-states.ts";
 
 // the states whose path is a scenario of an interface: {state: s, path: f/a}, f -> [it]
 export const statesWithPathIn = (states: readonly State[], name: string) =>
-  states.filter(({ path }) => path.split("/")[0] === name);
+  states.filter(({ path }) => partsOfPath(path).operation === name);
 
 // the states as written, with the findings of their entries
 export function statesOf(files: readonly SourceFile[]) {
@@ -39,7 +39,7 @@ function pathsRead(
 ): readonly ({ readonly state: string; readonly path: Path } | Unreached)[] {
   const interfaces = interfacesOf(files) ?? [];
   return states.map(({ state, path }) => {
-    const [name = "", slug = ""] = path.split("/");
+    const { operation: name, slug } = partsOfPath(path);
     const awaited = { state, awaited: true, why: `its path ${path} is not judged yet` };
     const bound = interfaces.find(({ interface: one }) => one === name);
     const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
@@ -77,11 +77,7 @@ export function pathsOf(
   readonly paths: readonly Path[];
   readonly unreached: readonly Unreached[];
   readonly findings: readonly string[];
-  readonly gaps: readonly {
-    readonly kind: "state-not-reached";
-    readonly name: string;
-    readonly message: string;
-  }[];
+  readonly gaps: readonly (Gap & { readonly kind: "state-not-reached" })[];
 } {
   const read = pathsRead(files, states);
   const unreached = read.flatMap((one) => ("why" in one ? [one] : []));

@@ -11,6 +11,7 @@ import type { Service } from "../shapes/service.ts";
 import type { State } from "../shapes/state.ts";
 import type { Interface } from "../shapes/target.ts";
 import type { Callable } from "./callables.ts";
+import { partsOfPath } from "./check-states.ts";
 import { flowYaml } from "./flow-yaml.ts";
 import { holesOf, holesOfGiven } from "./holes.ts";
 import { sentOfCall } from "./sent-of-call.ts";
@@ -245,7 +246,7 @@ export function checkBuilt(
   checking: Checking & {
     readonly paths: readonly Path[];
     readonly unreached: readonly Unreached[];
-    readonly states?: readonly State[];
+    readonly states: readonly State[];
     readonly files: readonly { readonly slug: string; readonly text: string }[];
   },
 ): {
@@ -255,7 +256,7 @@ export function checkBuilt(
   }[];
   readonly findings: readonly string[];
 } {
-  const { files, rules, protocol, paths, unreached, states = [] } = checking;
+  const { files, rules, protocol, paths, unreached, states } = checking;
   const read = files.map(({ slug, text }) => {
     const file = `scenarios/${slug}.yaml`;
     const parsed = readYaml(file, text, roleScenarioSchema);
@@ -289,7 +290,7 @@ export function checkBuilt(
     .filter((rule) => !exercised.has(rule))
     .map((rule) => `no scenario for the rule "${rule}"`);
   const ofPaths = states.flatMap(({ state, path }) => {
-    const slug = path.split("/")[1] ?? "";
+    const { slug } = partsOfPath(path);
     const written = read.find((one) => one.slug === slug);
     const of = `"${slug}" is the path of the state "${state}"`;
     if (written === undefined) return [`${of}: it is not written`];

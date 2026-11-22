@@ -1,6 +1,7 @@
 import { builtOf } from "../derive/built-of.ts";
 import type { Callable } from "../derive/callables.ts";
 import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
+import { partsOfPath } from "../derive/check-states.ts";
 import { isAsWritten } from "../derive/evidence.ts";
 import { operationsTold } from "../derive/operations-told.ts";
 import {
@@ -194,8 +195,8 @@ async function* builder(
   const actors = Object.keys(credentials);
   const folder = folderOf(name);
   const pathsOfStates = statesOf(files).states.map(({ path }) => {
-    const [name = "", slug = ""] = path.split("/");
-    return `${folderOf(name)}/scenarios/${slug}.yaml`;
+    const { operation, slug } = partsOfPath(path);
+    return `${folderOf(operation)}/scenarios/${slug}.yaml`;
   });
   const own = (path: string) =>
     [
