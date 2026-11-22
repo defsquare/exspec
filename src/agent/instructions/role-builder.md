@@ -104,8 +104,14 @@ steps:
   tool plays in its place the steps of that state's scenario. `{{p.c.id}}` is the field
   `id` of what the step `c` of that scenario answered; the file named by `path` shows its
   steps. Only its steps up to its call are played: a `before` or an `after` step
-  there is not played, and no hole cites it. What that scenario wrote is in the system once the state is reached: create
-  nothing under the same name or value. When no state fits, arrange as before.
+  there is not played, and no hole cites it. What that scenario wrote is in the system
+  once the state is reached: create nothing under the same name or value. When no state
+  fits, arrange as before.
+- Choose the situation first — from the rule, its `when` and its hint — then how to reach
+  it. A state is a start, not the situation: after the state step, add the `arrange`
+  steps the situation still needs (a second session, a learner enrolled). A rule that
+  names several things that can go wrong is not shown by the one a state makes easiest to
+  reach.
 - Every rule of `requires` and `effects`, every name under `common` and under the
   trigger's `protocol`, gets at least one
   scenario. A rule with several situations (its `when`, its hint, or a doubt of the reader

@@ -55,6 +55,12 @@ The design: ADR-0025 (Proposed).
   session at hand, took a trainer that does not exist (a 404, judged `contradicted`)
   where it had arranged two overlapping sessions before. A state at hand pulls a builder
   toward the situation it already gives.
+- **The builder told to choose the situation first** (2026-11-22): a state is a start,
+  the situation is the rule's. `assign-trainer` built again: `domain-rule-holds` starts
+  from the scheduled session and arranges a second, overlapping one; 17 of 20 scenarios
+  still start from a state, 0.26 USD and 60 s; 18 `holds` and 2 `not-shown`, as before
+  the states. The second session cites the path's literals (`prog-a`, `tr-a`): a path's
+  values are part of what a scenario that starts from it may write.
 - **Seen while measuring.** A state whose path is `not-shown` for a reason foreign to it
   is not reached: `create-program/answers` creates the program and is `not-shown` for a
   `Location` header that is not recorded. Nothing ties the rule a path proves to `seen`.
@@ -62,7 +68,6 @@ The design: ADR-0025 (Proposed).
 ## Backlog
 
 - [ ] The pass that gathers the states after the readers; the review.
-- [ ] A builder, a state at hand, keeps the situation its rule asks for.
 - [ ] A state reached though its path is `not-shown` for what `seen` does not say.
 - [ ] After the measure: ADR-0025 › Not decided here.
 - [ ] The world of a proven state captured and restored — last, apart.
