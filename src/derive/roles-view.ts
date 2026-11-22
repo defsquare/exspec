@@ -4,8 +4,8 @@ import type {
   Common,
   Evidence,
   Judgement,
+  PlayableScenario,
   Protocol,
-  RoleScenario,
   Rules,
   SideEffect,
   StepCall,
@@ -24,7 +24,7 @@ export type ReadInterface = {
   readonly findings: readonly string[];
   readonly scenarios: readonly {
     readonly slug: string;
-    readonly scenario: RoleScenario;
+    readonly scenario: PlayableScenario;
   }[];
   readonly evidence: readonly { readonly slug: string; readonly evidence: Evidence }[];
   readonly judgements: readonly Judgement[];
@@ -275,7 +275,7 @@ function linesOf(
 }
 
 function stepsOf(
-  scenario: RoleScenario | undefined,
+  scenario: PlayableScenario | undefined,
   evidence: Evidence | undefined,
   interfaceOf: (operation: string) => string | undefined,
 ): readonly StepView[] {

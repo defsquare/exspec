@@ -56,10 +56,13 @@ export function scenarioConverted(
   const read = readYaml(file, text, roleScenarioSchema);
   if (!("value" in read)) return { left: read.findings };
   const scenario = read.value;
-  const { steps, converted, conflicts } = stepsConverted(scenario.steps, callables);
+  // a scenario that starts from a state was written after this migration
+  const written = scenario.steps.flatMap((step) => ("state" in step ? [] : [step]));
+  if (written.length < scenario.steps.length) return { unchanged: true };
+  const { steps, converted, conflicts } = stepsConverted(written, callables);
   if (converted === 0) return { unchanged: true };
   if (conflicts.length > 0) return { left: conflicts.map((c) => `${file}: ${c}`) };
-  const next = rewritten(text, scenario.steps, steps, () =>
+  const next = rewritten(text, written, steps, () =>
     Bun.YAML.stringify({ ...scenario, steps }, null, 2),
   );
   const back = readYaml(file, next, roleScenarioSchema);

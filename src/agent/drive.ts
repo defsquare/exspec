@@ -7,7 +7,11 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import type { AgentEvent } from "../shapes/event.ts";
-import { type Step, stepRequestSchema, stepSchema } from "../shapes/roles.ts";
+import {
+  stepRequestSchema,
+  type WrittenStep,
+  writtenStepSchema,
+} from "../shapes/roles.ts";
 
 export class SessionWithoutResult extends Error {
   readonly type = "session-without-result";
@@ -33,7 +37,7 @@ export type Session = {
   // what the agent is told when a read or a write is denied
   readonly confinement: string;
   // given: a tool of the session's own, `play`: steps in, what the target answered out
-  readonly play?: (steps: readonly Step[]) => Promise<string>;
+  readonly play?: (steps: readonly WrittenStep[]) => Promise<string>;
 };
 
 // how: the SDK's word for an end in error ("error_max_turns", …); absent when it files the
@@ -140,7 +144,7 @@ function playServer(play: NonNullable<Session["play"]>) {
       tool(
         "play",
         "Puts the system back in its starting state, sends the steps in order and returns what it answered to each.",
-        { steps: z.array(stepSchema) },
+        { steps: z.array(writtenStepSchema) },
         async ({ steps }) => {
           try {
             return { content: [{ type: "text", text: await play(steps) }] };

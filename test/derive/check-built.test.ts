@@ -6,6 +6,7 @@ import {
   checkRulesAndHints,
   checkStructuresFile,
 } from "../../src/derive/check-reader.ts";
+import type { Path } from "../../src/derive/steps-from-states.ts";
 import type { Service } from "../../src/shapes/service.ts";
 import type { Interface } from "../../src/shapes/target.ts";
 import { commonText, hintsText, rulesText, structuresText } from "../roles-fixture.ts";
@@ -61,6 +62,7 @@ test("a scenario per rule, each with one call to the operation, passes", () => {
           actors: ["ann", "bob"],
           services: [],
           callables: [],
+          paths: [],
           files,
         });
   expect(built?.findings).toEqual([]);
@@ -98,6 +100,7 @@ steps:
           actors: ["ann", "bob"],
           services: [],
           callables: [],
+          paths: [],
           files,
         }).findings,
   ).toEqual([
@@ -149,6 +152,7 @@ const findingsOfGiven = (steps: string) =>
         actors: ["ann"],
         services: [service],
         callables: [],
+        paths: [],
         files: every.map((rule) => ({
           slug: rule,
           text: rule === "pet-exists" ? givenSteps(steps) : scenario(rule),
@@ -191,6 +195,7 @@ test("a rule of the target's wire its trigger lists is a rule a scenario may be 
           actors: ["ann"],
           services: [],
           callables: [],
+          paths: [],
           files: rulesOf.map((rule) => ({ slug: rule, text: scenario(rule) })),
         }).findings;
   expect({
@@ -238,6 +243,7 @@ const findingsOfCalls = (steps: string) =>
         actors: ["ann"],
         services: [],
         callables,
+        paths: [],
         files: every.map((rule) => ({
           slug: rule,
           text:
@@ -290,4 +296,67 @@ test("a call step names an operation read, inputs it takes and can send, and a h
     'scenarios/pet-exists.yaml: step 5: {{done.id}} names "done", a call to "delete-pet", which answers no single structure: the operation answers no structure',
     'scenarios/pet-exists.yaml: step 7: the path parameter "petId" of delete /api/pets/{petId} is not given',
   ]);
+});
+
+const reached: Path = {
+  state: "s",
+  steps: [
+    {
+      when: "arrange",
+      as: "ann",
+      name: "c",
+      request: { method: "post", path: "/api/pets", body: { name: "a" } },
+    },
+    {
+      when: "call",
+      as: "ann",
+      request: { method: "get", path: "/api/pets/{{c.body.id}}" },
+    },
+  ],
+};
+
+const startingFrom = (steps: string) => `
+rule: pet-exists
+situation: a pet
+reached: yes
+steps:
+${steps}
+  - {when: call, as: ann, request: {method: delete, path: /api/pets/1}}
+`;
+
+const findingsOfState = (steps: string) =>
+  rules === undefined
+    ? undefined
+    : checkBuilt({
+        bound,
+        rules,
+        protocol: [],
+        actors: ["ann"],
+        services: [],
+        callables: [],
+        paths: [reached],
+        files: every.map((rule) => ({
+          slug: rule,
+          text: rule === "pet-exists" ? startingFrom(steps) : scenario(rule),
+        })),
+      }).findings;
+
+test("a scenario starts from a state that is reached, its holes read in the path's steps under its name", () => {
+  expect({
+    passes: findingsOfState(`  - {when: arrange, state: s, name: p}
+  - {when: before, as: ann, request: {method: get, path: "/api/pets/{{p.c.body.id}}"}}`),
+    unreached: findingsOfState("  - {when: arrange, state: t, name: p}"),
+    colliding:
+      findingsOfState(`  - {when: arrange, as: ann, name: p-c, request: {method: post, path: /api/pets}}
+  - {when: arrange, state: s, name: p}`),
+    uncited: findingsOfState(`  - {when: arrange, state: s, name: p}
+  - {when: before, as: ann, request: {method: get, path: "/api/pets/{{p.x.id}}"}}`),
+  }).toEqual({
+    passes: [],
+    unreached: ['scenarios/pet-exists.yaml: step 1: "t" is not a state that is reached'],
+    colliding: ['scenarios/pet-exists.yaml: step 2: the names collide on "p-c"'],
+    uncited: [
+      'scenarios/pet-exists.yaml: step 3: a hole cites "p-x", no step named before it',
+    ],
+  });
 });

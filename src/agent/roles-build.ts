@@ -7,18 +7,20 @@ import {
   callablesOf,
   evidenceAt,
   folderOf,
+  pathsOf,
   slugsIn,
   textAt,
   unownedScenarios,
 } from "../derive/roles-files.ts";
 import { type InterfaceLeft, interfaceLeft, leftOf } from "../derive/roles-left.ts";
+import { stepsFromStates } from "../derive/steps-from-states.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import {
   type Evidence,
-  type RoleScenario,
+  type PlayableScenario,
   readYaml,
   roleScenarioSchema,
   type Step,
@@ -49,7 +51,7 @@ type Building = {
 const hasEvidenceAsWritten = (
   files: readonly SourceFile[],
   name: string,
-  { slug, scenario }: { readonly slug: string; readonly scenario: RoleScenario },
+  { slug, scenario }: { readonly slug: string; readonly scenario: PlayableScenario },
   callables: readonly Callable[],
 ) => {
   const evidence = evidenceAt(files, name, slug);
@@ -217,7 +219,13 @@ async function* builder(
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
         confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, exspec/roles/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
-        play: async (steps) => JSON.stringify((await play(steps)).exchanges, null, 2),
+        // a state step replaced by its path's steps; one that cannot be: nothing is played
+        play: async (steps) => {
+          const replaced = stepsFromStates(steps, pathsOf(await readFiles(dir)).paths);
+          return "findings" in replaced
+            ? replaced.findings.join("\n")
+            : JSON.stringify((await play(replaced.steps)).exchanges, null, 2);
+        },
       },
       gate: () => buildGate(building, bound),
     }),
@@ -283,7 +291,8 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
     { ...rolesRun, only: name },
     async function* ({ target }) {
       const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
-      const text = textAt(await readFiles(dir), file);
+      const files = await readFiles(dir);
+      const text = textAt(files, file);
       const read =
         text === undefined
           ? { findings: [`no scenario at exspec/${file}`] }
@@ -292,15 +301,22 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
         for (const message of read.findings) yield { type: "command-failed", message };
         return false;
       }
+      const replaced = stepsFromStates(read.value.steps, pathsOf(files).paths);
+      if ("findings" in replaced) {
+        for (const finding of replaced.findings) {
+          yield { type: "command-failed", message: `${file}: ${finding}` };
+        }
+        return false;
+      }
       const credentials = await io.readCredentials(dir, target);
-      const { steps, rule } = read.value;
+      const { rule } = read.value;
       const { run, exchanges, notTaken } = await playSteps({
         dir,
         target,
         io,
         credentials,
-        callables: callablesOf(await readFiles(dir)),
-        steps,
+        callables: callablesOf(files),
+        steps: replaced.steps,
       });
       for (const message of notTaken) {
         yield { type: "problem", file, at: "steps", message };

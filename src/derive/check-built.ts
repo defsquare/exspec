@@ -1,5 +1,5 @@
 import {
-  type RoleScenario,
+  type PlayableScenario,
   type Rules,
   readYaml,
   roleScenarioSchema,
@@ -14,6 +14,7 @@ import { flowYaml } from "./flow-yaml.ts";
 import { holesOf, holesOfGiven } from "./holes.ts";
 import { sentOfCall } from "./sent-of-call.ts";
 import { stepsAsCalls } from "./steps-as-calls.ts";
+import { type Path, stepsFromStates } from "./steps-from-states.ts";
 
 // "/a/{id}/b" and "/a/7/b" or "/a/{{m.body.id}}/b" -> true; "/a/7" -> false
 function pathMatches(pattern: string, path: string): boolean {
@@ -125,8 +126,9 @@ const holesOfStep = (step: Step) =>
       ? holesOfGiven(step.call.with)
       : holesOf(step.request);
 
+// a scenario its state steps replaced: the holes' checks read the path's steps
 function checkScenario(
-  { rule, steps }: RoleScenario,
+  { rule, steps }: PlayableScenario,
   {
     slug,
     bound,
@@ -228,27 +230,41 @@ type Checking = {
 };
 
 // What a builder wrote, checked before it is played: each scenario file, then the folder.
-// files: [{slug: "exists", text}] for scenarios/exists.yaml
+// files: [{slug: "exists", text}] for scenarios/exists.yaml; paths: the states reached.
+// A scenario comes back its state steps replaced; one whose state steps cannot be replaced
+// is told by those findings alone, and still exercises its rule.
 export function checkBuilt(
   checking: Checking & {
+    readonly paths: readonly Path[];
     readonly files: readonly { readonly slug: string; readonly text: string }[];
   },
 ): {
   readonly scenarios: readonly {
     readonly slug: string;
-    readonly scenario: RoleScenario;
+    readonly scenario: PlayableScenario;
   }[];
   readonly findings: readonly string[];
 } {
-  const { files, rules, protocol } = checking;
+  const { files, rules, protocol, paths } = checking;
   const read = files.map(({ slug, text }) => {
     const file = `scenarios/${slug}.yaml`;
     const parsed = readYaml(file, text, roleScenarioSchema);
     if (!("value" in parsed)) return { slug, findings: parsed.findings };
+    const { rule } = parsed.value;
+    const replaced = stepsFromStates(parsed.value.steps, paths);
+    if ("findings" in replaced) {
+      return {
+        slug,
+        rule,
+        findings: replaced.findings.map((finding) => `${file}: ${finding}`),
+      };
+    }
+    const scenario = { ...parsed.value, steps: replaced.steps };
     return {
       slug,
-      scenario: parsed.value,
-      findings: checkScenario(parsed.value, { ...checking, slug }).map(
+      rule,
+      scenario,
+      findings: checkScenario(scenario, { ...checking, slug }).map(
         (finding) => `${file}: ${finding}`,
       ),
     };
@@ -256,7 +272,7 @@ export function checkBuilt(
   const scenarios = read.flatMap(({ slug, scenario }) =>
     scenario === undefined ? [] : [{ slug, scenario }],
   );
-  const exercised = new Set(scenarios.map(({ scenario }) => scenario.rule));
+  const exercised = new Set(read.flatMap(({ rule }) => rule ?? []));
   const unexercised = [...rules.requires, ...rules.effects]
     .map(({ rule }) => rule)
     .concat(rules.common, protocol)

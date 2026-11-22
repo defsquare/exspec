@@ -238,6 +238,22 @@ const serviceStepSchema = z
 export const stepSchema = z.union([requestStepSchema, callStepSchema, serviceStepSchema]);
 
 export type Step = z.infer<typeof stepSchema>;
+
+// A scenario starts from a state of exspec/states.yaml, an arrange step only:
+//   {when: arrange, state: s, name: p}
+// what is played holds none: the step is replaced by the steps of the state's path
+export const stateStepSchema = z
+  .strictObject({ when: z.literal("arrange"), state: z.string(), name: z.string() })
+  .readonly();
+
+export const writtenStepSchema = z.union([
+  requestStepSchema,
+  callStepSchema,
+  serviceStepSchema,
+  stateStepSchema,
+]);
+
+export type WrittenStep = z.infer<typeof writtenStepSchema>;
 export type RequestStep = z.infer<typeof requestStepSchema>;
 export type CallStep = z.infer<typeof callStepSchema>;
 export type StepCall = z.infer<typeof stepCallSchema>;
@@ -252,11 +268,16 @@ export const roleScenarioSchema = z
       z.literal(true),
       z.string().regex(/^no — /, "reached is yes, or `no — why`"),
     ]),
-    steps: z.array(stepSchema).min(1).readonly(),
+    steps: z.array(writtenStepSchema).min(1).readonly(),
   })
   .readonly();
 
 export type RoleScenario = z.infer<typeof roleScenarioSchema>;
+
+// a scenario as it is played, its state steps replaced
+export type PlayableScenario = Omit<RoleScenario, "steps"> & {
+  readonly steps: readonly Step[];
+};
 
 // a request as sent, its holes filled: a hole alone in a string keeps its value's type
 export const sentSchema = z

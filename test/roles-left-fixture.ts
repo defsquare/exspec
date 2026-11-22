@@ -71,7 +71,7 @@ const recorded = (evidence: Evidence): Files => ({
   "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidence, null, 2),
 });
 
-const judgedAs = (of: string): Files => ({
+export const judgedAs = (of: string, verdict = "holds"): Files => ({
   "roles/f/judgements.yaml": Bun.YAML.stringify({
     model: "m",
     at: "2026-11-01T10:00:00.000Z",
@@ -79,7 +79,7 @@ const judgedAs = (of: string): Files => ({
       {
         scenario: "exists-a",
         situation: "yes",
-        verdict: "holds",
+        verdict,
         confidence: 1,
         evidence: "e",
         rule: "exists",
@@ -91,7 +91,7 @@ const judgedAs = (of: string): Files => ({
 
 const reference = evidenceOf({ noise: [] });
 
-const hash =
+export const hash =
   judgeTaskOf(filesOf(recorded(reference)), bound, [
     { slug: "exists-a", evidence: reference },
   ])?.of.get("exists-a") ?? "";

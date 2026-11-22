@@ -1,4 +1,4 @@
-import type { Evidence, Exchange, Json, RoleScenario } from "../shapes/roles.ts";
+import type { Evidence, Exchange, Json, PlayableScenario } from "../shapes/roles.ts";
 import type { Difference, Place } from "../shapes/scenario.ts";
 import type { Callable } from "./callables.ts";
 import { comparePlaces } from "./compare.ts";
@@ -152,7 +152,7 @@ export function compareEvidence(
 //   step {name: m, path: "/a"}, {path: "/b/{{m.body.id}}"}; m answered {body: {id: 7}}
 //   -> the second exchange must have sent "/b/7"
 export function isAsWritten(
-  scenario: RoleScenario,
+  scenario: PlayableScenario,
   evidence: Evidence,
   callables: readonly Callable[],
 ): boolean {

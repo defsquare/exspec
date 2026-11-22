@@ -6,10 +6,11 @@ import {
   isAsWritten,
   noiseBetween,
 } from "../../src/derive/evidence.ts";
+import { stepsFromStates } from "../../src/derive/steps-from-states.ts";
 import type {
   Evidence,
   Exchange,
-  RoleScenario,
+  PlayableScenario,
   SideEffect,
   Step,
 } from "../../src/shapes/roles.ts";
@@ -294,7 +295,7 @@ const step = (path: string, extra: Partial<Step> = {}): Step => ({
   ...extra,
 });
 
-const scenarioOf = (steps: readonly Step[]): RoleScenario => ({
+const scenarioOf = (steps: readonly Step[]): PlayableScenario => ({
   rule: "r",
   situation: "s",
   reached: "yes",
@@ -320,7 +321,7 @@ const callables: readonly Callable[] = [
   },
 ];
 
-const asWritten = (scenario: RoleScenario, evidence: Evidence) =>
+const asWritten = (scenario: PlayableScenario, evidence: Evidence) =>
   isAsWritten(scenario, evidence, callables);
 
 const calls = scenarioOf([
@@ -474,4 +475,38 @@ test("an exchange that sent the step's form is of it as written, another value i
     asWritten(scenarioOf([formStep("x")]), formEvidence("x")),
     asWritten(scenarioOf([formStep("x")]), formEvidence("y")),
   ]).toEqual([true, false]);
+});
+
+const startingFrom = (n: number) => {
+  const replaced = stepsFromStates(
+    [
+      { when: "arrange", state: "s", name: "p" },
+      {
+        when: "call",
+        as: "a",
+        call: { operation: "f", with: { x: "{{p.c.id}}", n: 2 } },
+      },
+    ],
+    [
+      {
+        state: "s",
+        steps: [
+          {
+            when: "call",
+            as: "a",
+            name: "c",
+            call: { operation: "f", with: { x: "p", n } },
+          },
+          { when: "after", as: "a", request: { method: "get", path: "/s" } },
+        ],
+      },
+    ],
+  );
+  return "steps" in replaced
+    ? asWritten(scenarioOf(replaced.steps), sentAs(7, "/s/7"))
+    : replaced;
+};
+
+test("a scenario that starts from a state is of its evidence as written through its path's steps, and no longer once the path changed", () => {
+  expect([startingFrom(1), startingFrom(3)]).toEqual([true, false]);
 });

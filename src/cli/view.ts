@@ -14,6 +14,7 @@ import {
   callablesOf,
   folderOf,
   judgementsIn,
+  pathsOf,
   readerFilesOf,
   slugsIn,
   textAt,
@@ -82,6 +83,7 @@ function readingsOf(files: readonly SourceFile[]) {
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
   const { providers, findings } = readAndCheckProviders(files);
   const callables = callablesOf(files);
+  const { paths } = pathsOf(files);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
     const folder = folderOf(name);
@@ -106,6 +108,7 @@ function readingsOf(files: readonly SourceFile[]) {
             actors: actorsNamed(written),
             services: servicesIn(files),
             callables,
+            paths,
             files: written,
           });
     return {

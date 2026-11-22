@@ -2,7 +2,7 @@ import type { Callable } from "../derive/callables.ts";
 import { builtOf, callablesOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
 import { playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
-import type { Evidence, RoleScenario } from "../shapes/roles.ts";
+import type { Evidence, PlayableScenario } from "../shapes/roles.ts";
 import type { Credentials, Interface, Target } from "../shapes/target.ts";
 import type { RolesRun } from "./roles.ts";
 
@@ -11,7 +11,7 @@ export type CheckedScenario = {
   readonly slug: string;
   // "<interface>/<slug>"
   readonly path: string;
-  readonly scenario: RoleScenario;
+  readonly scenario: PlayableScenario;
   readonly evidence: Evidence | undefined;
   // the operations its steps may call
   readonly callables: readonly Callable[];
