@@ -386,7 +386,7 @@ test("view hands the page a scenario with no service step and no side effect as 
   });
 });
 
-test("view lists what states.yaml says wrong, and each state whose path is not judged to hold", () => {
+test("view lists what states.yaml says wrong, and each state whose path is not judged yet as a gap", () => {
   const data = dataOf("/d/t", [
     { path: "target.yaml", text: target },
     { path: "interfaces.yaml", text: interfaces },
@@ -412,16 +412,24 @@ test("view lists what states.yaml says wrong, and each state whose path is not j
       at: "",
       message: 't: the path h/exists names "h", not an interface',
     },
-    {
-      file: "states.yaml",
-      at: "",
-      message: "s: its path f/exists is not judged to hold",
-    },
-    {
-      file: "states.yaml",
-      at: "",
-      message: "t: its path h/exists is not judged to hold",
-    },
     { file: "roles/f", at: "", message: 'no scenario for the rule "signed-in"' },
+    {
+      file: "roles/f",
+      at: "",
+      message:
+        '"exists" is the path of the state "s": it ends with no after step, which shows what is seen in the state',
+    },
+  ]);
+  expect(data.gaps.filter(({ kind }) => kind === "state-not-reached")).toEqual([
+    {
+      kind: "state-not-reached",
+      name: "s",
+      message: "its path f/exists is not judged yet",
+    },
+    {
+      kind: "state-not-reached",
+      name: "t",
+      message: "its path h/exists is not judged yet",
+    },
   ]);
 });

@@ -4,8 +4,14 @@ import { anyHole } from "./holes.ts";
 // a state that is reached, and the steps of its path
 export type Path = { readonly state: string; readonly steps: readonly Step[] };
 
-// a state of states.yaml that is not reached, and why: "its path f/a is not judged to hold"
-export type Unreached = { readonly state: string; readonly why: string };
+// a state of states.yaml that is not reached, and why; awaited: its path may still be
+// judged to hold, nothing refutes it yet
+//   {state: "s", awaited: true, why: "its path f/a is not judged yet"}
+export type Unreached = {
+  readonly state: string;
+  readonly awaited: boolean;
+  readonly why: string;
+};
 
 // a step's holes renamed on its JSON text, the step parsed back:
 //   {path: "/a/{{c.id}}"}, c -> p-c  ->  {path: "/a/{{p-c.id}}"}

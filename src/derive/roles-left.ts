@@ -38,6 +38,8 @@ export type Left = {
   readonly structures: boolean;
   readonly common: boolean;
   readonly protocol: boolean;
+  // true when states.yaml is missing: once written it is the user's, no role rewrites it
+  readonly states: boolean;
   readonly interfaces: readonly InterfaceLeft[];
 };
 
@@ -102,6 +104,7 @@ export function leftOf({
     structures: checkStructuresFile(textAt(files, "structures.yaml")).findings.length > 0,
     common: checkCommon(textAt(files, "roles/common.yaml")).findings.length > 0,
     protocol: checkProtocol(textAt(files, "roles/protocol.yaml")).findings.length > 0,
+    states: textAt(files, "states.yaml") === undefined,
     interfaces: interfaces.map((bound) => interfaceLeft(files, bound, callables)),
   };
 }

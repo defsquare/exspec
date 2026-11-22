@@ -77,12 +77,12 @@ test("a state not reached, with why, a state states.yaml lacks and a name the pa
         call,
       ],
       [path],
-      [{ state: "t", why: "its path f/a is not judged to hold" }],
+      [{ state: "t", awaited: true, why: "its path f/a is not judged yet" }],
     ),
   ).toEqual({
     findings: [
       'step 2: the names collide on "p-c"',
-      'step 3: "t" is not a state that is reached: its path f/a is not judged to hold',
+      'step 3: "t" is not a state that is reached: its path f/a is not judged yet',
       'step 4: "u" is not a state of states.yaml',
     ],
   });

@@ -37,6 +37,7 @@ export const gapSchema = z
       "reference-stale",
       "reference-without-scenario",
       "scenario-without-reference",
+      "state-not-reached",
     ]),
     name: z.string(),
     message: z.string(),

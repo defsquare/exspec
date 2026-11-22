@@ -21,16 +21,15 @@ export function checkedExtraction(files: readonly SourceFile[]) {
   const { extraction, problems } = parseExtraction(files);
   const checked = checkExtraction(extraction);
   const states = statesOf(files);
+  const paths = pathsOf(files, states.states);
   return {
     extraction,
     problems: [
       ...problems,
       ...checked.problems,
-      ...[...states.findings, ...pathsOf(files, states.states).findings].map((finding) =>
-        problemOf("", finding),
-      ),
+      ...[...states.findings, ...paths.findings].map((finding) => problemOf("", finding)),
     ],
-    gaps: checked.gaps,
+    gaps: [...checked.gaps, ...paths.gaps],
   };
 }
 

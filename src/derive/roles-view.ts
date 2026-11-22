@@ -126,7 +126,8 @@ export type RolesGap = {
     | "reading-without-scenario"
     | "evidence-not-judged"
     | "judgement-stale"
-    | "evidence-played-once";
+    | "evidence-played-once"
+    | "state-not-reached";
   readonly name: string;
   readonly message: string;
 };
@@ -347,6 +348,7 @@ export function viewOfRoles({
   common,
   protocol,
   findings,
+  gaps: ofStates = [],
   interfaces,
 }: {
   readonly target: Target | undefined;
@@ -355,6 +357,8 @@ export function viewOfRoles({
   readonly protocol: Protocol | undefined;
   // of structures.yaml and roles/common.yaml, each "file: message" relative to exspec/
   readonly findings: readonly string[];
+  // of states.yaml: each state whose path is not judged yet
+  readonly gaps?: readonly RolesGap[];
   readonly interfaces: readonly ReadInterface[];
 }) {
   const read = interfaces.flatMap((i) =>
@@ -449,6 +453,7 @@ export function viewOfRoles({
     }),
   );
   const gaps: readonly RolesGap[] = [
+    ...ofStates,
     ...interfaces
       .filter(({ rules }) => rules === undefined)
       .map(({ bound }) => ({

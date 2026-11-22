@@ -39,6 +39,7 @@ answers: {says: "the item", structure: null}
 `,
   "roles/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",
+  "states.yaml": "[]",
 };
 
 export const filesOf = (more: Files): readonly SourceFile[] =>

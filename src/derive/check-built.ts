@@ -8,6 +8,7 @@ import {
   type StepCall,
 } from "../shapes/roles.ts";
 import type { Service } from "../shapes/service.ts";
+import type { State } from "../shapes/state.ts";
 import type { Interface } from "../shapes/target.ts";
 import type { Callable } from "./callables.ts";
 import { flowYaml } from "./flow-yaml.ts";
@@ -236,13 +237,15 @@ type Checking = {
 
 // What a builder wrote, checked before it is played: each scenario file, then the folder.
 // files: [{slug: "exists", text}] for scenarios/exists.yaml; paths: the states reached;
-// unreached: the others, with why. A scenario comes back its state steps replaced; one
-// whose state steps cannot be replaced is told by those findings alone, and still
-// exercises its rule.
+// unreached: the others, with why; states: those whose path is a scenario of this
+// interface, which has to be written and end with an after step. A scenario comes back its
+// state steps replaced; one whose state steps cannot be replaced is told by those findings
+// alone, and still exercises its rule.
 export function checkBuilt(
   checking: Checking & {
     readonly paths: readonly Path[];
     readonly unreached: readonly Unreached[];
+    readonly states?: readonly State[];
     readonly files: readonly { readonly slug: string; readonly text: string }[];
   },
 ): {
@@ -252,7 +255,7 @@ export function checkBuilt(
   }[];
   readonly findings: readonly string[];
 } {
-  const { files, rules, protocol, paths, unreached } = checking;
+  const { files, rules, protocol, paths, unreached, states = [] } = checking;
   const read = files.map(({ slug, text }) => {
     const file = `scenarios/${slug}.yaml`;
     const parsed = readYaml(file, text, roleScenarioSchema);
@@ -285,8 +288,18 @@ export function checkBuilt(
     .concat(rules.common, protocol)
     .filter((rule) => !exercised.has(rule))
     .map((rule) => `no scenario for the rule "${rule}"`);
+  const ofPaths = states.flatMap(({ state, path }) => {
+    const slug = path.split("/")[1] ?? "";
+    const written = read.find((one) => one.slug === slug);
+    const of = `"${slug}" is the path of the state "${state}"`;
+    if (written === undefined) return [`${of}: it is not written`];
+    return written.scenario !== undefined &&
+      written.scenario.steps.at(-1)?.when !== "after"
+      ? [`${of}: it ends with no after step, which shows what is seen in the state`]
+      : [];
+  });
   return {
     scenarios,
-    findings: [...read.flatMap(({ findings }) => findings), ...unexercised],
+    findings: [...read.flatMap(({ findings }) => findings), ...unexercised, ...ofPaths],
   };
 }

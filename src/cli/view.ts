@@ -18,6 +18,7 @@ import {
   readerFilesOf,
   slugsIn,
   statesOf,
+  statesWithPathIn,
   textAt,
 } from "../derive/roles-files.ts";
 import { actorsOf, type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
@@ -85,7 +86,12 @@ function readingsOf(files: readonly SourceFile[]) {
   const { providers, findings } = readAndCheckProviders(files);
   const callables = callablesOf(files);
   const states = statesOf(files);
-  const { paths, unreached, findings: ofPaths } = pathsOf(files, states.states);
+  const {
+    paths,
+    unreached,
+    findings: ofPaths,
+    gaps: unreachedGaps,
+  } = pathsOf(files, states.states);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
     const folder = folderOf(name);
@@ -112,6 +118,7 @@ function readingsOf(files: readonly SourceFile[]) {
             callables,
             paths,
             unreached,
+            states: statesWithPathIn(states.states, name),
             files: written,
           });
     return {
@@ -142,6 +149,7 @@ function readingsOf(files: readonly SourceFile[]) {
       ...[...common.findings, ...protocol.findings].map((f) => `roles/${f}`),
       ...findings,
     ],
+    gaps: unreachedGaps,
     interfaces,
     services: servicesIn(files),
     providers,

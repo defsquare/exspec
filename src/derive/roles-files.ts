@@ -164,7 +164,8 @@ export function builtOf(
   const { rules, trigger } = readerFilesOf(files, bound.interface);
   if (rules === undefined || trigger === undefined) return undefined;
   const written = slugsIn(files, `${folderOf(bound.interface)}/scenarios`);
-  const { paths, unreached } = pathsOf(files);
+  const { states } = statesOf(files);
+  const { paths, unreached } = pathsOf(files, states);
   return checkBuilt({
     bound,
     rules,
@@ -174,9 +175,14 @@ export function builtOf(
     callables,
     paths,
     unreached,
+    states: statesWithPathIn(states, bound.interface),
     files: written,
   });
 }
+
+// the states whose path is a scenario of an interface: {state: s, path: f/a}, f -> [it]
+export const statesWithPathIn = (states: readonly State[], name: string) =>
+  states.filter(({ path }) => path.split("/")[0] === name);
 
 // the states as written, with the findings of their entries
 export function statesOf(files: readonly SourceFile[]) {
@@ -191,8 +197,9 @@ export function statesOf(files: readonly SourceFile[]) {
 
 // Each state of states.yaml, with its path when it is reached: the scenario its entry names
 // parses, starts from no state, and its judgement holds on the text its judge is given today.
-//   {state: s, path: f/a}, a judged holds  -> {state: s, path: {state: s, steps: […]}}
-//   {state: s, path: f/a}, a not judged    -> {state: s, why: "its path f/a is not judged to hold"}
+//   {state: s, path: f/a}, a judged holds      -> {state: s, path: {state: s, steps: […]}}
+//   {state: s, path: f/a}, a not judged        -> {state: s, awaited: true, why: "its path f/a is not judged yet"}
+//   {state: s, path: f/a}, a judged not-shown  -> {state: s, awaited: false, why: "its path f/a is judged not-shown"}
 function pathsRead(
   files: readonly SourceFile[],
   states: readonly State[],
@@ -200,16 +207,20 @@ function pathsRead(
   const interfaces = interfacesOf(files) ?? [];
   return states.map(({ state, path }) => {
     const [name = "", slug = ""] = path.split("/");
-    const unreached = { state, why: `its path ${path} is not judged to hold` };
+    const awaited = { state, awaited: true, why: `its path ${path} is not judged yet` };
     const bound = interfaces.find(({ interface: one }) => one === name);
     const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
     const text = textAt(files, file);
     const read =
       text === undefined ? undefined : readYaml(file, text, roleScenarioSchema);
-    if (bound === undefined || read === undefined || !("value" in read)) return unreached;
+    if (bound === undefined || read === undefined || !("value" in read)) return awaited;
     const steps = read.value.steps.flatMap((step) => ("state" in step ? [] : [step]));
     if (steps.length < read.value.steps.length) {
-      return { state, why: `its path ${path}: a path does not start from a state` };
+      return {
+        state,
+        awaited: false,
+        why: `its path ${path}: a path does not start from a state`,
+      };
     }
     const evidence = evidenceAt(files, name, slug);
     const of =
@@ -217,13 +228,15 @@ function pathsRead(
         ? undefined
         : judgeTaskOf(files, bound, [{ slug, evidence }])?.of.get(slug);
     const judged = judgementsIn(files, name).find(({ scenario }) => scenario === slug);
-    return of !== undefined && judged?.verdict === "holds" && judged.of === of
+    if (of === undefined || judged === undefined || judged.of !== of) return awaited;
+    return judged.verdict === "holds"
       ? { state, path: { state, steps } }
-      : unreached;
+      : { state, awaited: false, why: `its path ${path} is judged ${judged.verdict}` };
   });
 }
 
-// the states that are reached, the others with why, and that why as a finding of states.yaml
+// The states that are reached, the others with why. A state whose path is refuted, or
+// starts from a state, is a finding of states.yaml; one whose path is not judged yet, a gap.
 export function pathsOf(
   files: readonly SourceFile[],
   states: readonly State[] = statesOf(files).states,
@@ -231,13 +244,23 @@ export function pathsOf(
   readonly paths: readonly Path[];
   readonly unreached: readonly Unreached[];
   readonly findings: readonly string[];
+  readonly gaps: readonly {
+    readonly kind: "state-not-reached";
+    readonly name: string;
+    readonly message: string;
+  }[];
 } {
   const read = pathsRead(files, states);
   const unreached = read.flatMap((one) => ("why" in one ? [one] : []));
   return {
     paths: read.flatMap((one) => ("path" in one ? [one.path] : [])),
     unreached,
-    findings: unreached.map(({ state, why }) => `states.yaml: ${state}: ${why}`),
+    findings: unreached.flatMap(({ state, awaited, why }) =>
+      awaited ? [] : [`states.yaml: ${state}: ${why}`],
+    ),
+    gaps: unreached.flatMap(({ state, awaited, why }) =>
+      awaited ? [{ kind: "state-not-reached" as const, name: state, message: why }] : [],
+    ),
   };
 }
 

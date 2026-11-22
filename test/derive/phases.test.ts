@@ -11,6 +11,7 @@ const nothingLeft: Left = {
   structures: false,
   common: false,
   protocol: false,
+  states: false,
   interfaces: [],
 };
 
@@ -69,6 +70,29 @@ test("an interface not read leaves the reading to do", () => {
   });
 });
 
+test("every interface read, the reading is to do while states.yaml is missing", () => {
+  const files = filesOf(points.judged).filter(({ path }) => path !== "states.yaml");
+  expect({
+    missing: phasesAt(files),
+    empty: phasesAt([...files, { path: "states.yaml", text: "[]" }]),
+  }).toEqual({
+    missing: {
+      target: "done",
+      interfaces: "done",
+      reading: "to-do",
+      evidence: "to-do",
+      judgement: "to-do",
+    },
+    empty: {
+      target: "done",
+      interfaces: "done",
+      reading: "done",
+      evidence: "done",
+      judgement: "done",
+    },
+  });
+});
+
 test("every interface read, a rule without its scenario leaves the evidence to do", () => {
   expect(phasesAt(filesOf(points["no scenario"]))).toEqual({
     target: "done",
@@ -114,6 +138,7 @@ test("a phase is done only when the one before it is", () => {
     structures: true,
     common: false,
     protocol: false,
+    states: false,
     interfaces: [
       {
         interface: "f",

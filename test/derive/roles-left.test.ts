@@ -13,6 +13,7 @@ const done = (
   structures: false,
   common: false,
   protocol: false,
+  states: false,
   interfaces: [
     {
       interface: "f",
@@ -33,6 +34,7 @@ test("with only the target and its interfaces declared, everything is left to re
     structures: true,
     common: true,
     protocol: true,
+    states: true,
     interfaces: [{ interface: "f", reading: "to-do" }],
   });
 });

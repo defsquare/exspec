@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { check } from "../../src/cli/check.ts";
 import type { Event } from "../../src/shapes/event.ts";
+import { filesOf, hash, judgedAs, points } from "../roles-left-fixture.ts";
 
 test("check of an extraction with gaps only", async () => {
   expect(
@@ -78,14 +79,73 @@ test("check of a states.yaml that names a state twice", async () => {
       '"s" is named twice',
       's: the path f/a names "f", not an interface',
       's: the path f/a names "f", not an interface',
-      "s: its path f/a is not judged to hold",
-      "s: its path f/a is not judged to hold",
     ].map((message) => ({
       type: "problem" as const,
       file: "states.yaml",
       at: "",
       message,
     })),
+    ...[0, 1].map(() => ({
+      type: "gap" as const,
+      kind: "state-not-reached" as const,
+      name: "s",
+      message: "its path f/a is not judged yet",
+    })),
     { type: "command-finished", command: "check", ok: false },
   ]);
+});
+
+test("check tells a state whose path is not judged yet a gap, one judged not-shown a problem", async () => {
+  const checked = async (more: Record<string, string>) =>
+    (
+      await Array.fromAsync(
+        check({
+          dir: "/abs/dir",
+          exists: async () => true,
+          readFiles: async () =>
+            filesOf({
+              ...points["a reference"],
+              "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-a}",
+              ...more,
+            }),
+        }),
+      )
+    ).filter(({ type }) => type === "problem" || type === "gap");
+  const ofExtraction: Event[] = [
+    {
+      type: "gap",
+      kind: "interface-not-bound",
+      name: "f",
+      message: "no trigger and no projection cites it",
+    },
+    {
+      type: "gap",
+      kind: "structure-not-shown",
+      name: "S",
+      message: "no projection shows it",
+    },
+  ];
+  expect({
+    notJudged: await checked({}),
+    notShown: await checked(judgedAs(hash, "not-shown")),
+  }).toEqual({
+    notJudged: [
+      ...ofExtraction,
+      {
+        type: "gap",
+        kind: "state-not-reached",
+        name: "s",
+        message: "its path f/exists-a is not judged yet",
+      },
+    ],
+    notShown: [
+      {
+        type: "problem",
+        file: "states.yaml",
+        at: "",
+        message: "s: its path f/exists-a is judged not-shown",
+      },
+      ...ofExtraction,
+    ],
+  });
 });
