@@ -26,6 +26,9 @@ requests of your scenarios and the system's answers.
   accepts and answers. It may be large: search it.
 - The actors, named in your task. You never see their credentials: a step says who sends
   it, the tool signs it.
+- `exspec/states.yaml`, when there is one: the situations already reached, each with what
+  is seen in it (`seen`) and `path`, the scenario that brings the system there, a file you
+  may read at `roles/<operation>/scenarios/<slug>.yaml`.
 - One tool, `play`: you give it steps, it puts the system back in its starting state, sends
   the steps in order and returns what the system answered to each. It is your only access
   to the system. Use it as much as you need to look around — which instances exist in the
@@ -96,6 +99,12 @@ steps:
   Conditions are given in the order written, each on top of the ones before. Every `play`
   starts each service with none of its conditions. What the judged system sends to the
   systems it calls is recorded with each step; you do not write it.
+- A scenario that needs a situation `states.yaml` lists starts from it: an `arrange` step
+  `{when: arrange, state: s, name: p}`, with no `as` — rather than calling what builds it. The
+  tool plays in its place the steps of that state's scenario. `{{p.c.id}}` is the field
+  `id` of what the step `c` of that scenario answered; the file named by `path` shows its
+  steps. What that scenario wrote is in the system once the state is reached: create
+  nothing under the same name or value. When no state fits, arrange as before.
 - Every rule of `requires` and `effects`, every name under `common` and under the
   trigger's `protocol`, gets at least one
   scenario. A rule with several situations (its `when`, its hint, or a doubt of the reader

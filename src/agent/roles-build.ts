@@ -9,6 +9,7 @@ import {
   folderOf,
   pathsOf,
   slugsIn,
+  statesOf,
   textAt,
   unownedScenarios,
 } from "../derive/roles-files.ts";
@@ -193,9 +194,15 @@ async function* builder(
   await removeUnownedScenarios(rolesRun, name);
   const actors = Object.keys(credentials);
   const folder = folderOf(name);
+  const pathsOfStates = statesOf(files).states.map(
+    ({ path }) =>
+      `${folderOf(path.split("/")[0] ?? "")}/scenarios/${path.split("/")[1]}.yaml`,
+  );
   const own = (path: string) =>
     [
       "interfaces.yaml",
+      "states.yaml",
+      ...pathsOfStates,
       "roles/common.yaml",
       "roles/protocol.yaml",
       `${folder}/rules.yaml`,
@@ -218,7 +225,7 @@ async function* builder(
         tools,
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
-        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, exspec/roles/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
+        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, exspec/roles/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, exspec/states.yaml and the scenario file each state of it names, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
         // a state step replaced by its path's steps; one that cannot be: nothing is played
         play: async (steps) => {
           const replaced = stepsFromStates(steps, pathsOf(await readFiles(dir)).paths);

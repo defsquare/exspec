@@ -199,6 +199,17 @@ function statesNamed(
   });
 }
 
+// the states as written, with the findings of their entries
+export function statesOf(files: readonly SourceFile[]) {
+  const interfaces = interfacesOf(files) ?? [];
+  const { structures = [] } = checkStructuresFile(textAt(files, "structures.yaml"));
+  return checkStates({
+    text: textAt(files, "states.yaml"),
+    structures: structures.map(({ structure }) => structure),
+    interfaces: interfaces.map(({ interface: name }) => name),
+  });
+}
+
 // Each state of states.yaml, with its path when it is reached: the scenario its entry names
 // parses, starts from no state, and its judgement holds on the text its judge is given today.
 //   {state: s, path: f/a}, a judged holds  -> {state: s, path: {state: s, steps: […]}}
@@ -210,13 +221,7 @@ function pathsRead(
   | { readonly state: string; readonly finding: string }
 )[] {
   const interfaces = interfacesOf(files) ?? [];
-  const { structures = [] } = checkStructuresFile(textAt(files, "structures.yaml"));
-  const { states } = checkStates({
-    text: textAt(files, "states.yaml"),
-    structures: structures.map(({ structure }) => structure),
-    interfaces: interfaces.map(({ interface: name }) => name),
-  });
-  return states.map(({ state, path }) => {
+  return statesOf(files).states.map(({ state, path }) => {
     const [name = "", slug = ""] = path.split("/");
     const unreached = {
       state,
