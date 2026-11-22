@@ -95,13 +95,35 @@ The design: ADR-0025 (Proposed).
   `contradicted` (its rule says the answer carries attendance and progress; it does not).
   Not a measure of what a builder saves: only the five operations with something left
   were built again, and 85 of their 89 state steps start from `a-session-planned`.
+- **What a builder saves with the gathered states** (2026-11-22, six operations that need
+  the chained states built again with `--only`, once each; before: the builders' cost in
+  the run of 2026-11-21):
+
+  | Operation | Cost USD | Scenarios from a state | The states |
+  |---|---|---|---|
+  | record-progress | 0.45 → 0.29 | 26 of 28 | learner enrolled 26 |
+  | unenroll-learner | 0.35 → 0.39 | 0 of 19 | — |
+  | list-session-attendance | 0.29 → 0.22 | 11 of 15 | attendance recorded 10, session planned 1 |
+  | admin-get-convention-pdf | 0.31 → 0.28 | 5 of 9 | convention issued 4, session planned 1 |
+  | record-attendance | 0.50 → 0.32 | 25 of 28 | learner enrolled 24, attendance recorded 1 |
+  | remove-session | 0.34 → 0.23 | 12 of 16 | session planned 9, three others 1 each |
+
+  2.24 → 1.73 USD, 23 % less; the five that used a state, 28 % less. `record-attendance`
+  had cost 0.43 with the two states by hand, neither of which it could use: 247 steps
+  written then, 99 now. `unenroll-learner` used none, though "a learner enrolled" is its
+  situation: one run, a builder's choice, not looked into. The chained states are used
+  (enrolled 51 times, attendance recorded 12, convention issued 5) though their paths
+  arrange by hand: a path that starts from a state would spare 14 scenarios, not the
+  1100 others — left where ADR-0025 leaves it.
+- **A state is reached when its sentence is judged on its path** (2026-11-22, ADRs
+  amended `8da03f2`, built `1e8e75d`, reviewed: approved). From the two states left
+  unreached on `trainings` and the user's objection to "accepted is enough". The
+  challenger had read two forms and leaned to the one with no judge.
 
 ## Backlog
 
-- [ ] What a builder saves with the gathered states: the operations built again
-  (`--force`) on the copy, against the run of 2026-11-21.
-- [ ] After the gathered states are read with the user: a command that renames a state,
-  the states on the page.
+- [ ] A command that renames a state, the states on the page (in progress).
+- [ ] A full run on `trainings`, from the reading to the judgement.
 - [ ] A state reached though its path is `not-shown` for what `seen` does not say.
 - [ ] After the measure: ADR-0025 › Not decided here.
 - [ ] The world of a proven state captured and restored — last, apart.
