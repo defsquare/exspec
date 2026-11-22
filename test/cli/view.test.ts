@@ -455,3 +455,65 @@ test("view lists what states.yaml says wrong, and each state whose path is not j
     },
   ]);
 });
+
+const readFolder = [
+  { path: "target.yaml", text: target },
+  { path: "interfaces.yaml", text: interfaces },
+  { path: "structures.yaml", text: structures },
+  { path: "roles/common.yaml", text: common },
+  { path: "roles/protocol.yaml", text: protocol },
+  { path: "roles/f/rules.yaml", text: rules },
+  { path: "roles/f/trigger.yaml", text: trigger },
+  { path: "roles/f/hints.yaml", text: hints },
+  { path: "roles/f/scenarios/exists.yaml", text: scenario },
+];
+
+test("view hands the page each state, and the state a scenario starts from", () => {
+  const data = dataOf("/d/t", [
+    ...readFolder,
+    {
+      path: "roles/f/scenarios/exists-2.yaml",
+      text: `
+rule: exists
+situation: an id no a has
+reached: yes
+steps:
+  - {when: arrange, state: s, name: p}
+  - {when: call, as: u, request: {method: delete, path: /a/9}}
+`,
+    },
+    { path: "roles/f/evidence/exists-2.yaml", text: evidence },
+    {
+      path: "states.yaml",
+      text: "- {state: s, of: [A], seen: a, path: f/exists, serves: [f/exists]}",
+    },
+  ]);
+  expect({
+    states: "states" in data ? data.states : undefined,
+    startsFrom: data.extraction.scenarios.map((e) =>
+      "startsFrom" in e ? { path: e.path, startsFrom: e.startsFrom } : { path: e.path },
+    ),
+  }).toEqual({
+    states: [
+      {
+        state: "s",
+        seen: "a",
+        of: ["A"],
+        path: { operation: "f", scenario: "exists" },
+        reached: "not-yet",
+        why: "it is not judged on its path f/exists yet",
+        serves: [{ operation: "f", rules: ["exists"] }],
+        startedFrom: [{ operation: "f", scenarios: ["exists-2"] }],
+      },
+    ],
+    startsFrom: [{ path: "f/exists" }, { path: "f/exists-2", startsFrom: ["s"] }],
+  });
+});
+
+test("view hands the page no state when states.yaml is missing or empty", () => {
+  expect({
+    missing: "states" in dataOf("/d/t", readFolder),
+    empty:
+      "states" in dataOf("/d/t", [...readFolder, { path: "states.yaml", text: "[]" }]),
+  }).toEqual({ missing: false, empty: false });
+});

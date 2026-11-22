@@ -1,5 +1,5 @@
 import type { Gap, SourceFile } from "../shapes/extraction.ts";
-import { readYaml, roleScenarioSchema } from "../shapes/roles.ts";
+import { readYaml, roleScenarioSchema, type StateJudgement } from "../shapes/roles.ts";
 import type { State } from "../shapes/state.ts";
 import { partsOfPath } from "./check-states.ts";
 import { isAsWritten } from "./evidence.ts";
@@ -25,10 +25,14 @@ export const statesWithPathIn = (states: readonly State[], name: string) =>
 //   {state: s, path: f/a}, s judged holds on a      -> {state: s, path: {state: s, steps: […]}}
 //   {state: s, path: f/a}, s not judged on a        -> {state: s, awaited: true, why: "it is not judged on its path f/a yet"}
 //   {state: s, path: f/a}, s judged not-shown on a  -> {state: s, awaited: false, why: "its path f/a does not show it: judged not-shown"}
+// judged: the state's judgement on its path, when it is of the text its judge is given today
 function pathsRead(
   files: readonly SourceFile[],
   states: readonly State[],
-): readonly ({ readonly state: string; readonly path: Path } | Unreached)[] {
+): readonly {
+  readonly read: { readonly state: string; readonly path: Path } | Unreached;
+  readonly judged?: StateJudgement;
+}[] {
   const interfaces = interfacesOf(files) ?? [];
   const callables = callablesOf(files);
   return states.map(({ state, path }) => {
@@ -43,13 +47,16 @@ function pathsRead(
     const text = textAt(files, file);
     const read =
       text === undefined ? undefined : readYaml(file, text, roleScenarioSchema);
-    if (bound === undefined || read === undefined || !("value" in read)) return awaited;
+    if (bound === undefined || read === undefined || !("value" in read))
+      return { read: awaited };
     const steps = read.value.steps.flatMap((step) => ("state" in step ? [] : [step]));
     if (steps.length < read.value.steps.length) {
       return {
-        state,
-        awaited: false,
-        why: `its path ${path}: a path does not start from a state`,
+        read: {
+          state,
+          awaited: false,
+          why: `its path ${path}: a path does not start from a state`,
+        },
       };
     }
     // no reference of the path as written, no text its judge is given today
@@ -63,14 +70,19 @@ function pathsRead(
     const judged = stateJudgementsIn(files, name).find(
       (j) => j.scenario === slug && j.state === state,
     );
-    if (of === undefined || judged === undefined || judged.of !== of) return awaited;
-    return judged.verdict === "holds"
-      ? { state, path: { state, steps } }
-      : {
-          state,
-          awaited: false,
-          why: `its path ${path} does not show it: judged ${judged.verdict}`,
-        };
+    if (of === undefined || judged === undefined || judged.of !== of)
+      return { read: awaited };
+    return {
+      read:
+        judged.verdict === "holds"
+          ? { state, path: { state, steps } }
+          : {
+              state,
+              awaited: false,
+              why: `its path ${path} does not show it: judged ${judged.verdict}`,
+            },
+      judged,
+    };
   });
 }
 
@@ -86,7 +98,7 @@ export function pathsOf(
   readonly findings: readonly string[];
   readonly gaps: readonly (Gap & { readonly kind: "state-not-reached" })[];
 } {
-  const read = pathsRead(files, states);
+  const read = pathsRead(files, states).map(({ read }) => read);
   const unreached = read.flatMap((one) => ("why" in one ? [one] : []));
   return {
     paths: read.flatMap((one) => ("path" in one ? [one.path] : [])),
@@ -99,3 +111,14 @@ export function pathsOf(
     ),
   };
 }
+
+// each state's judgement on its path, of the text its judge is given today: s -> {verdict, …}
+export const judgedOnPaths = (
+  files: readonly SourceFile[],
+  states: readonly State[],
+): ReadonlyMap<string, StateJudgement> =>
+  new Map(
+    pathsRead(files, states).flatMap(({ read: { state }, judged }) =>
+      judged === undefined ? [] : [[state, judged] as const],
+    ),
+  );

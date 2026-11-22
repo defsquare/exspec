@@ -22,6 +22,7 @@ import {
 import { actorsOf, type ReadInterface, viewOfRoles } from "../derive/roles-view.ts";
 import { type ReadProvider, viewOfServices } from "../derive/services-view.ts";
 import { pathsOf, statesWithPathIn } from "../derive/states-files.ts";
+import { statesStartedFrom, statesView } from "../derive/states-view.ts";
 import { triggerSchema } from "../shapes/bindings.ts";
 import { parseExtraction, type SourceFile } from "../shapes/extraction.ts";
 import { providerSchema } from "../shapes/provider.ts";
@@ -134,6 +135,7 @@ function readingsOf(files: readonly SourceFile[]) {
         return evidence === undefined ? [] : [{ slug, evidence }];
       }),
       judgements: judgementsIn(files, name),
+      startsFrom: statesStartedFrom(files, name),
     };
   });
   return {
@@ -162,10 +164,12 @@ export function dataOf(dir: string, files: readonly SourceFile[]) {
   const { services, providers, ...roles } = readingsOf(files);
   if (roles.interfaces.some(({ rules }) => rules !== undefined)) {
     const view = viewOfRoles(roles);
+    const states = statesView(files);
     return {
       dir,
       name: basename(dir),
       ...view,
+      ...(states.length === 0 ? {} : { states }),
       services: viewOfServices({
         services,
         providers,

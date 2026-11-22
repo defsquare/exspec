@@ -28,6 +28,11 @@ export type ReadInterface = {
   }[];
   readonly evidence: readonly { readonly slug: string; readonly evidence: Evidence }[];
   readonly judgements: readonly RuleJudgement[];
+  // the scenarios that start from a state, as written: [{slug: b, states: [s]}]
+  readonly startsFrom?: readonly {
+    readonly slug: string;
+    readonly states: readonly string[];
+  }[];
 };
 
 export type Word =
@@ -95,6 +100,8 @@ export type ScenarioView = {
   readonly rule: string;
   readonly situation?: string;
   readonly reached?: string;
+  // the states its steps start from, as written: its steps are played with their paths'
+  readonly startsFrom?: readonly string[];
   readonly steps: readonly StepView[];
   readonly judgement: {
     readonly verdict: Word;
@@ -367,7 +374,7 @@ export function viewOfRoles({
   const interfaceOf = (operation: string) =>
     read.find(({ rules }) => rules.operation === operation)?.bound.interface;
   const scenarios = read.flatMap(
-    ({ bound, rules, trigger, scenarios, evidence, judgements }) => {
+    ({ bound, rules, trigger, scenarios, evidence, judgements, startsFrom = [] }) => {
       const name = bound.interface;
       // with no trigger, no text a judge would be given today: every judgement is stale
       const { of } =
@@ -394,6 +401,7 @@ export function viewOfRoles({
         const rule = scenario?.rule ?? played?.rule;
         if (rule === undefined) return [];
         const judged = judgements.find((j) => j.scenario === slug);
+        const from = startsFrom.find((one) => one.slug === slug)?.states ?? [];
         return [
           {
             path: `${name}/${slug}`,
@@ -402,6 +410,7 @@ export function viewOfRoles({
             ...(scenario === undefined
               ? {}
               : { situation: scenario.situation, reached: String(scenario.reached) }),
+            ...(from.length === 0 ? {} : { startsFrom: from }),
             steps: stepsOf(scenario, played, interfaceOf),
             judgement:
               judged === undefined

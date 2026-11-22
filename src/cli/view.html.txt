@@ -615,6 +615,7 @@ function roleScenarioPanel(e, back) {
     h("a", { class: "close", href: back }, "Close", h("kbd", null, "esc")),
     h("p", { class: "eyebrow" }, `Scenario of ${e.operation}`), h("h2", null, e.path.split("/")[1]),
     h("p", null, "Exercises ", h("a", { href: ruleRoute(e.operation, e.rule) }, code(e.rule)), "."),
+    e.startsFrom ? h("p", null, "Starts from the state ", commas(e.startsFrom.map(toState)), h("span", { class: "muted" }, " — its path's steps are played first, as arrange steps.")) : null,
     e.situation ? h("p", null, e.situation, h("span", { class: "muted" }, ` — reached: ${e.reached}`)) : null,
     h("h3", null, "The judgement"),
     j ? [h("p", null, judgementOf(j)), h("p", null, j.says)] : h("p", { class: "muted" }, e.steps.some((st) => st.status !== undefined) ? "Not judged yet." : "Not played yet: nothing is judged."),
@@ -697,6 +698,35 @@ function commonSheet() {
       h("h2", null, "Errors"), table(["Kind", "Status", "Body"], p.errors.map((e) => [e.kind, code(e.status), e.body])),
       h("h2", null, "Contract and code"), p.contract.length === 0 ? h("p", { class: "muted" }, "None.") : p.contract.map((t) => h("p", null, t)),
       h("h2", null, "Doubts"), table(["About", "What"], p.unsure.map((u) => [u.about, u.what]))]),
+  ];
+}
+
+// the states of states.yaml, to review with the business: what is seen in each, the structures it is about, whether
+// its path shows it, the rules that need it and the scenarios that start from it; one state alone when it is named
+const states = data.states ?? [];
+const toState = (name) => h("a", { href: route("state", name) }, name);
+const toScenario = (path) => (scenarioAt(path) ? h("a", { href: route("scenario", path) }, path) : code(path));
+const toOperationIfShown = (name) => (operation(name) ? toOperation(name) : code(name));
+const reachedWord = { yes: "reached", "not-yet": "not reached yet", no: "not reached" };
+const reachedColor = { yes: colors.holds, "not-yet": colors.none, no: colors.refuted };
+function stateCard(st) {
+  const rule = (name, r) => (judged(name, r) ? h("a", { href: ruleRoute(name, r) }, code(r)) : code(r));
+  return h("div", { class: "card" },
+    h("h2", null, toState(st.state)), h("p", null, st.seen),
+    h("p", null, "Of ", st.of.length === 0 ? "no structure" : commas(st.of.map((n) => (x.structures.some((e) => e.structure === n) ? toStructure(n) : code(n)))), "."),
+    h("p", null, dot(reachedColor[st.reached], st.reached), h("b", null, reachedWord[st.reached]), " by its path ", toScenario(`${st.path.operation}/${st.path.scenario}`), st.why ? h("span", { class: "muted" }, ` — ${st.why}`) : ""),
+    st.judged ? h("p", null, judgementOf(st.judged), " — ", st.judged.evidence) : null,
+    h("h3", null, "The rules that need it"),
+    table(["Operation", "Rules"], st.serves.map((g) => [toOperationIfShown(g.operation), commas(g.rules.map((r) => rule(g.operation, r)))])),
+    h("h3", null, "The scenarios that start from it"),
+    table(["Operation", "Scenarios"], st.startedFrom.map((g) => [toOperationIfShown(g.operation), commas(g.scenarios.map((sc) => toScenario(`${g.operation}/${sc}`)))])));
+}
+function statesSheet(name) {
+  const shown = name === undefined ? states : states.filter((st) => st.state === name);
+  return [
+    h("p", { class: "eyebrow" }, "What a reading of the system shows"), h("h1", null, name ?? "The states"),
+    name === undefined ? h("p", { class: "muted" }, "Each is named by what is seen in it; a scenario starts from one once its path shows it.") : h("p", null, h("a", { href: "#/states" }, "All the states")),
+    shown.length === 0 ? h("p", { class: "muted" }, "No state of this name.") : shown.map(stateCard),
   ];
 }
 
@@ -807,6 +837,7 @@ function render() {
   const back = sc ? (under ? ruleRoute(o.operation, under.rule) : route("operation", operationOfScenario(sc))) : undefined;
   const panel = sc ? (roles ? roleScenarioPanel(sc, back) : scenarioPanel(sc, back)) : line ? rulePanel(o, line) : null;
   const sheet = o ? operationSheet(o, sc?.path, line?.rule ?? under?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet() : concept === "service" ? serviceSheet(name ?? "")
+    : concept === "states" ? statesSheet() : concept === "state" ? statesSheet(name ?? "")
     : group === transverse ? [h("p", { class: "eyebrow" }, "Operations"), h("h1", null, "Transverse"), h("p", null, "They answer no structure, and name several in what they take, or none.")]
     : group ? structureSheet(group) : overview();
   cols.className = `cols ${o && panel ? "paneled" : ""}`;
@@ -828,6 +859,7 @@ function render() {
   document.getElementById("header").replaceChildren(
     h("a", { class: "mark", href: "#/", "aria-label": "exspec" }, s("svg", { viewBox: "-24 -84 348 108", "aria-hidden": "true" }, s("path", { d: "M-16 0V-76H112V0" }), s("text", { textLength: 96 }, "ex"), s("text", { x: 128, textLength: 192 }, "spec"))), h("a", { href: "#/", "aria-current": concept ? null : "page" }, x.target?.target ?? data.name),
     ...(roles ? [h("a", { href: "#/common", "aria-current": concept === "common" ? "page" : null }, "The common reading")] : []),
+    ...(states.length > 0 ? [h("a", { href: "#/states", "aria-current": concept === "states" || concept === "state" ? "page" : null }, "The states")] : []),
     h("a", { href: "#/findings", "aria-current": concept === "findings" ? "page" : null }, `Extraction checks${data.problems.length + data.gaps.length ? ` ${data.problems.length + data.gaps.length}` : ""}`),
     h("span", { class: "warn" }, "This page holds what the target answered, tokens included: mind who it is sent to."));
   for (const on of cols.querySelectorAll(".row.on")) on.scrollIntoView({ block: "nearest" });
