@@ -1,54 +1,16 @@
 import { expect, test } from "bun:test";
 import { statesView } from "../../src/derive/states-view.ts";
 import {
-  evidenceOf,
   type Files,
   filesOf,
+  pathed,
   points,
   stateHashIn,
 } from "../roles-left-fixture.ts";
 
-const path: Files = {
-  "roles/f/scenarios/exists-a.yaml": `
-rule: exists
-situation: an id no item has
-reached: yes
-steps:
-  - {when: call, as: u, request: {method: get, path: /f/x}}
-  - {when: after, as: u, request: {method: get, path: /f/x}}
-`,
-  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(
-    evidenceOf({
-      noise: [],
-      exchanges: [
-        {
-          when: "call",
-          as: "u",
-          request: { method: "get", path: "/f/x" },
-          response: { status: 404, body: null },
-        },
-        {
-          when: "after",
-          as: "u",
-          request: { method: "get", path: "/f/x" },
-          response: { status: 404, body: null },
-        },
-      ],
-    }),
-  ),
-  "roles/f/scenarios/exists-b.yaml": `
-rule: exists
-situation: an id no item has
-reached: yes
-steps:
-  - {when: arrange, state: s, name: p}
-  - {when: call, as: u, request: {method: get, path: /f/y}}
-`,
-};
-
 const written: Files = {
   ...points["a reference"],
-  ...path,
+  ...pathed,
   "states.yaml": `
 - {state: s, of: [S], seen: reading the f shows it, path: f/exists-a, serves: [f/exists, g/r, f/answers]}
 - {state: t, of: [S, T], seen: reading the f shows it gone, path: f/exists-a}

@@ -8,6 +8,7 @@ import {
   directoryExists,
   readCredentials,
   readExtractionFiles,
+  writeExtractionFile,
   writeReference,
 } from "../io/files.ts";
 import { send } from "../io/http.ts";
@@ -29,6 +30,7 @@ import { renderFlow } from "./render-flow.tsx";
 import { renderJson } from "./render-json.ts";
 import { renderTerminal } from "./render-terminal.tsx";
 import { rolesEvents } from "./roles.ts";
+import { statesRename } from "./states.ts";
 import { status } from "./status.ts";
 import { verdicts } from "./verdicts.ts";
 import { pageOf } from "./view.ts";
@@ -47,6 +49,7 @@ const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
        exspec roles record <dir> [--only <interface>] [--force]
        exspec roles replay <dir> [--only <interface>]
        exspec providers <read|write-twin> <dir> [--only <provider>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
+       exspec states rename <dir> <old> <new> [--format json]
        exspec --help | --version`;
 
 // an option that is not one of these: its name, the usage, 2
@@ -97,7 +100,9 @@ if (asked.type === "refused-to-agent") {
       ? "exspec view is not run from an agent's session: the page is for a person; status and verdicts say the same."
       : asked.command.startsWith("roles-") || asked.command.startsWith("providers-")
         ? `exspec ${asked.command.replace("-", " ")} is not run from an agent's session: the roles are kept apart, and the tool drives each of them.`
-        : `exspec ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
+        : asked.command === "states-rename"
+          ? "exspec states rename is not run from an agent's session: once written, states.yaml is the user's."
+          : `exspec ${asked.command} is not run from an agent's session: the references are recorded and judged by the tool, after the agent.`,
   );
   process.exit(2);
 }
@@ -252,6 +257,11 @@ async function eventsOf(
         effort: effort.data,
         io: await ioOf(providers),
       });
+    }
+    case "states-rename": {
+      const [from, to, ...more] = paths;
+      if (from === undefined || to === undefined || more.length > 0) return undefined;
+      return statesRename({ ...examination, writeFile: writeExtractionFile, from, to });
     }
     default:
       return undefined;

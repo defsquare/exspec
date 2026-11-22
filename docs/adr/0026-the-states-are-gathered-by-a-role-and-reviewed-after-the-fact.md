@@ -53,6 +53,10 @@ and judged — but whether the sentence and the name are the business's.
   The judgement is the state's (ADR-0025), on its `seen`: what the path's own rule is
   judged is a claim of the specification, not a matter of `states.yaml`.
 
+- **A state is renamed by a command**, which rewrites its name in `states.yaml`, in the
+  scenarios that start from it and in its judgement; it stales nothing: the name is in no
+  evidence and in no hash.
+
 ## Alternatives
 
 - **The review before the paths, by a file the user renames** (`states.proposed.yaml`).
@@ -61,9 +65,6 @@ and judged — but whether the sentence and the name are the business's.
   costs the scenarios that started from it.
 - **`states.yaml` gathered again at every reading, the names kept.** Nothing asks for it
   yet, and it needs what tells a state renamed from a state new.
-- **A command that renames a state, a page that lists them** — wanted, after the first
-  gathered states are read: a rename stales no judgement, the name of a state is in no
-  evidence and in no hash of a judge's task.
 
 ## Consequences
 

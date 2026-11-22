@@ -103,6 +103,46 @@ export const hash =
     { slug: "exists-a", evidence: reference },
   ])?.of.get("exists-a") ?? "";
 
+// exists-a as the path of a state s, played to the end of its after step, and exists-b
+// starting from s
+export const pathed: Files = {
+  "roles/f/scenarios/exists-a.yaml": `
+rule: exists
+situation: an id no item has
+reached: yes
+steps:
+  - {when: call, as: u, request: {method: get, path: /f/x}}
+  - {when: after, as: u, request: {method: get, path: /f/x}}
+`,
+  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(
+    evidenceOf({
+      noise: [],
+      exchanges: [
+        {
+          when: "call",
+          as: "u",
+          request: { method: "get", path: "/f/x" },
+          response: { status: 404, body: null },
+        },
+        {
+          when: "after",
+          as: "u",
+          request: { method: "get", path: "/f/x" },
+          response: { status: 404, body: null },
+        },
+      ],
+    }),
+  ),
+  "roles/f/scenarios/exists-b.yaml": `
+rule: exists
+situation: an id no item has
+reached: yes
+steps:
+  - {when: arrange, state: s, name: p}
+  - {when: call, as: u, request: {method: get, path: /f/y}}
+`,
+};
+
 // the hash of the state s judged on the evidence of exists-a, in these files
 export function stateHashIn(more: Files): string {
   const files = filesOf(more);

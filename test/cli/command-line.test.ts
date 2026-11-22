@@ -87,3 +87,15 @@ test("the providers' roles are two words, each refused to the agent", () => {
     { type: "unknown" },
   ]);
 });
+
+test("a state is renamed in two words, refused to the agent", () => {
+  expect([
+    askedOf(["states", "rename", "d", "s", "t"], false),
+    askedOf(["states", "rename", "d", "s", "t"], true),
+    askedOf(["states", "drop", "d", "s"], false),
+  ]).toEqual([
+    { type: "command", command: "states-rename", rest: ["d", "s", "t"] },
+    { type: "refused-to-agent", command: "states-rename" },
+    { type: "unknown" },
+  ]);
+});

@@ -324,6 +324,7 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
     case "extraction-judged":
     case "fact-blocks":
     case "not-observed":
+    case "state-renamed":
       return flow;
     default: {
       const unreachable: never = event;

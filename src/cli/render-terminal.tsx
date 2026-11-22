@@ -43,7 +43,9 @@ function bindingBy({ provenance, by }: BindingJudged): string {
 // "providers write-twin"; "check" -> "check"
 function typedAs(command: string): string {
   if (onTarget.includes(command)) return `target ${command}`;
-  return command.startsWith("roles-") || command.startsWith("providers-")
+  return command.startsWith("roles-") ||
+    command.startsWith("providers-") ||
+    command.startsWith("states-")
     ? command.replace("-", " ")
     : command;
 }
@@ -175,6 +177,8 @@ export function describeEvent(event: Event): string {
       return `[${event.interface}] judged   ${event.scenario}  ${"rule" in event ? event.rule : `state ${event.state}`} ${event.verdict} (${event.confidence})`;
     case "roles-counted":
       return `judged   ${verdictLine(event.verdicts)}`;
+    case "state-renamed":
+      return `renamed  ${event.from} -> ${event.to} in ${event.files.join(", ")}`;
     case "command-failed":
       return `failed   ${event.message}`;
     case "command-finished":

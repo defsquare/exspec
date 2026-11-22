@@ -25,6 +25,7 @@ const commandSchema = z.enum([
   "roles-replay",
   "providers-read",
   "providers-write-twin",
+  "states-rename",
 ]);
 export type Command = z.infer<typeof commandSchema>;
 
@@ -302,6 +303,13 @@ export const eventSchema = z.union([
     verdicts: z.record(verdictSchema, z.int()),
   }),
   // what ended a command before its end: the target failed to start, a command failed
+  // a state's name rewritten in each of these files, relative to exspec/
+  z.object({
+    type: z.literal("state-renamed"),
+    from: z.string(),
+    to: z.string(),
+    files: z.array(z.string()),
+  }),
   z.object({ type: z.literal("command-failed"), message: z.string() }),
   z.object({
     type: z.literal("command-finished"),

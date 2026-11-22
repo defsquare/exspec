@@ -46,6 +46,14 @@ exspec providers write-twin <dir> [--only <provider>] [--jobs n]   # serve.ts, t
 
 `read` and `write-twin` take `--model` and `--effort` as `extract` does.
 
+## The states
+
+```
+exspec states rename <dir> <old> <new>   # the name rewritten in states.yaml, in the scenarios that start from it and in its judgement; stales nothing
+```
+
+Every file is rewritten in memory first, then written; a refusal writes none.
+
 ## The target
 
 ```

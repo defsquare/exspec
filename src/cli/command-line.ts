@@ -5,9 +5,11 @@
 //   the three roles        roles read, roles build, roles judge, roles play, roles record,
 //                          roles replay — refused to the agent
 //   the providers' roles   providers read, providers write-twin — refused to the agent
+//   the states             states rename — refused to the agent: states.yaml is the user's
 const read = ["status", "check", "verdicts"];
 const roles = ["read", "build", "judge", "play", "record", "replay"];
 const providers = ["read", "write-twin"];
+const states = ["rename"];
 export const onTarget = ["up", "down", "play"];
 // view: a page for a person, every recorded answer in it
 const refusedToAgent = ["record", "replay", "extract", "view"];
@@ -27,10 +29,11 @@ export type Asked =
 // ["record", "d"], agent -> { type: "refused-to-agent", command: "record" }
 // ["roles", "read", "d"] -> { type: "command", command: "roles-read", rest: ["d"] }
 // ["providers", "write-twin", "d"] -> { type: "command", command: "providers-write-twin", … }
+// ["states", "rename", "d", "s", "t"] -> { type: "command", command: "states-rename", rest: ["d", "s", "t"] }
 export function askedOf(positionals: readonly string[], agent: boolean): Asked {
   const [first, second, ...after] = positionals;
-  if (first === "roles" || first === "providers") {
-    const known = first === "roles" ? roles : providers;
+  if (first === "roles" || first === "providers" || first === "states") {
+    const known = { roles, providers, states }[first];
     if (second === undefined || !known.includes(second)) return { type: "unknown" };
     const command = `${first}-${second}`;
     return agent
