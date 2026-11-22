@@ -1,7 +1,9 @@
 # ADR-0025 — A state is named by what is seen in it; a scenario starts from it
 
 Status: Accepted (2026-11-22) — a design from a conversation with the user; read by the
-challenger: "keep the direction, reduce it", taken whole; approved by the user.
+challenger: "keep the direction, reduce it", taken whole; approved by the user. When the
+states are reviewed is decided again by
+[ADR-0026](0026-the-states-are-gathered-by-a-role-and-reviewed-after-the-fact.md).
 
 ## Context
 
@@ -40,9 +42,9 @@ written in the target's store that its operations did not put there.
   ```
 
 - **The states are gathered after the interfaces are read, then reviewed.** One pass reads
-  every `rules.yaml` and `hints.yaml` and writes `states.yaml`; it writes no rule. The
-  user reviews names, sentences and the rules served before any path is sought, and
-  merges, renames or drops.
+  every `rules.yaml` and `hints.yaml` and writes `states.yaml`; it writes no rule. Who
+  gathers them and when the user reviews: ADR-0026, which moves the review after the
+  paths.
 
 - **A path is of the proof: a scenario that ends in the state, judged to hold.** It is a
   scenario of the operation that last moves the system into the state, named in the

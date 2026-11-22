@@ -65,9 +65,23 @@ The design: ADR-0025 (Proposed).
   is not reached: `create-program/answers` creates the program and is `not-shown` for a
   `Location` header that is not recorded. Nothing ties the rule a path proves to `seen`.
 
+- **The pass that gathers, designed** (2026-11-22, ADR-0026). Two forms to the
+  challenger. First: "keep the direction, reduce it" — `<operation>/answers` is not
+  always written (8 of 52 on `trainings`, 28 of the 44 others read nothing after the
+  call), and a review by a flag is enforced by nothing. The user then set aside any stop
+  and any YAML to edit: the review is after the fact. Second: "keep the direction, the
+  order is wrong" — the reader's rule is the structures reader's (file missing, every
+  interface read), a state not reached is a gap before anything writes the file, the
+  rename command and the page wait for names to judge. Not taken: its claim that a
+  state's finding stops the evidence phase — `runPhase` reads `target.yaml` and
+  `interfaces.yaml` only.
+
 ## Backlog
 
-- [ ] The pass that gathers the states after the readers; the review.
+- [ ] The pass that gathers the states: the derivations (gap, gate of a path, reading
+  done), then the role and the two waves, then a measure on `trainings`.
+- [ ] After the gathered states are read with the user: a command that renames a state,
+  the states on the page.
 - [ ] A state reached though its path is `not-shown` for what `seen` does not say.
 - [ ] After the measure: ADR-0025 › Not decided here.
 - [ ] The world of a proven state captured and restored — last, apart.
