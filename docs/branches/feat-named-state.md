@@ -75,11 +75,31 @@ The design: ADR-0025 (Proposed).
   rename command and the page wait for names to judge. Not taken: its claim that a
   state's finding stops the evidence phase — `runPhase` reads `target.yaml` and
   `interfaces.yaml` only.
+- **The pass that gathers, built** (2026-11-22): a state not reached is a gap, the check
+  of a path's scenario, a reading not done without `states.yaml` (`979f59f`, reviewed:
+  two Important, fixed in `6df110b`, `8e03d5c`); the states' reader, what a builder is
+  told, the path operations first (`aae5dce`, `f879d45`, `87f3f33`, reviewed: approved).
+  Minor, for the pre-merge challenger: "1 operations are not read yet"; the first wave
+  stops every operation on one path's builder failing; `RolesGap` repeats the kinds of
+  `gapSchema`.
+- **Gathered on `trainings`** (2026-11-22, the copy, the two states by hand set aside).
+  The states' reader: 14 states, one session, 54 s, 0.45 USD, its check passed at once;
+  read by the user: "plutôt bien". They chain — session planned, then a learner
+  enrolled, then an attendance recorded, or completed, or its convention issued — and
+  four are a bare creation. Before anything ran, 9 were reached by what the extraction
+  held. `extract --phase evidence` then `judgement`: 4.03 + 1.07 USD, 12 sessions of
+  builders and judges then 5 judges; three path operations built first (two paths not
+  written, one without its `after`), two paths given their `after`. After: 12 of 14
+  reached. The two others are problems of `check`, both for a reason foreign to `seen`:
+  `create-program/answers` `not-shown` (the `Location` header), `complete-session/answers`
+  `contradicted` (its rule says the answer carries attendance and progress; it does not).
+  Not a measure of what a builder saves: only the five operations with something left
+  were built again, and 85 of their 89 state steps start from `a-session-planned`.
 
 ## Backlog
 
-- [ ] The pass that gathers the states: the derivations (gap, gate of a path, reading
-  done), then the role and the two waves, then a measure on `trainings`.
+- [ ] What a builder saves with the gathered states: the operations built again
+  (`--force`) on the copy, against the run of 2026-11-21.
 - [ ] After the gathered states are read with the user: a command that renames a state,
   the states on the page.
 - [ ] A state reached though its path is `not-shown` for what `seen` does not say.
