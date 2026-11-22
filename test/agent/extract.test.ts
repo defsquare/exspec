@@ -349,6 +349,74 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
   });
 });
 
+const answersPath: Files = {
+  "roles/f/scenarios/answers.yaml": `
+rule: answers
+situation: an item
+reached: yes
+steps:
+  - {when: call, as: u, request: {method: get, path: /f/x}}
+  - {when: after, as: u, request: {method: get, path: /f/x}}
+`,
+  "roles/f/evidence/answers.yaml": Bun.YAML.stringify(
+    {
+      rule: "answers",
+      run: { target: "t", version: "v", at, clock: null },
+      exchanges: ["call", "after"].map((when) => ({
+        when,
+        as: "u",
+        request: { method: "get", path: "/f/x" },
+        response: { status: 404, body: null },
+      })),
+      noise: [],
+    },
+    null,
+    2,
+  ),
+};
+
+const rolesOf = (events: readonly Event[]) =>
+  events.flatMap((event) =>
+    event.type === "role-started" || event.type === "role-skipped"
+      ? [{ type: event.type, role: event.role, interface: event.interface }]
+      : [],
+  );
+
+test("in the evidence, the interfaces a path of a state not reached names go first, as far as their judgement", async () => {
+  const answer = JSON.stringify(
+    ["answers", "exists-a"].map((scenario) => ({
+      scenario,
+      situation: "yes",
+      verdict: "holds",
+      confidence: 1,
+      evidence: "e",
+    })),
+  );
+  const at = (states: string) => {
+    const agent = fakeAgent(
+      { ...reading, ...points.judged, ...answersPath, "states.yaml": states },
+      [{ writes: {}, said: answer }],
+    );
+    return Array.fromAsync(extract(extracting(agent, fakeIo({}).io, "evidence")));
+  };
+  const builderSkipped = {
+    type: "role-skipped",
+    role: "builder",
+    interface: "f",
+  } as const;
+  expect({
+    unreached: rolesOf(await at("- {state: s, of: [S], seen: x, path: f/answers}")),
+    none: rolesOf(await at("[]")),
+  }).toEqual({
+    unreached: [
+      builderSkipped,
+      { type: "role-started", role: "judge", interface: "f" },
+      builderSkipped,
+    ],
+    none: [builderSkipped],
+  });
+});
+
 test("each of the two agent phases writes its own files, never the other's", () => {
   const paths = [
     "exspec/target.yaml",

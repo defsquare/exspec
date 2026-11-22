@@ -1,3 +1,4 @@
+import { pathsFirst } from "../derive/paths-first.ts";
 import {
   type AgentPhase,
   declaredIn,
@@ -148,7 +149,9 @@ function agentPhase(
   });
 }
 
-// what the roles run in a phase, on the target and interfaces declared
+// What the roles run in a phase, on the target and interfaces declared. In the evidence,
+// the interfaces a path of a state not reached names go first, as far as their judgement:
+// then every interface is built and recorded with the states now reached.
 function rolesPhase(
   phase: Exclude<Phase, AgentPhase>,
   rolesRun: RolesRun,
@@ -159,6 +162,16 @@ function rolesPhase(
       return runReaders(rolesRun, setting);
     case "evidence":
       return (async function* () {
+        const first = pathsFirst(
+          await rolesRun.readFiles(rolesRun.dir),
+          setting.interfaces,
+        );
+        if (first.length > 0) {
+          const ahead = { ...setting, interfaces: first };
+          if (!(yield* runBuilders(rolesRun, ahead))) return false;
+          if (!(yield* recordReferences(rolesRun, ahead, false))) return false;
+          if (!(yield* runJudges(rolesRun, ahead))) return false;
+        }
         const built = yield* runBuilders(rolesRun, setting);
         const recorded = yield* recordReferences(rolesRun, setting, false);
         return built && recorded;
