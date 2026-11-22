@@ -1,7 +1,10 @@
 # ADR-0025 — A state is named by what is seen in it; a scenario starts from it
 
 Status: Accepted (2026-11-22) — a design from a conversation with the user; read by the
-challenger: "keep the direction, reduce it", taken whole; approved by the user. When the
+challenger: "keep the direction, reduce it", taken whole; approved by the user. Amended on its branch after the first measure: a
+state is reached when its sentence is judged on its path, no longer when its path's own
+rule holds — the challenger leaned to a form with no judge, the user chose the judged one.
+When the
 states are reviewed is decided again by
 [ADR-0026](0026-the-states-are-gathered-by-a-role-and-reviewed-after-the-fact.md).
 

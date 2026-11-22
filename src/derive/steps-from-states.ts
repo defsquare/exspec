@@ -4,9 +4,9 @@ import { anyHole } from "./holes.ts";
 // a state that is reached, and the steps of its path
 export type Path = { readonly state: string; readonly steps: readonly Step[] };
 
-// a state of states.yaml that is not reached, and why; awaited: its path may still be
-// judged to hold, nothing refutes it yet
-//   {state: "s", awaited: true, why: "its path f/a is not judged yet"}
+// a state of states.yaml that is not reached, and why; awaited: it may still be judged
+// on its path, nothing refutes it yet
+//   {state: "s", awaited: true, why: "it is not judged on its path f/a yet"}
 export type Unreached = {
   readonly state: string;
   readonly awaited: boolean;

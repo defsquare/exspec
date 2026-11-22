@@ -180,7 +180,7 @@ interfaces:
     unread: {
       type: "role-skipped",
       role: "states-reader",
-      why: "1 operations are not read yet",
+      why: "operations not read yet: 1",
     },
     sessions: ["The operation: f, GET /f/{a}."],
   });

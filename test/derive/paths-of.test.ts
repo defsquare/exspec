@@ -174,7 +174,7 @@ const notReached = (why: string) => [
   `scenarios/exists-b.yaml: step 1: "s" is not a state that is reached: ${why}`,
 ];
 
-test("a scenario that starts from a state not reached is told so in one line, with why its path is not", () => {
+test("a scenario that starts from a state not reached is told so in one line, with why the state is not", () => {
   const findingsAt = (more: Files) =>
     builtOf(at({ ...startingFrom("s"), ...more }), bound)?.findings;
   expect({

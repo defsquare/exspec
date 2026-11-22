@@ -364,7 +364,7 @@ export function viewOfRoles({
   readonly protocol: Protocol | undefined;
   // of structures.yaml and roles/common.yaml, each "file: message" relative to exspec/
   readonly findings: readonly string[];
-  // of states.yaml: each state whose path is not judged yet
+  // of states.yaml: each state not judged on its path yet
   readonly gaps?: readonly RolesGap[];
   readonly interfaces: readonly ReadInterface[];
 }) {

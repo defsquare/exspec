@@ -42,10 +42,10 @@ and judged — but whether the sentence and the name are the business's.
   they are built, recorded and judged, then every operation is built and recorded with
   the states now reached. Nothing of that order is stored: it is read from `states.yaml`.
 
-- **A state not reached yet is a gap; a state whose path is refuted is a problem.**
+- **A state not reached yet is a gap; a state its path does not show is a problem.**
 
   ```
-  the path not written, not recorded, the state not judged, or on another text   gap      state-not-reached
+  the path not written, unreadable, not recorded, the state not judged, or on another text   gap   state-not-reached
   the state judged, on today's text, other than `holds`                          problem
   the path starts from a state; an entry that does not parse                     problem
   ```
@@ -68,7 +68,9 @@ and judged — but whether the sentence and the name are the business's.
 
 ## Consequences
 
-- An extraction never waits for the user.
+- An extraction never waits for the user. The states are read on the page (`view`): for
+  each, its sentence, its structures, the rules it serves, whether it is reached and what
+  the judge saw, the scenarios that start from it.
 - An operation a path names never starts from a state gathered in the same extraction: a
   path starts from none (ADR-0025).
 - Interfaces read after the states were gathered bring no new state.

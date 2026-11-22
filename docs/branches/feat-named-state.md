@@ -120,12 +120,32 @@ The design: ADR-0025 (Proposed).
   unreached on `trainings` and the user's objection to "accepted is enough". The
   challenger had read two forms and leaned to the one with no judge.
 
+- **The states judged on the copy** (2026-11-22): 13 judges, 2.79 USD; 13 of 14 reached,
+  `a-program-created` and `a-session-completed` among them, each on what its `after`
+  step reads. The fourteenth waits for a reference my measuring script did not record.
+- **The states on the page, a state renamed** (2026-11-22; built, reviewed: approved, no
+  Critical nor Important). A sheet "The states"; a scenario's panel says the state it
+  starts from, its steps staying the ones played. `exspec states rename` rewrites the
+  name in `states.yaml`, the scenarios and the judgements, computed whole before a file
+  is written, refused to an agent's session. Minor: a write that fails midway leaves a
+  half rename; a key `my-state: a` makes it refuse where it could go on.
+- **Pre-merge review** (2026-11-23, the challenger on `git diff main...`): "ready after
+  these fixes" — no rule bent, no dead branch of the first form; words of it left in two
+  ADRs, comments and tests' names, a broken sentence and examples taken from `trainings`
+  in the builder's instructions: fixed. Older debt it names, not split here:
+  `roles-view.ts` (563 lines), `main.ts` (309), `roles-build.ts` (356, `rolesPlay` would
+  go in a module of its own), `check-built.ts` (306). `RolesGap` repeats the kinds of
+  `gapSchema`. No merge asked.
+
 ## Backlog
 
-- [ ] A command that renames a state, the states on the page (in progress).
 - [ ] A full run on `trainings`, from the reading to the judgement.
-- [ ] A state reached though its path is `not-shown` for what `seen` does not say.
-- [ ] After the measure: ADR-0025 › Not decided here.
+- [ ] `serves` is checked by the states' reader alone and read by the page alone: a rule
+  renamed later leaves a dead link there.
+- [ ] In the first wave one path's builder failing stops the evidence of every operation;
+  a state its path does not show puts its operation first again at each extraction
+  (nothing left: no cost).
+- [ ] ADR-0025 › Not decided here.
 - [ ] The world of a proven state captured and restored — last, apart.
 
 Taken from `docs/backlog.md`: *A scenario that starts from the end of another one, judged

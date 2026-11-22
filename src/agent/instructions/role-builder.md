@@ -100,9 +100,9 @@ steps:
   Conditions are given in the order written, each on top of the ones before. Every `play`
   starts each service with none of its conditions. What the judged system sends to the
   systems it calls is recorded with each step; you do not write it.
-- A scenario that needs a situation `states.yaml` lists starts from it: an `arrange` step
-  `{when: arrange, state: s, name: p}`, the step has no `as` key — rather than calling what builds it. The
-  tool plays in its place the steps of that state's scenario. `{{p.c.id}}` is the field
+- A scenario that needs a situation `states.yaml` lists starts from it, rather than
+  calling what builds it: an `arrange` step `{when: arrange, state: s, name: p}`, with no
+  `as` key. The tool plays in its place the steps of that state's scenario. `{{p.c.id}}` is the field
   `id` of what the step `c` of that scenario answered; the file named by `path` shows its
   steps. Only its steps up to its call are played: a `before` or an `after` step
   there is not played, and no hole cites it. What that scenario wrote is in the system
@@ -110,7 +110,7 @@ steps:
   fits, arrange as before.
 - Choose the situation first — from the rule, its `when` and its hint — then how to reach
   it. A state is a start, not the situation: after the state step, add the `arrange`
-  steps the situation still needs (a second session, a learner enrolled). A rule that
+  steps the situation still needs (a second item, an item given a label). A rule that
   names several things that can go wrong is not shown by the one a state makes easiest to
   reach.
 - Every rule of `requires` and `effects`, every name under `common` and under the

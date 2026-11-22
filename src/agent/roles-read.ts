@@ -179,7 +179,7 @@ async function* statesReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean>
     return yield* roleSkipped(
       "states-reader",
       undefined,
-      `${unread} operations are not read yet`,
+      `operations not read yet: ${unread}`,
     );
   }
   const own = "states.yaml";

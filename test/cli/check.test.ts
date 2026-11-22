@@ -95,7 +95,7 @@ test("check of a states.yaml that names a state twice", async () => {
   ]);
 });
 
-test("check tells a state whose path is not judged yet a gap, one judged not-shown a problem", async () => {
+test("check tells a state not judged on its path yet a gap, one judged not-shown a problem", async () => {
   const states = {
     ...points["a reference"],
     "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-a}",

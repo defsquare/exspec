@@ -408,7 +408,7 @@ test("view hands the page a scenario with no service step and no side effect as 
   });
 });
 
-test("view lists what states.yaml says wrong, and each state whose path is not judged yet as a gap", () => {
+test("view lists what states.yaml says wrong, and each state not judged on its path yet as a gap", () => {
   const data = dataOf("/d/t", [
     { path: "target.yaml", text: target },
     { path: "interfaces.yaml", text: interfaces },
