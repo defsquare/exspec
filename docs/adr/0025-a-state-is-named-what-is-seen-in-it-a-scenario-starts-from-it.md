@@ -46,11 +46,23 @@ written in the target's store that its operations did not put there.
   gathers them and when the user reviews: ADR-0026, which moves the review after the
   paths.
 
-- **A path is of the proof: a scenario that ends in the state, judged to hold.** It is a
-  scenario of the operation that last moves the system into the state, named in the
-  state's entry — built, recorded, replayed and judged as that operation's, by what
-  exists. A state is reached when that scenario's judgement is `holds` and not stale. One
-  path a state.
+- **A path is of the proof: a scenario that ends in the state, and the sentence judged on
+  it.** It is a scenario of the operation that last moves the system into the state,
+  named in the state's entry — built, recorded and replayed as that operation's, by what
+  exists. The operation's judge is given the recording a second time, with `seen` in
+  place of its rule, and writes a judgement of the state beside the scenario's own, told
+  by its key:
+
+  ```yaml
+  # roles/f/judgements.yaml
+  - {scenario: accepted, rule: r, verdict: contradicted, of: h}
+  - {scenario: accepted, state: s, verdict: holds, of: k}
+  ```
+
+  A state is reached when that judgement is `holds` and not stale. What the scenario's own
+  rule is judged does not gate the state: it speaks of what the call answers, not of what
+  the system is then in. `k` is of `seen` and the exchanges, never of the state's name.
+  One path a state.
 
 - **A scenario starts from a state.** A fourth step, told by its key:
 
@@ -90,8 +102,15 @@ once that measure is in.
   no rule to show.
 - **An evidence that keeps the scenario's own steps only.** A hole filled from the path
   could not be played back, and a judgement would outlive a path that changed.
-- **A path kept apart and judged against `seen`.** A builder and a judge's task more, for
+- **A path kept apart**, a scenario of its own under the state. A builder's task more, for
   a scenario the extraction already holds.
+- **A state reached when its path's own rule is judged to hold** — the first form, built
+  and measured: of 14 states gathered on `trainings`, two stayed unreached because the
+  rule `answers` was refuted on what the call answers (a header, a field), the system
+  being in the state. And a rule that holds proves nothing of a sentence that names
+  several structures in given conditions: the user's objection.
+- **A state reached when every step of its path is accepted, no judge.** Proves that the
+  operations made what is there, not that it is what the sentence says.
 - **A richer seed**, or **several scenarios played on one state in place.** The first
   writes states the target may not allow; the second lets a scenario falsify the next.
 - **The world of a proven state captured and restored instead of replayed** — wanted by
@@ -104,10 +123,9 @@ once that measure is in.
   instructions say a state may be started from.
 - A path that breaks takes down every scenario that starts from it. Accepted by the user:
   the state is no longer reached, they prove nothing.
-- Nothing checks that the rule a path proves says what `seen` says: the review reads
-  both.
-- An evidence is no shorter: what a judge costs does not change. What changes is what a
-  builder writes and searches for.
+- A judgement more per state; a `seen` reworded makes it stale, a state renamed does not.
+- An evidence is no shorter: what a judge costs for a scenario does not change. What
+  changes is what a builder writes and searches for.
 - A literal of a path (a slug) is in the world of every scenario that starts from it: a
   scenario that creates the same one collides. A path's literals are said in `seen` or
   kept out of the way.

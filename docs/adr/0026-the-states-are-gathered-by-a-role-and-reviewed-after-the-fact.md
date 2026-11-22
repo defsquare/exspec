@@ -45,10 +45,13 @@ and judged — but whether the sentence and the name are the business's.
 - **A state not reached yet is a gap; a state whose path is refuted is a problem.**
 
   ```
-  the path not written, not recorded, not judged, or judged on another text   gap      state-not-reached
-  the path judged, on today's text, other than `holds`                        problem
-  the path starts from a state; an entry that does not parse                  problem
+  the path not written, not recorded, the state not judged, or on another text   gap      state-not-reached
+  the state judged, on today's text, other than `holds`                          problem
+  the path starts from a state; an entry that does not parse                     problem
   ```
+
+  The judgement is the state's (ADR-0025), on its `seen`: what the path's own rule is
+  judged is a claim of the specification, not a matter of `states.yaml`.
 
 ## Alternatives
 
@@ -56,21 +59,15 @@ and judged — but whether the sentence and the name are the business's.
   Rejected by the user: it stops the extraction and asks for YAML.
 - **A refusal kept** — the user drops a state after the fact. Set aside: unlikely, and it
   costs the scenarios that started from it.
-- **The path judged against `seen`.** A judge's task more (ADR-0025 › Alternatives). The
-  `after` step puts the reading under the judge's eyes; the user accepted that `holds`
-  does not prove the sentence.
 - **`states.yaml` gathered again at every reading, the names kept.** Nothing asks for it
   yet, and it needs what tells a state renamed from a state new.
 - **A command that renames a state, a page that lists them** — wanted, after the first
   gathered states are read: a rename stales no judgement, the name of a state is in no
-  evidence and no judge's task.
+  evidence and in no hash of a judge's task.
 
 ## Consequences
 
 - An extraction never waits for the user.
 - An operation a path names never starts from a state gathered in the same extraction: a
   path starts from none (ADR-0025).
-- A path `not-shown` for a reason foreign to the state keeps it unreached.
 - Interfaces read after the states were gathered bring no new state.
-- `holds` on a path says the call was answered as its rule says; that the sentence of
-  `seen` is true of the `after` step is read by the user.
