@@ -14,6 +14,7 @@ import type { Structure } from "../shapes/specification.ts";
 import type { Interface, Target } from "../shapes/target.ts";
 import { judgeTask } from "./judge-task.ts";
 import { type Placed, placedOfRoles } from "./placing.ts";
+import { operationFolderOf } from "./roles-files.ts";
 
 // What one interface's folder holds, parsed; findings: what its reader's and its builder's
 // checks say, each "file: message" relative to the folder
@@ -157,8 +158,8 @@ function wordOf(verdicts: readonly Word[]): Word {
   return "unjudged";
 }
 
-// "rules.yaml: a" of roles/f -> {file: "roles/f/rules.yaml", at: "", message: "a"};
-// "no scenario for b" -> {file: "roles/f", at: "", message: "no scenario for b"}
+// "rules.yaml: a" of operations/f -> {file: "operations/f/rules.yaml", at: "", message: "a"};
+// "no scenario for b" -> {file: "operations/f", at: "", message: "no scenario for b"}
 export function problemOf(folder: string, finding: string): Problem {
   const [, file, message] = /^([\w./-]+\.yaml): (.*)$/s.exec(finding) ?? [];
   return file === undefined || message === undefined
@@ -366,7 +367,7 @@ export function viewOfRoles({
   readonly structures: readonly Structure[];
   readonly common: Common | undefined;
   readonly protocol: Protocol | undefined;
-  // of structures.yaml and roles/common.yaml, each "file: message" relative to exspec/
+  // of structures.yaml and common.yaml, each "file: message" relative to exspec/
   readonly findings: readonly string[];
   // of states.yaml: each state not judged on its path yet
   readonly gaps?: readonly RolesGap[];
@@ -543,7 +544,7 @@ export function viewOfRoles({
     problems: [
       ...findings.map((finding) => problemOf("", finding)),
       ...interfaces.flatMap(({ bound, findings }) =>
-        findings.map((finding) => problemOf(`roles/${bound.interface}`, finding)),
+        findings.map((finding) => problemOf(operationFolderOf(bound.interface), finding)),
       ),
     ],
     gaps,

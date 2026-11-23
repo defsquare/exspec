@@ -6,9 +6,9 @@ import { isAsWritten } from "./evidence.ts";
 import {
   callablesOf,
   evidenceAt,
-  folderOf,
   interfacesOf,
   judgeTaskOf,
+  operationFolderOf,
   stateJudgementsIn,
   statesOf,
   textAt,
@@ -43,7 +43,7 @@ function pathsRead(
       why: `it is not judged on its path ${path} yet`,
     };
     const bound = interfaces.find(({ interface: one }) => one === name);
-    const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
+    const file = `${operationFolderOf(name)}/scenarios/${slug}.yaml`;
     const text = textAt(files, file);
     const read =
       text === undefined ? undefined : readYaml(file, text, roleScenarioSchema);

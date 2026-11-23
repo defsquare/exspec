@@ -27,17 +27,17 @@ interfaces:
 export const reading: Files = {
   ...declared,
   "structures.yaml": "- {structure: S, identity: a, fields: {a: {type: string}}}",
-  "roles/common.yaml": "target: t",
-  "roles/protocol.yaml": "target: t",
-  "roles/f/trigger.yaml":
+  "common.yaml": "target: t",
+  "protocol.yaml": "target: t",
+  "operations/f/trigger.yaml":
     "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
-  "roles/f/rules.yaml": `
+  "operations/f/rules.yaml": `
 operation: f
 requires:
   - {rule: exists, fact: the item exists, otherwise: not-found, source: "F.java:1"}
 answers: {says: "the item", structure: null}
 `,
-  "roles/f/hints.yaml":
+  "operations/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",
   "states.yaml": "[]",
 };
@@ -68,8 +68,8 @@ export const evidenceOf = (more: Partial<Evidence> = {}): Evidence => ({
 });
 
 const recorded = (evidence: Evidence): Files => ({
-  "roles/f/scenarios/exists-a.yaml": scenario("/f/x"),
-  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidence, null, 2),
+  "operations/f/scenarios/exists-a.yaml": scenario("/f/x"),
+  "operations/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidence, null, 2),
 });
 
 const judgementOf = (more: Readonly<Record<string, string>>) => ({
@@ -86,7 +86,7 @@ export const judgedAs = (
   verdict = "holds",
   state?: { readonly of: string; readonly verdict: string },
 ): Files => ({
-  "roles/f/judgements.yaml": Bun.YAML.stringify({
+  "operations/f/judgements.yaml": Bun.YAML.stringify({
     model: "m",
     at: "2026-11-01T10:00:00.000Z",
     judgements: [
@@ -106,7 +106,7 @@ export const hash =
 // exists-a as the path of a state s, played to the end of its after step, and exists-b
 // starting from s
 export const pathed: Files = {
-  "roles/f/scenarios/exists-a.yaml": `
+  "operations/f/scenarios/exists-a.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -114,7 +114,7 @@ steps:
   - {when: call, as: u, request: {method: get, path: /f/x}}
   - {when: after, as: u, request: {method: get, path: /f/x}}
 `,
-  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(
+  "operations/f/evidence/exists-a.yaml": Bun.YAML.stringify(
     evidenceOf({
       noise: [],
       exchanges: [
@@ -133,7 +133,7 @@ steps:
       ],
     }),
   ),
-  "roles/f/scenarios/exists-b.yaml": `
+  "operations/f/scenarios/exists-b.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -161,11 +161,11 @@ export const points = {
   judged: { ...recorded(reference), ...judgedAs(hash) },
   "edited after its evidence": {
     ...recorded(reference),
-    "roles/f/scenarios/exists-a.yaml": scenario("/f/y"),
+    "operations/f/scenarios/exists-a.yaml": scenario("/f/y"),
   },
   "as an unknown actor": {
-    "roles/f/scenarios/exists-a.yaml": scenario("/f/x", "c"),
-    "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(
+    "operations/f/scenarios/exists-a.yaml": scenario("/f/x", "c"),
+    "operations/f/evidence/exists-a.yaml": Bun.YAML.stringify(
       evidenceOf({
         exchanges: [{ when: "call", as: "c", unplayable: 'no credentials for "c"' }],
       }),

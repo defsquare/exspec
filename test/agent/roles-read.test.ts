@@ -12,7 +12,7 @@ test("the reader of the structures reads the code and its own file, not the inte
     [
       "exspec/interfaces.yaml",
       "exspec/structures.yaml",
-      "exspec/roles/common.yaml",
+      "exspec/common.yaml",
       "src/a.ts",
     ].filter((path) => structuresReads("/d")(path)),
   ).toEqual(["exspec/structures.yaml", "src/a.ts"]);
@@ -120,7 +120,7 @@ const readersSkipped: Event[] = [
 ];
 
 const gathering =
-  "Read exspec/structures.yaml, exspec/interfaces.yaml and the rules.yaml and hints.yaml of every folder of exspec/roles/, and write exspec/states.yaml.";
+  "Read exspec/structures.yaml, exspec/interfaces.yaml and the rules.yaml and hints.yaml of every folder of exspec/operations/, and write exspec/states.yaml.";
 
 test("the states' reader runs after the readers when states.yaml is missing and every operation is read, its gate's findings sent back", async () => {
   const { received, run } = readingOf(noStates, [

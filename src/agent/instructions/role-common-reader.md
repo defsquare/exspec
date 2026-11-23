@@ -39,7 +39,7 @@ Read what no single operation owns:
 Two files. What holds for the system whatever answers for it goes in the first; how this
 system says it on the wire goes in the second.
 
-`exspec/roles/common.yaml` — the requirements every operation, or a family of them, shares,
+`exspec/common.yaml` — the requirements every operation, or a family of them, shares,
 in the business's words:
 
 ```yaml
@@ -55,7 +55,7 @@ unsure:                          # what reading could not settle; empty list if 
     what: "the handler for any failure may take it first"
 ```
 
-`exspec/roles/protocol.yaml` — what this system says of its wire:
+`exspec/protocol.yaml` — what this system says of its wire:
 
 ```yaml
 target: <its name>

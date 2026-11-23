@@ -39,7 +39,7 @@ async function judgedWith(answer: readonly unknown[]) {
       },
     }),
   );
-  const text = files.get("roles/f/judgements.yaml");
+  const text = files.get("operations/f/judgements.yaml");
   return {
     judgements: text === undefined ? undefined : Bun.YAML.parse(text),
     gates: events.flatMap((event) =>

@@ -2,14 +2,14 @@ import { z } from "zod";
 import { noiseSchema, responseSchema, runSchema } from "./scenario.ts";
 import { methodSchema } from "./target.ts";
 
-// The files of a reading by three roles kept apart, under exspec/roles/:
-//   common.yaml                        what holds for the whole system, in its words
-//   protocol.yaml                      what the whole target says of its wire
-//   <interface>/rules.yaml, hints.yaml what one operation is supposed to do
-//   <interface>/trigger.yaml           how this target says it: its statuses, its refusals'
-//   <interface>/scenarios/<slug>.yaml  a scenario: calls, requests, a service's conditions
-//   <interface>/evidence/<slug>.yaml   what the system answered to it, written by the tool
-//   <interface>/judgements.yaml        what the judge made of it, written by the tool
+// The files of a reading by three roles kept apart, under exspec/:
+//   common.yaml                                what holds for the whole system, in its words
+//   protocol.yaml                              what the whole target says of its wire
+//   operations/<op>/rules.yaml, hints.yaml     what one operation is supposed to do
+//   operations/<op>/trigger.yaml               how this target says it: its statuses, its refusals'
+//   operations/<op>/scenarios/<slug>.yaml      a scenario: calls, requests, a service's conditions
+//   operations/<op>/evidence/<slug>.yaml       what the system answered to it, written by the tool
+//   operations/<op>/judgements.yaml            what the judge made of it, written by the tool
 
 export const ruleName = z
   .string()

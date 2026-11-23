@@ -35,7 +35,7 @@ const told = toldWith(
 
 const ofG = [
   "The operation: g, GET /g.",
-  "Your folder: exspec/roles/g/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
+  "Your folder: exspec/operations/g/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
 ];
 
 test("a builder of an operation no path names is told the states reached now", () => {
@@ -53,7 +53,7 @@ test("a builder of an operation a path names is told each scenario of its that i
     [
       ...told,
       "The operation: f, GET /f/{a}.",
-      "Your folder: exspec/roles/f/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
+      "Your folder: exspec/operations/f/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
       'Your scenario `exists-a` is the path of the state "s": others will start from it. It starts from no state and ends with an `after` step that shows: reading the a shows it.',
       'Your scenario `answers` is the path of the state "t": others will start from it. It starts from no state and ends with an `after` step that shows: reading the a shows it gone.',
     ].join("\n"),

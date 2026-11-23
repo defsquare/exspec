@@ -36,10 +36,21 @@ The design: ADR-0027 (Accepted).
   folder is renamed, the proof stays in it, the two shared files go to the root rather
   than have two names reserved against the computed path's `operations/<name>.yaml`.
 
+- **The layout switched** (`ac1b43d`, 2026-11-23). On a copy of `trainings`' `exspec/`,
+  52 entries moved, `status --format json` equal before and after; a copy not rewritten
+  refused with the script's name. Reviewer: conforms, approved; the reads and writes of
+  each session the same but for the paths. Taken: `0024-requests-to-calls.ts` read
+  `roles/` through `readExtractionFiles`, which now refuses it — it reads the new layout
+  and says to run 0027 first; two assertions made whole. Minor, left: the script removes
+  an empty `roles/` and says `moved: 0`.
+
+- **Before the merge, the challenger** (2026-11-23): "merge after fixes" — no concept
+  without its ADR, none left standing, the code does what ADR-0027 says. Taken: the index
+  says the three ADRs amended; the backlog item on the two specifications reads cold
+  again; the script refuses a file of `roles/` that is of no operation, which under
+  `operations/` the computed path would read as one; `folderOf` is `operationFolderOf`,
+  `ExtractionLayoutOld` is `ExtractionUnderRoles` — what was found, not how old it is.
+
 ## Backlog
 
-- The layout switched: the paths, what `readSourceFile` passes over, an extraction with
-  `roles/` refused, the briefs, the script, the fixtures, the docs that name a path.
-- `docs/backlog.md`, "Two specifications side by side": its step (1) says the reader's
-  rules become `operations/*.yaml` — rewritten to what is left of it.
 - `targets/trainings` rewritten by the script, once no extraction runs on it.

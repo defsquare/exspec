@@ -6,9 +6,11 @@ import { checkCommon, checkProtocol, checkStructuresFile } from "./check-reader.
 import { isAsWritten } from "./evidence.ts";
 import {
   callablesOf,
+  commonFile,
   evidenceAt,
   judgementsIn,
   judgeTaskOf,
+  protocolFile,
   stateJudgementsIn,
   textAt,
 } from "./roles-files.ts";
@@ -116,8 +118,8 @@ export function leftOf({
   const callables = callablesOf(files);
   return {
     structures: checkStructuresFile(textAt(files, "structures.yaml")).findings.length > 0,
-    common: checkCommon(textAt(files, "roles/common.yaml")).findings.length > 0,
-    protocol: checkProtocol(textAt(files, "roles/protocol.yaml")).findings.length > 0,
+    common: checkCommon(textAt(files, commonFile)).findings.length > 0,
+    protocol: checkProtocol(textAt(files, protocolFile)).findings.length > 0,
     states: textAt(files, "states.yaml") === undefined,
     interfaces: interfaces.map((bound) => interfaceLeft(files, bound, callables)),
   };

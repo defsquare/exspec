@@ -4,9 +4,20 @@ import type { SourceFile } from "../shapes/extraction.ts";
 import type { Reference } from "../shapes/scenario.ts";
 import { type Credentials, credentialsSchema, type Target } from "../shapes/target.ts";
 
-// the YAML files, and the twins a twin writer wrote
+export class ExtractionUnderRoles extends Error {
+  readonly type = "extraction-under-roles";
+  constructor() {
+    super(
+      "exspec/roles/ is the layout before operations/: run `bun scripts/migrations/0027-roles-to-operations.ts <dir>`",
+    );
+  }
+}
+
+// the YAML files, and the twins a twin writer wrote; an extraction still under roles/ is
+// refused, it would look empty
 export async function readExtractionFiles(dir: string): Promise<readonly SourceFile[]> {
   const root = join(dir, "exspec");
+  if (await directoryExists(join(root, "roles"))) throw new ExtractionUnderRoles();
   const paths = [
     ...(await Array.fromAsync(new Bun.Glob("**/*.yaml").scan(root))),
     ...(await Array.fromAsync(new Bun.Glob("providers/*/twin.ts").scan(root))),

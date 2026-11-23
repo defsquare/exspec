@@ -1,6 +1,6 @@
 import { builtOf } from "../derive/built-of.ts";
 import type { Callable } from "../derive/callables.ts";
-import { callablesOf, evidenceAt, folderOf } from "../derive/roles-files.ts";
+import { callablesOf, evidenceAt, operationFolderOf } from "../derive/roles-files.ts";
 import { playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
 import type { Evidence, PlayableScenario } from "../shapes/roles.ts";
@@ -91,7 +91,7 @@ export async function* playOnce(
   for (const message of notTaken) {
     yield {
       type: "problem",
-      file: `${folderOf(name)}/scenarios/${slug}.yaml`,
+      file: `${operationFolderOf(name)}/scenarios/${slug}.yaml`,
       at: "steps",
       message,
     };

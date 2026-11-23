@@ -17,19 +17,19 @@ const reading: Files = {
 interfaces:
   - {interface: f, method: get, pattern: "/f/{a}", responses: {200: {body: any}}}
 `,
-  "roles/common.yaml": "target: t",
-  "roles/protocol.yaml": "target: t",
-  "roles/f/trigger.yaml":
+  "common.yaml": "target: t",
+  "protocol.yaml": "target: t",
+  "operations/f/trigger.yaml":
     "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
-  "roles/f/rules.yaml": `
+  "operations/f/rules.yaml": `
 operation: f
 requires:
   - {rule: exists, fact: the item exists, otherwise: not-found, source: "F.java:1"}
 answers: {says: "the item", structure: null}
 `,
-  "roles/f/hints.yaml":
+  "operations/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",
-  "roles/f/scenarios/exists-a.yaml": `
+  "operations/f/scenarios/exists-a.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -107,7 +107,7 @@ const stepsPlayed = (evidence: Evidence): Event => ({
 });
 
 const evidenceFile = (evidence: Evidence) => ({
-  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidence, null, 2),
+  "operations/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidence, null, 2),
 });
 
 async function recordWith(
@@ -142,7 +142,7 @@ const twoStacks: Played = {
   ],
   lines: ["stop", "start", "seed", "reset", "stop", "start", "seed", "reset", "stop"],
   written: [
-    { path: "roles/f/evidence/exists-a.yaml", evidence: { ...played("t1"), noise } },
+    { path: "operations/f/evidence/exists-a.yaml", evidence: { ...played("t1"), noise } },
   ],
 };
 
@@ -162,7 +162,7 @@ test("roles record plays an evidence as written once more on one stack, and writ
     ],
     lines: ["stop", "start", "seed", "reset", "stop"],
     written: [
-      { path: "roles/f/evidence/exists-a.yaml", evidence: { ...evidence, noise } },
+      { path: "operations/f/evidence/exists-a.yaml", evidence: { ...evidence, noise } },
     ],
   });
 });
@@ -209,7 +209,10 @@ test("roles record plays on two stacks an evidence taken with no side effects, o
     ],
     lines: twoStacks.lines,
     written: [
-      { path: "roles/f/evidence/exists-a.yaml", evidence: { ...observed("t1"), noise } },
+      {
+        path: "operations/f/evidence/exists-a.yaml",
+        evidence: { ...observed("t1"), noise },
+      },
     ],
   });
 });
@@ -350,10 +353,10 @@ test("roles replay compares a copy with its reference outside the noise", async 
 });
 
 test("roles record tells an interface whose scenarios fail their check, and plays nothing of it", async () => {
-  const scenario = reading["roles/f/scenarios/exists-a.yaml"] ?? "";
+  const scenario = reading["operations/f/scenarios/exists-a.yaml"] ?? "";
   expect(
     await recordWith(
-      { "roles/f/scenarios/exists-a.yaml": scenario.replace("as: u", "as: c") },
+      { "operations/f/scenarios/exists-a.yaml": scenario.replace("as: u", "as: c") },
       [],
     ),
   ).toEqual({

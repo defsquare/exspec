@@ -17,7 +17,7 @@ requests of your scenarios and the system's answers.
   name (`refuses`); under `protocol`, the names of the system's rules about its wire alone
   that hold on this operation. A status tells you whether your scenario reached the case
   you meant.
-- `exspec/roles/common.yaml`: the shared rules. `exspec/roles/protocol.yaml`: what holds for
+- `exspec/common.yaml`: the shared rules. `exspec/protocol.yaml`: what holds for
   the whole system on its wire — its rules about the wire alone, how a shared rule's
   refusal is answered, how it is started.
 - In your task, the operations a step may call: for each, its inputs by name with what
@@ -28,7 +28,7 @@ requests of your scenarios and the system's answers.
   it, the tool signs it.
 - `exspec/states.yaml`, when there is one: the situations named for the whole system,
   each with what is seen in it (`seen`) and `path`, the scenario that brings the system
-  there, a file you may read at `roles/<operation>/scenarios/<slug>.yaml` once it is
+  there, a file you may read at `operations/<operation>/scenarios/<slug>.yaml` once it is
   written. Your task says which are reached now: a scenario starts from those only.
 - One tool, `play`: you give it steps, it puts the system back in its starting state, sends
   the steps in order and returns what the system answered to each. It is your only access

@@ -1,8 +1,8 @@
 import { parseJudgeAnswer } from "../derive/judge-answer.ts";
 import {
-  folderOf,
   judgementsIn,
   judgeTaskOf,
+  operationFolderOf,
   recordingsRead,
 } from "../derive/roles-files.ts";
 import { interfaceLeft } from "../derive/roles-left.ts";
@@ -105,7 +105,7 @@ async function* judge(
         });
         await writeFile(
           dir,
-          `${folderOf(name)}/judgements.yaml`,
+          `${operationFolderOf(name)}/judgements.yaml`,
           Bun.YAML.stringify(
             { model, at: io.now(), judgements: [...judgements, ...stateJudgements] },
             null,

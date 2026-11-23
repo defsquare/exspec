@@ -304,8 +304,8 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
     {
       ...declared,
       "structures.yaml": reading["structures.yaml"] ?? "",
-      "roles/common.yaml": reading["roles/common.yaml"] ?? "",
-      "roles/protocol.yaml": reading["roles/protocol.yaml"] ?? "",
+      "common.yaml": reading["common.yaml"] ?? "",
+      "protocol.yaml": reading["protocol.yaml"] ?? "",
     },
     [{ writes: {} }, { writes: {} }, { writes: {} }, { writes: {} }],
   );
@@ -350,7 +350,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
 });
 
 const answersPath: Files = {
-  "roles/f/scenarios/answers.yaml": `
+  "operations/f/scenarios/answers.yaml": `
 rule: answers
 situation: an item
 reached: yes
@@ -358,7 +358,7 @@ steps:
   - {when: call, as: u, request: {method: get, path: /f/x}}
   - {when: after, as: u, request: {method: get, path: /f/x}}
 `,
-  "roles/f/evidence/answers.yaml": Bun.YAML.stringify(
+  "operations/f/evidence/answers.yaml": Bun.YAML.stringify(
     {
       rule: "answers",
       run: { target: "t", version: "v", at, clock: null },
@@ -424,7 +424,7 @@ test("each of the two agent phases writes its own files, never the other's", () 
     "exspec/target/seed.sh",
     "exspec/interfaces.yaml",
     "exspec/structures.yaml",
-    "exspec/roles/f/rules.yaml",
+    "exspec/operations/f/rules.yaml",
     "src/a.ts",
   ];
   expect({

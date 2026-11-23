@@ -55,8 +55,8 @@ function rewrite<T>({
 // What each file a state's name is written in becomes, the name changed; only an entry
 // told by the key `state` changes:
 //   states.yaml              [{state: s, …}]                                  -> state: t
-//   roles/f/scenarios/a.yaml {steps: [{when: arrange, state: s, name: p}, …]} -> state: t
-//   roles/f/judgements.yaml  {judgements: [{scenario: a, state: s, …}]}       -> state: t
+//   operations/f/scenarios/a.yaml {steps: [{when: arrange, state: s, name: p}, …]} -> state: t
+//   operations/f/judgements.yaml  {judgements: [{scenario: a, state: s, …}]} -> state: t
 function rewriteFile(
   { path, text }: SourceFile,
   from: string,
@@ -72,7 +72,7 @@ function rewriteFile(
         states.map((one) => (one.state === from ? { ...one, state: to } : one)),
     });
   }
-  if (/^roles\/[^/]+\/scenarios\/[^/]+\.yaml$/.test(path)) {
+  if (/^operations\/[^/]+\/scenarios\/[^/]+\.yaml$/.test(path)) {
     return rewrite({
       ...named,
       schema: roleScenarioSchema,
@@ -85,7 +85,7 @@ function rewriteFile(
       }),
     });
   }
-  if (/^roles\/[^/]+\/judgements\.yaml$/.test(path)) {
+  if (/^operations\/[^/]+\/judgements\.yaml$/.test(path)) {
     return rewrite({
       ...named,
       schema: judgementsSchema,
@@ -105,7 +105,7 @@ function rewriteFile(
 // the value of `state` and kept everywhere else; or why it is refused, nothing changed. A
 // request's body holding a field `state: s` in a scenario that starts from s would be
 // rewritten with it: the rewrite parsed back differs, and the rename is refused.
-//   s -> t  ->  {files: [{path: "states.yaml", text: "- state: t …"}, {path: "roles/f/judgements.yaml", …}]}
+//   s -> t  ->  {files: [{path: "states.yaml", text: "- state: t …"}, {path: "operations/f/judgements.yaml", …}]}
 export function renameState({
   files,
   from,

@@ -2,8 +2,9 @@
 
 The concepts exspec writes down, the group each belongs to, and what names what. It is
 written by hand after the schemas under `src/shapes/` — the shapes of the files of an
-extraction — and shows the reading made by the roles (`exspec/roles/`): a schema that
-changes a concept or a link changes `metamodel.yaml` in the same commit. The reasons are in
+extraction — and shows the reading made by the roles (`exspec/operations/`,
+`common.yaml`, `protocol.yaml`): a schema that changes a concept or a link changes
+`metamodel.yaml` in the same commit. The reasons are in
 [`adr/`](adr/README.md); how the files get written, in
 [`extraction-flow.md`](extraction-flow.md).
 
@@ -49,7 +50,7 @@ concepts that stand by themselves.
 
 ![The proof, and what it names of the specification and of the target](metamodel/proof.svg)
 
-Files under `roles/<interface>/`.
+Files under `operations/<interface>/`.
 
 | Concept | What it is | What it holds | Where | An instance |
 |---|---|---|---|---|
@@ -65,9 +66,9 @@ Files under `roles/<interface>/`.
 
 | Concept | What it is | What it holds | Where | An instance |
 |---|---|---|---|---|
-| operation | something the system does when asked | what it takes, the shared rules it is under, its rules, what it answers, what the reader is unsure of | `roles/<interface>/rules.yaml` | `{operation: f, takes: {a: {says: "…", field: [A, id]}}, common: [c], requires: […], effects: […], answers: {says: "…", structure: A}}` |
+| operation | something the system does when asked | what it takes, the shared rules it is under, its rules, what it answers, what the reader is unsure of | `operations/<interface>/rules.yaml` | `{operation: f, takes: {a: {says: "…", field: [A, id]}}, common: [c], requires: […], effects: […], answers: {says: "…", structure: A}}` |
 | rule | one thing an operation must do: a requirement and the refusal when it is not met, or an effect | its name, the fact in words, the refusal's name (a requirement), the service it rests on, the line of code it was read at | `requires` and `effects` of `rules.yaml` | `{rule: r, on: a, fact: "…", otherwise: gone, source: "src/a.ts:12"}` |
-| shared rule | a requirement that holds for the whole system | its name, what it applies to, the fact, the refusal's name, its source | `roles/common.yaml` | `{rule: c, applies-to: "…", fact: "…", otherwise: denied, source: "src/b.ts:3"}` |
+| shared rule | a requirement that holds for the whole system | its name, what it applies to, the fact, the refusal's name, its source | `common.yaml` | `{rule: c, applies-to: "…", fact: "…", otherwise: denied, source: "src/b.ts:3"}` |
 | structure | a business concept the system keeps | its name, the field that identifies it, its fields | `structures.yaml` | `{structure: A, identity: id, fields: {…}}` |
 | field | one thing a structure holds: a value, or a reference to a structure | a type and its limits, or the structure referred to | an entry of the structure's `fields` | `name: {type: string, max-length: 80}` · `owner: {structure: B}` |
 | service | what the system needs of someone else, whoever renders it | its name, what it does in words, its conditions | `services/<service>.yaml` | `{service: s, says: "…", conditions: […]}` |
@@ -83,7 +84,7 @@ never named by another file.
 
 | Concept | What it is | What it holds | Where | An instance |
 |---|---|---|---|---|
-| trigger | how this target says an operation on its wire | the interface, the operation, where each input goes, the status of an accepted call, how each refusal leaves, the protocol rules that hold | `roles/<interface>/trigger.yaml` | `{trigger: f, interface: f, operation: f, sends: {a: [path, id]}, answers: {status: 200}, refuses: {gone: {status: 404}}, protocol: [p]}` |
+| trigger | how this target says an operation on its wire | the interface, the operation, where each input goes, the status of an accepted call, how each refusal leaves, the protocol rules that hold | `operations/<interface>/trigger.yaml` | `{trigger: f, interface: f, operation: f, sends: {a: [path, id]}, answers: {status: 200}, refuses: {gone: {status: 404}}, protocol: [p]}` |
 | renders | which service a provider of this target renders | the provider's name, the service's name | the `renders` line of `providers/<name>/provider.yaml` | `{provider: p, renders: s, …}` |
 
 ### Target
@@ -96,7 +97,7 @@ The target names nothing outside itself: every arrow that crosses its frame come
 |---|---|---|---|---|
 | target | the running software, and how exspec handles it | how it starts, is known alive, is seeded, reset and stopped, where its API is, the providers observed | `target.yaml` | `{target: t, start: […], alive: {method: get, path: /h, status: 200}, seed: […], reset: […], stop: […], api: {base-url: "…"}, observables: [{observable: p, kind: provider}]}` |
 | interface | one entry of the target's wire | its name, the method, the path pattern, the shape of the request, the shape of each response by status | `interfaces.yaml` | `{interface: f, method: get, pattern: "/f/{a}", request: {path: {a: string}}, responses: {"200": {body: {id: string}}}}` |
-| protocol | what the whole target says of its wire, apart from any operation | the settings it runs with, its rules about the wire, how a shared refusal leaves, its error bodies | `roles/protocol.yaml` | `{rule: p, applies-to: "…", fact: "the body is a JSON object", otherwise: {refusal: malformed-body, status: 400, body: "…"}, source: "src/c.ts:8"}` |
+| protocol | what the whole target says of its wire, apart from any operation | the settings it runs with, its rules about the wire, how a shared refusal leaves, its error bodies | `protocol.yaml` | `{rule: p, applies-to: "…", fact: "the body is a JSON object", otherwise: {refusal: malformed-body, status: 400, body: "…"}, source: "src/c.ts:8"}` |
 | provider | a system the target calls, as the target's code expects it | its name, the form of its state, what the target expects of it, where the target calls it | `providers/<name>/provider.yaml`, `interfaces.yaml` | `{provider: p, renders: s, state: {shape: {kept: [string]}, says: "…"}, expects: [{expect: e, on: make, says: "…", source: "src/d.ts"}]}` |
 | twin | the program that stands for a provider while scenarios are played | code: it answers the target as the provider would, and can be put in a service's conditions | `providers/<name>/twin.ts` | — |
 

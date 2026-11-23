@@ -12,8 +12,10 @@ import { countJudged, judgeExtraction } from "../derive/provenance.ts";
 import {
   actorsNamed,
   callablesOf,
-  folderOf,
+  commonFile,
   judgementsIn,
+  operationFolderOf,
+  protocolFile,
   readerFilesOf,
   slugsIn,
   statesOf,
@@ -80,8 +82,8 @@ function readingsOf(files: readonly SourceFile[]) {
       ["target.yaml", "interfaces.yaml", "structures.yaml"].includes(path),
     ),
   );
-  const common = checkCommon(textAt(files, "roles/common.yaml"));
-  const protocol = checkProtocol(textAt(files, "roles/protocol.yaml"));
+  const common = checkCommon(textAt(files, commonFile));
+  const protocol = checkProtocol(textAt(files, protocolFile));
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
   const { providers, findings } = readAndCheckProviders(files);
   const callables = callablesOf(files);
@@ -94,7 +96,7 @@ function readingsOf(files: readonly SourceFile[]) {
   } = pathsOf(files, states.states);
   const interfaces = extraction.interfaces.map((bound): ReadInterface => {
     const name = bound.interface;
-    const folder = folderOf(name);
+    const folder = operationFolderOf(name);
     const text = textAt(files, `${folder}/rules.yaml`);
     const rules =
       text === undefined
@@ -147,7 +149,8 @@ function readingsOf(files: readonly SourceFile[]) {
       ...structures.findings,
       ...states.findings,
       ...ofPaths,
-      ...[...common.findings, ...protocol.findings].map((f) => `roles/${f}`),
+      ...common.findings,
+      ...protocol.findings,
       ...findings,
     ],
     gaps: unreachedGaps,
@@ -157,7 +160,7 @@ function readingsOf(files: readonly SourceFile[]) {
   };
 }
 
-// What the page draws: the roles' reading when exspec/roles/ holds one that parses, the
+// What the page draws: the roles' reading when exspec/operations/ holds one that parses, the
 // extraction and everything derived from it otherwise — the files, the problems and the
 // gaps, every rule and trigger judged, and each operation filed under a structure.
 export function dataOf(dir: string, files: readonly SourceFile[]) {

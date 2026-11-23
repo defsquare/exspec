@@ -53,3 +53,15 @@ test("the files read are the YAML files and the twins, not serve.ts nor the targ
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("an extraction still under roles/ is refused with the script to run", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "exspec-"));
+  try {
+    await Bun.write(join(dir, "exspec", "roles", "common.yaml"), "x: 1\n");
+    await expect(readExtractionFiles(dir)).rejects.toThrow(
+      "exspec/roles/ is the layout before operations/: run `bun scripts/migrations/0027-roles-to-operations.ts <dir>`",
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

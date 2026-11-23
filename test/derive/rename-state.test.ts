@@ -45,7 +45,7 @@ const applied = (files: readonly SourceFile[], rewritten: readonly SourceFile[])
   files.map((file) => rewritten.find(({ path }) => path === file.path) ?? file);
 
 test("a state renamed is renamed in states.yaml, in the scenarios that start from it and in its judgement, nothing else", () => {
-  const files = at({ "roles/f/scenarios/exists-c.yaml": withBody });
+  const files = at({ "operations/f/scenarios/exists-c.yaml": withBody });
   expect(renameState({ files, from: "s", to: "t" })).toEqual({
     files: [
       {
@@ -53,15 +53,18 @@ test("a state renamed is renamed in states.yaml, in the scenarios that start fro
         text: states.replace("- state: s\n", "- state: t\n"),
       },
       {
-        path: "roles/f/scenarios/exists-b.yaml",
-        text: textOf(files, "roles/f/scenarios/exists-b.yaml").replace(
+        path: "operations/f/scenarios/exists-b.yaml",
+        text: textOf(files, "operations/f/scenarios/exists-b.yaml").replace(
           "{when: arrange, state: s, name: p}",
           "{when: arrange, state: t, name: p}",
         ),
       },
       {
-        path: "roles/f/judgements.yaml",
-        text: textOf(files, "roles/f/judgements.yaml").replace("state: s}", "state: t}"),
+        path: "operations/f/judgements.yaml",
+        text: textOf(files, "operations/f/judgements.yaml").replace(
+          "state: s}",
+          "state: t}",
+        ),
       },
     ],
   });
@@ -75,9 +78,11 @@ test("a rename is refused, nothing rewritten, when it cannot be done whole", () 
     taken: refused({}, "s", "other"),
     notAName: refused({}, "s", "T t"),
     statesUnparsed: refused({ "states.yaml": "- state: [" }),
-    citingUnparsed: refused({ "roles/f/scenarios/exists-d.yaml": "steps: [{state: s" }),
+    citingUnparsed: refused({
+      "operations/f/scenarios/exists-d.yaml": "steps: [{state: s",
+    }),
     bodyAndStep: refused({
-      "roles/f/scenarios/exists-b.yaml": `
+      "operations/f/scenarios/exists-b.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -96,11 +101,11 @@ steps:
     },
     citingUnparsed: {
       refused:
-        "roles/f/scenarios/exists-d.yaml does not parse: roles/f/scenarios/exists-d.yaml: not YAML: YAML Parse error: Unexpected token",
+        "operations/f/scenarios/exists-d.yaml does not parse: operations/f/scenarios/exists-d.yaml: not YAML: YAML Parse error: Unexpected token",
     },
     bodyAndStep: {
       refused:
-        'roles/f/scenarios/exists-b.yaml: "s" is written there other than as a state',
+        'operations/f/scenarios/exists-b.yaml: "s" is written there other than as a state',
     },
   });
 });

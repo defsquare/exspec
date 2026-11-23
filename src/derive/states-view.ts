@@ -1,7 +1,7 @@
 import type { SourceFile } from "../shapes/extraction.ts";
 import { readYaml, roleScenarioSchema, type StateJudgement } from "../shapes/roles.ts";
 import { partsOfPath } from "./check-states.ts";
-import { folderOf, interfacesOf, slugsIn, statesOf } from "./roles-files.ts";
+import { interfacesOf, operationFolderOf, slugsIn, statesOf } from "./roles-files.ts";
 import { judgedOnPaths, pathsOf } from "./states-files.ts";
 import { type Path, stepsFromStates } from "./steps-from-states.ts";
 
@@ -45,22 +45,24 @@ export function statesStartedFrom(
   readonly states: readonly string[];
   readonly played: readonly (string | undefined)[];
 }[] {
-  return slugsIn(files, `${folderOf(name)}/scenarios`).flatMap(({ slug, text }) => {
-    const read = readYaml(slug, text, roleScenarioSchema);
-    if (!("value" in read)) return [];
-    const { steps } = read.value;
-    const states = steps.flatMap((step) => ("state" in step ? [step.state] : []));
-    if (states.length === 0) return [];
-    const replaced = stepsFromStates(steps, paths);
-    const played =
-      "from" in replaced
-        ? replaced.from.map((at) => {
-            const step = steps[at - 1];
-            return step !== undefined && "state" in step ? step.state : undefined;
-          })
-        : [];
-    return [{ slug, states, played }];
-  });
+  return slugsIn(files, `${operationFolderOf(name)}/scenarios`).flatMap(
+    ({ slug, text }) => {
+      const read = readYaml(slug, text, roleScenarioSchema);
+      if (!("value" in read)) return [];
+      const { steps } = read.value;
+      const states = steps.flatMap((step) => ("state" in step ? [step.state] : []));
+      if (states.length === 0) return [];
+      const replaced = stepsFromStates(steps, paths);
+      const played =
+        "from" in replaced
+          ? replaced.from.map((at) => {
+              const step = steps[at - 1];
+              return step !== undefined && "state" in step ? step.state : undefined;
+            })
+          : [];
+      return [{ slug, states, played }];
+    },
+  );
 }
 
 // ["g/r", "h/z", "g/q"] -> [{operation: g, rules: [r, q]}, {operation: h, rules: [z]}]

@@ -248,3 +248,37 @@ test("a scenario holding readings is refused", () => {
     },
   ]);
 });
+
+test("the files of the roles' reading are no part of the extraction", () => {
+  expect(
+    parseExtraction([
+      { path: "common.yaml", text: "x: 1" },
+      { path: "protocol.yaml", text: "x: 1" },
+      { path: "operations/a/rules.yaml", text: "x: 1" },
+      { path: "operations/a/scenarios/b.yaml", text: "x: 1" },
+    ]).problems,
+  ).toEqual([]);
+});
+
+test("operations/<name>.yaml is still an operation of the computed path", () => {
+  expect(parseExtraction([{ path: "operations/a.yaml", text: "x: 1" }]).problems).toEqual(
+    [
+      {
+        file: "operations/a.yaml",
+        at: "operation",
+        message: "Invalid input: expected string, received undefined",
+      },
+      {
+        file: "operations/a.yaml",
+        at: "takes",
+        message: "Invalid input: expected record, received undefined",
+      },
+      {
+        file: "operations/a.yaml",
+        at: "answers",
+        message: "Invalid input: expected string, received undefined",
+      },
+      { file: "operations/a.yaml", at: "", message: 'Unrecognized key: "x"' },
+    ],
+  );
+});

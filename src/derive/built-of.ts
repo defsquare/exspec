@@ -6,7 +6,7 @@ import { servicesIn } from "./check-service.ts";
 import {
   actorsNamed,
   callablesOf,
-  folderOf,
+  operationFolderOf,
   readerFilesOf,
   slugsIn,
   statesOf,
@@ -29,7 +29,7 @@ export function builtOf(
 ) {
   const { rules, trigger } = readerFilesOf(files, bound.interface);
   if (rules === undefined || trigger === undefined) return undefined;
-  const written = slugsIn(files, `${folderOf(bound.interface)}/scenarios`);
+  const written = slugsIn(files, `${operationFolderOf(bound.interface)}/scenarios`);
   const { states } = statesOf(files);
   const { paths, unreached } = pathsOf(files, states);
   return checkBuilt({

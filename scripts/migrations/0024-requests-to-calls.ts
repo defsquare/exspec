@@ -1,5 +1,6 @@
 // For an extraction made before ADR-0024: every request step a call says exactly, written as that call.
 //   bun scripts/migrations/0024-requests-to-calls.ts <dir>  (rewrites the scenarios of <dir> in place; run again, it changes nothing)
+// It reads the layout of ADR-0027: on an extraction still under roles/, run 0027-roles-to-operations.ts first.
 import type { Callable } from "../../src/derive/callables.ts";
 import { flowYaml } from "../../src/derive/flow-yaml.ts";
 import { deepEqual } from "../../src/derive/json.ts";
@@ -80,7 +81,7 @@ if (import.meta.main) {
   const files = await readExtractionFiles(dir);
   const callables = callablesOf(files);
   const scenarios = files.filter(({ path }) =>
-    /^roles\/[^/]+\/scenarios\/[^/]+\.yaml$/.test(path),
+    /^operations\/[^/]+\/scenarios\/[^/]+\.yaml$/.test(path),
   );
   const rewrittenFiles: string[] = [];
   const left: string[] = [];

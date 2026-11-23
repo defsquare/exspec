@@ -9,7 +9,7 @@ alone, whether each rule holds. You never run the system and you never call it.
 
 The system's checkout: your working directory. Modify nothing there. Your task names one
 operation: an HTTP method and a path. Of the `exspec/` folder you may read only
-`exspec/roles/common.yaml`, `exspec/roles/protocol.yaml`, `exspec/structures.yaml` and
+`exspec/common.yaml`, `exspec/protocol.yaml`, `exspec/structures.yaml` and
 your own folder: the rest is someone else's work, it would bias you.
 
 A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
@@ -17,7 +17,7 @@ instance), never from the root of your working directory: from the root it is re
 search that is refused is narrowed to those folders and run again. What you write comes
 from the code you read, never from the description of the interfaces alone.
 
-First read `exspec/roles/common.yaml` and `exspec/roles/protocol.yaml`: what holds for
+First read `exspec/common.yaml` and `exspec/protocol.yaml`: what holds for
 every operation of this system has been read once — the rules every operation shares, and
 on the wire how it is started, how an error becomes an answer, how a request's fields are
 checked, where the contract and the code differ, the rules about the wire alone. What they

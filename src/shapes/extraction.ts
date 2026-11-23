@@ -112,13 +112,16 @@ function readSourceFile(file: SourceFile): Outcome {
   const { path } = file;
   // target/ is the target's own: a compose file, a seed, what the lifecycle commands run
   if (path.startsWith("target/")) return nothing;
-  // roles/ is a reading of its own, by roles kept apart: it is not part of the extraction
-  if (path.startsWith("roles/")) return nothing;
+  // operations/<op>/… is what the roles read, play and judge; operations/<name>.yaml
+  // stays an operation of the computed path
+  if (/^operations\/[^/]+\//.test(path)) return nothing;
   // services/ is what the operations of the roles' reading rest on; providers/ what the
   // target expects of the systems it calls, and their twins
   if (path.startsWith("services/") || path.startsWith("providers/")) return nothing;
   switch (path) {
     case "states.yaml":
+    case "common.yaml":
+    case "protocol.yaml":
       return nothing;
     case "target.yaml":
       return parseFile(file, targetSchema, (target) => ({ target }));

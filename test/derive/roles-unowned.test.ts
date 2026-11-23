@@ -15,7 +15,7 @@ const hints = `
 `;
 
 const scenarios = ["a", "a-2", "a-b-2", "answers", "c", "b-a"].map((slug) => ({
-  path: `roles/f/scenarios/${slug}.yaml`,
+  path: `operations/f/scenarios/${slug}.yaml`,
   text: "",
 }));
 
@@ -23,10 +23,10 @@ test("a scenario file is unowned when its name starts with no rule of the readin
   expect(
     unownedScenarios(
       [
-        { path: "roles/f/rules.yaml", text: rules },
-        { path: "roles/f/hints.yaml", text: hints },
+        { path: "operations/f/rules.yaml", text: rules },
+        { path: "operations/f/hints.yaml", text: hints },
         {
-          path: "roles/f/trigger.yaml",
+          path: "operations/f/trigger.yaml",
           text: "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404}, closed: {status: 409}}}",
         },
         ...scenarios,
@@ -40,10 +40,10 @@ test("no scenario file is unowned while the reading does not pass its check", ()
   expect(
     unownedScenarios(
       [
-        { path: "roles/f/rules.yaml", text: "operation: [" },
-        { path: "roles/f/hints.yaml", text: hints },
+        { path: "operations/f/rules.yaml", text: "operation: [" },
+        { path: "operations/f/hints.yaml", text: hints },
         {
-          path: "roles/f/trigger.yaml",
+          path: "operations/f/trigger.yaml",
           text: "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404}, closed: {status: 409}}}",
         },
         ...scenarios,

@@ -15,17 +15,17 @@ const reading: Files = {
 interfaces:
   - {interface: f, method: get, pattern: "/f/{a}", responses: {200: {body: any}}}
 `,
-  "roles/common.yaml": "target: t",
-  "roles/protocol.yaml": "target: t",
-  "roles/f/trigger.yaml":
+  "common.yaml": "target: t",
+  "protocol.yaml": "target: t",
+  "operations/f/trigger.yaml":
     "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
-  "roles/f/rules.yaml": `
+  "operations/f/rules.yaml": `
 operation: f
 requires:
   - {rule: exists, fact: the item exists, otherwise: not-found, source: "F.java:1"}
 answers: {says: "the item", structure: null}
 `,
-  "roles/f/hints.yaml":
+  "operations/f/hints.yaml":
     "- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}",
 };
 
@@ -47,9 +47,9 @@ function fakeAgent(sessions: readonly Files[], more: Files = {}) {
       prompt,
       ...(resume === undefined ? {} : { resume }),
       mayWrite: [
-        "exspec/roles/f/scenarios/exists.yaml",
-        "exspec/roles/f/evidence/exists.yaml",
-        "exspec/roles/f/rules.yaml",
+        "exspec/operations/f/scenarios/exists.yaml",
+        "exspec/operations/f/evidence/exists.yaml",
+        "exspec/operations/f/rules.yaml",
       ].map(mayWrite),
     });
     if (writes === undefined) throw new Error("no session left");
@@ -85,8 +85,8 @@ const by: { readonly role: Role; readonly interface: string } = {
 
 test("a builder's failed gate goes back to its session; the tool writes the evidence", async () => {
   const agent = fakeAgent([
-    { "roles/f/scenarios/exists.yaml": scenario("carl") },
-    { "roles/f/scenarios/exists.yaml": scenario("u") },
+    { "operations/f/scenarios/exists.yaml": scenario("carl") },
+    { "operations/f/scenarios/exists.yaml": scenario("u") },
   ]);
   const { io, lines } = fakeIo({ "http://h/f/x": [{ status: 404, body: null }] });
   const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
@@ -139,7 +139,7 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
           "The operations a step may call, by their inputs, and what each answers:",
           "- f: takes nothing. Answers no structure a hole can read: the operation answers no structure.",
           "The operation: f, GET /f/{a}.",
-          "Your folder: exspec/roles/f/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
+          "Your folder: exspec/operations/f/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
         ].join("\n"),
         mayWrite: [true, false, false],
       },
@@ -154,7 +154,7 @@ test("a builder's failed gate goes back to its session; the tool writes the evid
       },
     ],
     lines: ["start", "seed", "reset", "stop"],
-    written: [{ path: "roles/f/evidence/exists.yaml", evidence }],
+    written: [{ path: "operations/f/evidence/exists.yaml", evidence }],
   });
 });
 
@@ -175,10 +175,10 @@ noise: []
 
 test("a builder's gate plays a scenario whose evidence is of it as it was, and leaves the other alone", async () => {
   const agent = fakeAgent([{}], {
-    "roles/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
-    "roles/f/scenarios/exists-b.yaml": scenarioAt("/f/y"),
-    "roles/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
-    "roles/f/evidence/exists-b.yaml": evidenceAt("/f/z"),
+    "operations/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
+    "operations/f/scenarios/exists-b.yaml": scenarioAt("/f/y"),
+    "operations/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
+    "operations/f/evidence/exists-b.yaml": evidenceAt("/f/z"),
   });
   const { io, lines } = fakeIo({ "http://h/f/y": [{ status: 404, body: null }] });
   const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
@@ -217,16 +217,16 @@ test("a builder's gate plays a scenario whose evidence is of it as it was, and l
       { type: "command-finished", command: "roles-build", ok: true },
     ],
     lines: ["start", "seed", "reset", "stop"],
-    written: [{ path: "roles/f/evidence/exists-b.yaml", evidence }],
+    written: [{ path: "operations/f/evidence/exists-b.yaml", evidence }],
   });
 });
 
 test("a scenario file no rule of the reading can own is removed, with its evidence", async () => {
   const agent = fakeAgent([{}], {
-    "roles/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
-    "roles/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
-    "roles/f/scenarios/gone.yaml": scenarioAt("/f/y"),
-    "roles/f/evidence/gone.yaml": evidenceAt("/f/y"),
+    "operations/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
+    "operations/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
+    "operations/f/scenarios/gone.yaml": scenarioAt("/f/y"),
+    "operations/f/evidence/gone.yaml": evidenceAt("/f/y"),
   });
   const { io } = fakeIo({});
   const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
@@ -244,15 +244,15 @@ test("a scenario file no rule of the reading can own is removed, with its eviden
       ...step("stop"),
       { type: "command-finished", command: "roles-build", ok: true },
     ],
-    removed: ["roles/f/scenarios/gone.yaml", "roles/f/evidence/gone.yaml"],
+    removed: ["operations/f/scenarios/gone.yaml", "operations/f/evidence/gone.yaml"],
     written: [],
   });
 });
 
 test("a builder is told of a scenario it wrote under a name no rule can own", async () => {
   const agent = fakeAgent([
-    { "roles/f/scenarios/other.yaml": scenario("u") },
-    { "roles/f/scenarios/exists.yaml": scenario("u") },
+    { "operations/f/scenarios/other.yaml": scenario("u") },
+    { "operations/f/scenarios/exists.yaml": scenario("u") },
   ]);
   const { io } = fakeIo({ "http://h/f/x": [{ status: 404, body: null }] });
   const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));
@@ -273,15 +273,15 @@ test("a builder is told of a scenario it wrote under a name no rule can own", as
       },
       { type: "gate-checked", ...by, ok: true, findings: [] },
     ],
-    removed: ["roles/f/scenarios/other.yaml"],
-    written: ["roles/f/evidence/exists.yaml"],
+    removed: ["operations/f/scenarios/other.yaml"],
+    written: ["operations/f/evidence/exists.yaml"],
   });
 });
 
 test("roles build starts no target when every scenario has its evidence as written, and skips each builder", async () => {
   const agent = fakeAgent([], {
-    "roles/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
-    "roles/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
+    "operations/f/scenarios/exists-a.yaml": scenarioAt("/f/x"),
+    "operations/f/evidence/exists-a.yaml": evidenceAt("/f/x"),
   });
   const { io, lines } = fakeIo({});
   const events = await Array.fromAsync(rolesBuild(agent.rolesRun(io)));

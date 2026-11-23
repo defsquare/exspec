@@ -26,7 +26,7 @@ test("the builder is told each service that passes its check by its file, and no
       "The actors: u, v; null for a call by nobody.",
       "A service: s — keeps documents. Its conditions: exspec/services/s.yaml.",
       "The operation: a, POST /a.",
-      "Your folder: exspec/roles/a/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
+      "Your folder: exspec/operations/a/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
     ].join("\n"),
   );
 });
@@ -53,11 +53,11 @@ test("the builder is told each operation a step may call, by its inputs, and wha
           text: "[{structure: S, identity: id, fields: {id: {type: string}}}]",
         },
         {
-          path: "roles/a/rules.yaml",
+          path: "operations/a/rules.yaml",
           text: "{operation: a, takes: {n: {says: a number}}, answers: {says: the s, structure: S}}",
         },
         {
-          path: "roles/a/trigger.yaml",
+          path: "operations/a/trigger.yaml",
           text: "{trigger: a, interface: a, operation: a, answers: {status: 200}}",
         },
       ],
@@ -68,7 +68,7 @@ test("the builder is told each operation a step may call, by its inputs, and wha
       "The operations a step may call, by their inputs, and what each answers:",
       "- a: takes n (a number). Answers S: id.",
       "The operation: a, POST /a.",
-      "Your folder: exspec/roles/a/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
+      "Your folder: exspec/operations/a/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.",
     ].join("\n"),
   );
 });

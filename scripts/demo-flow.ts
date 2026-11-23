@@ -93,7 +93,7 @@ const events: readonly Event[] = [
     type: "agent-used",
     ...reader("delete-pet"),
     tool: "Edit",
-    about: "exspec/roles/delete-pet/rules.yaml",
+    about: "exspec/operations/delete-pet/rules.yaml",
   },
   { type: "agent-ended", ...reader(long), turns: 11, seconds: 60, cost: 0.65 },
   { type: "gate-checked", ...reader(long), ok: true, findings: [] },

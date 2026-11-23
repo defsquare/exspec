@@ -6,8 +6,10 @@ import { isAsWritten } from "../derive/evidence.ts";
 import { operationsTold } from "../derive/operations-told.ts";
 import {
   callablesOf,
+  commonFile,
   evidenceAt,
-  folderOf,
+  operationFolderOf,
+  protocolFile,
   slugsIn,
   statesOf,
   textAt,
@@ -68,7 +70,7 @@ async function removeUnownedScenarios(
 ): Promise<readonly string[]> {
   const unowned = unownedScenarios(await readFiles(dir), name);
   for (const slug of unowned) {
-    await removeFile(dir, `${folderOf(name)}/scenarios/${slug}.yaml`);
+    await removeFile(dir, `${operationFolderOf(name)}/scenarios/${slug}.yaml`);
   }
   return unowned;
 }
@@ -81,7 +83,7 @@ async function* buildGate(
 ): AsyncGenerator<Event, readonly string[]> {
   const { dir, readFiles, writeFile, removeFile } = rolesRun;
   const name = bound.interface;
-  const folder = folderOf(name);
+  const folder = operationFolderOf(name);
   // a file the session has just written under a name no rule can own is removed too: left
   // there it could never pass, whatever the builder wrote in it. The builder is told, with
   // what the check then finds.
@@ -165,7 +167,7 @@ export function builderPrompt({
   readonly actors: readonly string[];
   readonly files: readonly SourceFile[];
 }): string {
-  const folder = folderOf(name);
+  const folder = operationFolderOf(name);
   const told = operationsTold(callablesOf(files));
   const { states } = statesOf(files);
   const { paths } = pathsOf(files, states);
@@ -214,18 +216,18 @@ async function* builder(
   if (skip !== undefined) return yield* roleSkipped("builder", name, skip);
   await removeUnownedScenarios(rolesRun, name);
   const actors = Object.keys(credentials);
-  const folder = folderOf(name);
+  const folder = operationFolderOf(name);
   const pathsOfStates = statesOf(files).states.map(({ path }) => {
     const { operation, slug } = partsOfPath(path);
-    return `${folderOf(operation)}/scenarios/${slug}.yaml`;
+    return `${operationFolderOf(operation)}/scenarios/${slug}.yaml`;
   });
   const own = (path: string) =>
     [
       "interfaces.yaml",
       "states.yaml",
       ...pathsOfStates,
-      "roles/common.yaml",
-      "roles/protocol.yaml",
+      commonFile,
+      protocolFile,
       `${folder}/rules.yaml`,
       `${folder}/hints.yaml`,
       `${folder}/trigger.yaml`,
@@ -246,7 +248,7 @@ async function* builder(
         tools,
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
-        confinement: `This session reads only exspec/interfaces.yaml, exspec/roles/common.yaml, exspec/roles/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, exspec/states.yaml and the scenario file each state of it names, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
+        confinement: `This session reads only exspec/interfaces.yaml, exspec/common.yaml, exspec/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, exspec/states.yaml and the scenario file each state of it names, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
         // a state step replaced by its path's steps; one that cannot be: nothing is played
         play: async (steps) => {
           const { paths, unreached } = pathsOf(await readFiles(dir));
@@ -319,7 +321,7 @@ export function rolesPlay(rolesRun: RolesRun, scenario: string): AsyncGenerator<
     "roles-play",
     { ...rolesRun, only: name },
     async function* ({ target }) {
-      const file = `${folderOf(name)}/scenarios/${slug}.yaml`;
+      const file = `${operationFolderOf(name)}/scenarios/${slug}.yaml`;
       const files = await readFiles(dir);
       const text = textAt(files, file);
       const read =

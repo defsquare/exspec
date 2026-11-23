@@ -162,8 +162,8 @@ test("a reader is told what its rules and its trigger lack at once", () => {
   expect(
     readerFilesOf(
       filesOf({
-        "roles/f/hints.yaml": "[]",
-        "roles/f/trigger.yaml":
+        "operations/f/hints.yaml": "[]",
+        "operations/f/trigger.yaml":
           "{trigger: f, interface: f, operation: f, answers: {status: []}}",
       }),
       "f",

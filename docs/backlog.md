@@ -385,10 +385,10 @@ them in; each of the first five is a branch of its own.
 
 ## Two specifications side by side: the extraction's terms and the roles' reading
 
-- **Seen.** `exspec roles` writes its own files under `exspec/roles/` — rules as
-  sentences, scenarios whose steps call an operation (ADR-0024), evidence, judgements —
-  beside `operations/`, the facts' terms and the projections, which serve nothing in the
-  roles' path. The trigger serves both: a roles' reading writes one per interface
+- **Seen.** `exspec roles` writes its own files under `exspec/operations/<op>/`
+  (ADR-0027) — rules as sentences, scenarios whose steps call an operation (ADR-0024),
+  evidence, judgements — beside the computed path's `operations/<op>.yaml`, `facts.yaml`
+  and `bindings.yaml`, which serve nothing in the roles' path. The trigger serves both: a roles' reading writes one per interface
   (ADR-0023).
   Only `structures.yaml` is shared. `target up` and `status` refuse a checkout whose old
   files no longer parse while `roles` runs on it. Three whole targets through the roles:
@@ -397,7 +397,8 @@ them in; each of the first five is a branch of its own.
   bounded concepts for a human reader — operations, rules, facts, structures — and a rule
   may be a sentence. By the user, the challenger agreeing on the direction: the
   specification takes the roles' form —
-  (1) the reader's rules become `operations/*.yaml`;
+  (1) the reader's rules become the operation's one file — its folder is `operations/<op>/`
+  since ADR-0027, beside the computed path's `operations/<op>.yaml`;
   (2) the roles' evidence becomes a reference, two executions and the noise beside, and a
   judgement is attached to it;
   (3) the judgement replaces the derived verdicts as the conclusion;

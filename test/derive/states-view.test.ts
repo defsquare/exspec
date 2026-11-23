@@ -49,7 +49,7 @@ test("each state as the page shows it: reached, not judged on its path yet, or n
     statesView(
       filesOf({
         ...written,
-        "roles/f/judgements.yaml": Bun.YAML.stringify({
+        "operations/f/judgements.yaml": Bun.YAML.stringify({
           model: "m",
           at: "2026-11-01T10:00:00.000Z",
           judgements: [judged("s", "holds", k), judged("u", "not-shown", k)],

@@ -1,5 +1,5 @@
 import { noiseBetween } from "../derive/evidence.ts";
-import { folderOf } from "../derive/roles-files.ts";
+import { operationFolderOf } from "../derive/roles-files.ts";
 import { type InterfaceLeft, leftOf } from "../derive/roles-left.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import type { Event } from "../shapes/event.ts";
@@ -21,7 +21,7 @@ async function* markAndWriteReference(
   const { rule, run, exchanges } = first;
   await writeFile(
     dir,
-    `${folderOf(name)}/evidence/${slug}.yaml`,
+    `${operationFolderOf(name)}/evidence/${slug}.yaml`,
     Bun.YAML.stringify({ rule, run, exchanges, noise: marked.noise }, null, 2),
   );
   yield { type: "reference-written", path, noise: marked.noise.length };

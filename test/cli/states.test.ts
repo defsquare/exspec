@@ -31,14 +31,14 @@ test("states rename writes every file that names the state, and says which", asy
         type: "state-renamed",
         from: "s",
         to: "t",
-        files: ["states.yaml", "roles/f/scenarios/exists-b.yaml"],
+        files: ["states.yaml", "operations/f/scenarios/exists-b.yaml"],
       },
       { type: "command-finished", command: "states-rename", ok: true },
     ] satisfies Event[],
     written: {
       "states.yaml": "- {state: t, of: [S], seen: x, path: f/exists-a}\n",
-      "roles/f/scenarios/exists-b.yaml": (
-        pathed["roles/f/scenarios/exists-b.yaml"] ?? ""
+      "operations/f/scenarios/exists-b.yaml": (
+        pathed["operations/f/scenarios/exists-b.yaml"] ?? ""
       ).replace("state: s,", "state: t,"),
     },
   });

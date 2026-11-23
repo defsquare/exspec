@@ -15,15 +15,15 @@ test("an operation may be called when its rules and its trigger parse: its input
         text: "[{structure: S, identity: id, fields: {id: {type: string}}}]",
       },
       {
-        path: "roles/f/rules.yaml",
+        path: "operations/f/rules.yaml",
         text: "{operation: f, takes: {x: {says: an x}, b: {says: a b}}, answers: {says: the s, structure: S}}",
       },
       {
-        path: "roles/f/trigger.yaml",
+        path: "operations/f/trigger.yaml",
         text: "{trigger: f, interface: f, operation: f, sends: {b: [body, a, b]}, answers: {status: 201}}",
       },
       {
-        path: "roles/g/rules.yaml",
+        path: "operations/g/rules.yaml",
         text: "{operation: g, answers: {says: x, structure: null}}",
       },
     ]),

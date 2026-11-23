@@ -14,8 +14,8 @@ Under `exspec/` in your working directory, and nothing else:
 
 - `structures.yaml`: the business concepts of the system.
 - `interfaces.yaml`: its operations, by name, with the method and path of each.
-- `roles/<operation>/rules.yaml`: the rules of one operation — `requires`, `effects`.
-- `roles/<operation>/hints.yaml`: for each rule, the `situation` it needs and `how` a
+- `operations/<operation>/rules.yaml`: the rules of one operation — `requires`, `effects`.
+- `operations/<operation>/hints.yaml`: for each rule, the `situation` it needs and `how` a
   reader thought it is reached.
 
 Read the hints of every operation before you write anything: a state is found by seeing

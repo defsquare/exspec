@@ -13,7 +13,7 @@ import {
 
 const states: Files = {
   "states.yaml": "- {state: s, of: [S], seen: reading the f shows it, path: f/exists-a}",
-  "roles/f/scenarios/exists-a.yaml": `
+  "operations/f/scenarios/exists-a.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -21,7 +21,7 @@ steps:
   - {when: call, as: u, request: {method: get, path: /f/x}}
   - {when: after, as: u, request: {method: get, path: /f/x}}
 `,
-  "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(
+  "operations/f/evidence/exists-a.yaml": Bun.YAML.stringify(
     evidenceOf({
       noise: [],
       exchanges: [
@@ -84,12 +84,12 @@ test("a state is reached when its sentence's judgement on its path holds on toda
     notWritten: pathsOf(
       at({ "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-b}" }),
     ),
-    unparsed: pathsOf(at({ "roles/f/scenarios/exists-a.yaml": "rule: [" })),
-    noEvidence: pathsOf(at({ "roles/f/evidence/exists-a.yaml": "" })),
+    unparsed: pathsOf(at({ "operations/f/scenarios/exists-a.yaml": "rule: [" })),
+    noEvidence: pathsOf(at({ "operations/f/evidence/exists-a.yaml": "" })),
     playedOnce: pathsOf(
       at({
         ...judgedAs("h", "holds", { of: hash, verdict: "holds" }),
-        "roles/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidenceOf()),
+        "operations/f/evidence/exists-a.yaml": Bun.YAML.stringify(evidenceOf()),
       }),
     ),
     none: pathsOf(at({})),
@@ -135,7 +135,7 @@ test("a path whose steps start from a state is a finding", () => {
     pathsOf(
       at({
         ...judgedAs("h", "holds", { of: hash, verdict: "holds" }),
-        "roles/f/scenarios/exists-a.yaml": `
+        "operations/f/scenarios/exists-a.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -160,7 +160,7 @@ steps:
 });
 
 const startingFrom = (state: string): Files => ({
-  "roles/f/scenarios/exists-b.yaml": `
+  "operations/f/scenarios/exists-b.yaml": `
 rule: exists
 situation: an id no item has
 reached: yes
@@ -213,7 +213,7 @@ test("the scenario a state's path names is written, and ends with an after step"
       "states.yaml": "- {state: s, of: [S], seen: x, path: f/exists-b}",
     }),
     noAfter: findingsAt({
-      "roles/f/scenarios/exists-a.yaml": scenarioOf(
+      "operations/f/scenarios/exists-a.yaml": scenarioOf(
         "  - {when: call, as: u, request: {method: get, path: /f/x}}",
       ),
     }),

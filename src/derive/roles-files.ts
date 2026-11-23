@@ -26,13 +26,17 @@ import { checkStates, partsOfPath } from "./check-states.ts";
 import { checkTrigger } from "./check-trigger.ts";
 import { judgeTask } from "./judge-task.ts";
 
-// "delete-item" -> "roles/delete-item"
-export const folderOf = (name: string) => `roles/${name}`;
+// "delete-item" -> "operations/delete-item"
+export const operationFolderOf = (name: string) => `operations/${name}`;
+
+// what is of no operation, at the root of the extraction
+export const commonFile = "common.yaml";
+export const protocolFile = "protocol.yaml";
 
 export const textAt = (files: readonly SourceFile[], path: string) =>
   files.find((file) => file.path === path)?.text;
 
-// the YAML files directly in a folder, by slug: "roles/i/scenarios" -> [{slug: "a", text}]
+// the YAML files directly in a folder, by slug: "operations/i/scenarios" -> [{slug: "a", text}]
 export function slugsIn(
   files: readonly SourceFile[],
   folder: string,
@@ -51,7 +55,7 @@ export function evidenceAt(
   name: string,
   slug: string,
 ): Evidence | undefined {
-  const file = `${folderOf(name)}/evidence/${slug}.yaml`;
+  const file = `${operationFolderOf(name)}/evidence/${slug}.yaml`;
   const text = textAt(files, file);
   const read = text === undefined ? undefined : readYaml(file, text, evidenceSchema);
   return read !== undefined && "value" in read ? read.value : undefined;
@@ -77,7 +81,7 @@ const interfacesNamed = (files: readonly SourceFile[]) =>
 export function callablesOf(files: readonly SourceFile[]): readonly Callable[] {
   const { structures = [] } = checkStructuresFile(textAt(files, "structures.yaml"));
   return (interfacesOf(files) ?? []).flatMap((bound) => {
-    const folder = folderOf(bound.interface);
+    const folder = operationFolderOf(bound.interface);
     const rulesText = textAt(files, `${folder}/rules.yaml`);
     const triggerText = textAt(files, `${folder}/trigger.yaml`);
     const rules =
@@ -102,10 +106,10 @@ export function callablesOf(files: readonly SourceFile[]): readonly Callable[] {
 // only when every check passes. The trigger is checked as soon as rules.yaml parses: the
 // reader is told all there is to fix at once.
 export function readerFilesOf(files: readonly SourceFile[], name: string) {
-  const { common } = checkCommon(textAt(files, "roles/common.yaml"));
-  const { protocol } = checkProtocol(textAt(files, "roles/protocol.yaml"));
+  const { common } = checkCommon(textAt(files, commonFile));
+  const { protocol } = checkProtocol(textAt(files, protocolFile));
   const { structures } = checkStructuresFile(textAt(files, "structures.yaml"));
-  const folder = folderOf(name);
+  const folder = operationFolderOf(name);
   const rulesText = textAt(files, `${folder}/rules.yaml`);
   const read = checkRulesAndHints({
     operation: name,
@@ -166,7 +170,7 @@ export function unownedScenarios(
   const { rules, trigger } = readerFilesOf(files, name);
   if (rules === undefined || trigger === undefined) return [];
   const owners = ownersOf(rules, trigger.protocol ?? []);
-  return slugsIn(files, `${folderOf(name)}/scenarios`)
+  return slugsIn(files, `${operationFolderOf(name)}/scenarios`)
     .map(({ slug }) => slug)
     .filter((slug) => !owners.some((rule) => slug.startsWith(rule)));
 }
@@ -174,7 +178,7 @@ export function unownedScenarios(
 // the judgements of a folder as they are written, none when there is no file or it does
 // not parse
 function judgementsRead(files: readonly SourceFile[], name: string) {
-  const file = `${folderOf(name)}/judgements.yaml`;
+  const file = `${operationFolderOf(name)}/judgements.yaml`;
   const text = textAt(files, file);
   const read = text === undefined ? undefined : readYaml(file, text, judgementsSchema);
   return read !== undefined && "value" in read ? read.value.judgements : [];
@@ -213,7 +217,7 @@ export function recordingsRead(
   | { readonly slug: string; readonly evidence: Evidence }
   | { readonly slug: string; readonly findings: readonly string[] }
 )[] {
-  return slugsIn(files, `${folderOf(name)}/evidence`).map(({ slug, text }) => {
+  return slugsIn(files, `${operationFolderOf(name)}/evidence`).map(({ slug, text }) => {
     const read = readYaml(`evidence/${slug}.yaml`, text, evidenceSchema);
     return "value" in read ? { slug, evidence: read.value } : { slug, ...read };
   });

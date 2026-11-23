@@ -31,9 +31,9 @@ flowchart TD
         R1(["structures reader"])
         F3["structures.yaml"]
         R2(["common reader"])
-        F4["roles/common.yaml<br/>roles/protocol.yaml"]
+        F4["common.yaml<br/>protocol.yaml"]
         R3(["reader — one per interface"])
-        F5["roles/&lt;interface&gt;/<br/>rules.yaml, hints.yaml, trigger.yaml"]
+        F5["operations/&lt;interface&gt;/<br/>rules.yaml, hints.yaml, trigger.yaml"]
         R4(["states reader"])
         F6["states.yaml"]
         R1 --> F3 --> R2 --> F4 --> R3 --> F5 --> R4 --> F6
@@ -41,15 +41,15 @@ flowchart TD
 
     subgraph P4["Phase 4 — evidence (the proof)"]
         B(["builder — one per interface<br/>one tool: play"])
-        F7["roles/&lt;interface&gt;/scenarios/*.yaml"]
+        F7["operations/&lt;interface&gt;/scenarios/*.yaml"]
         T1{{"record: each scenario played twice<br/>on fresh stacks"}}
-        F8["roles/&lt;interface&gt;/evidence/*.yaml<br/>a reference and its noise"]
+        F8["operations/&lt;interface&gt;/evidence/*.yaml<br/>a reference and its noise"]
         B --> F7 --> T1 --> F8
     end
 
     subgraph P5["Phase 5 — judgement"]
         J(["judge — one per interface<br/>no tool"])
-        F9["roles/&lt;interface&gt;/judgements.yaml"]
+        F9["operations/&lt;interface&gt;/judgements.yaml"]
         J --> F9
     end
 
@@ -89,8 +89,8 @@ the rule.
 | target | agent, one session | the checkout | `target.yaml`, `target/` | the target starts, is seeded, is reset, stops |
 | interfaces | agent, one session | the contract, else the code | `interfaces.yaml` | the file passes its check |
 | reading | structures reader | the code | `structures.yaml` | the structures' file |
-| reading | common reader | the code | `roles/common.yaml`, `roles/protocol.yaml` | both files |
-| reading | reader, one per interface | the code, the structures, the common files, `services/` | `roles/<interface>/rules.yaml`, `hints.yaml`, `trigger.yaml` | the three files pass their check |
+| reading | common reader | the code | `common.yaml`, `protocol.yaml` | both files |
+| reading | reader, one per interface | the code, the structures, the common files, `services/` | `operations/<interface>/rules.yaml`, `hints.yaml`, `trigger.yaml` | the three files pass their check |
 | reading | states reader, once | `exspec/` only: structures, interfaces, every rule and hint | `states.yaml` | each state serves rules of two operations at least |
 | evidence | builder, one per interface | its rules and hints, `states.yaml`, the paths of the states; **the system through `play` only** | `scenarios/<slug>.yaml` | every scenario is well formed and plays |
 | evidence | the tool (`record`) | the scenarios | `evidence/<slug>.yaml` | two plays agree outside the noise |
@@ -157,16 +157,15 @@ exspec/
   states.yaml              the named states, each with its path
   services/<service>.yaml  what the system needs of someone else               providers read
   providers/<name>/        the provider this target calls, its twin            providers write-twin
-  roles/
-    common.yaml            what holds for every operation
-    protocol.yaml          the rules of the protocol
-    <interface>/
-      rules.yaml           what the operation requires, does and answers       phase 3
-      hints.yaml           for each rule, a situation and how to reach it
-      trigger.yaml         how the interface is bound to the operation
-      scenarios/<slug>.yaml   one scenario per rule and situation              phase 4
-      evidence/<slug>.yaml    what the target answered, and its noise
-      judgements.yaml         a verdict per scenario, and per state            phase 5
+  common.yaml              what holds for every operation
+  protocol.yaml            the rules of the protocol
+  operations/<interface>/
+    rules.yaml             what the operation requires, does and answers       phase 3
+    hints.yaml             for each rule, a situation and how to reach it
+    trigger.yaml           how the interface is bound to the operation
+    scenarios/<slug>.yaml  one scenario per rule and situation                 phase 4
+    evidence/<slug>.yaml   what the target answered, and its noise
+    judgements.yaml        a verdict per scenario, and per state               phase 5
 ```
 
 Nothing derived is stored: `status`, `check` and `view` compute what is verified, refuted
