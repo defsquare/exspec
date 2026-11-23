@@ -11,7 +11,7 @@ the rules left `not-shown` for a state never reached, and what a build costs.
 restore of a proven state's world (set apart, last). Another extraction of `her_hippos`
 before the design holds on a cheaper target.
 
-The design: ADR-0025 (Proposed).
+The design: ADR-0025 and ADR-0026 (Accepted).
 
 ## Journal
 
@@ -28,9 +28,9 @@ The design: ADR-0025 (Proposed).
   What it measures is what a build costs; the rules left `not-shown` on `trainings` are
   so for other reasons.
 
-- **Built** (2026-11-22): `states.yaml` and its check (`2a46492`); the `state` step,
-  replaced by its path's steps in `derive` (`22ab5ce`, `aef23b6`); the builder told, and
-  `check` / `status` reading the file (`e33a553`, `05d95a2`, `488ccb3`). Each reviewed;
+- **Built** (2026-11-22): `states.yaml` and its check; the `state` step,
+  replaced by its path's steps in `derive`; the builder told, and
+  `check` / `status` reading the file. Each reviewed;
   one Important finding a round on the last two, fixed. Minor, for the pre-merge reading:
   `serves` is checked against nothing; `roles-files.ts` is past 300 lines; a finding
   about a replaced step shows the name as replaced (`{{p-s.id}}`), not as written
@@ -76,9 +76,9 @@ The design: ADR-0025 (Proposed).
   state's finding stops the evidence phase — `runPhase` reads `target.yaml` and
   `interfaces.yaml` only.
 - **The pass that gathers, built** (2026-11-22): a state not reached is a gap, the check
-  of a path's scenario, a reading not done without `states.yaml` (`979f59f`, reviewed:
-  two Important, fixed in `6df110b`, `8e03d5c`); the states' reader, what a builder is
-  told, the path operations first (`aae5dce`, `f879d45`, `87f3f33`, reviewed: approved).
+  of a path's scenario, a reading not done without `states.yaml` (reviewed:
+  two Important, fixed); the states' reader, what a builder is
+  told, the path operations first (reviewed: approved).
   Minor, for the pre-merge challenger: "1 operations are not read yet"; the first wave
   stops every operation on one path's builder failing; `RolesGap` repeats the kinds of
   `gapSchema`.
@@ -116,7 +116,7 @@ The design: ADR-0025 (Proposed).
   arrange by hand: a path that starts from a state would spare 14 scenarios, not the
   1100 others — left where ADR-0025 leaves it.
 - **A state is reached when its sentence is judged on its path** (2026-11-22, ADRs
-  amended `8da03f2`, built `1e8e75d`, reviewed: approved). From the two states left
+  amended, built, reviewed: approved). From the two states left
   unreached on `trainings` and the user's objection to "accepted is enough". The
   challenger had read two forms and leaned to the one with no judge.
 
@@ -136,10 +136,38 @@ The design: ADR-0025 (Proposed).
   `roles-view.ts` (563 lines), `main.ts` (309), `roles-build.ts` (356, `rolesPlay` would
   go in a module of its own), `check-built.ts` (306). `RolesGap` repeats the kinds of
   `gapSchema`. No merge asked.
+- **The full run on `trainings`** (2026-11-23, a fresh copy, `extract` once, from the
+  reading to the judgement; before: the run of 2026-11-21, its costs corrected). 1 h 53,
+  29.04 USD against 30.58 for the same roles: reading 8.47 (7.90; the states' reader 0.44,
+  the structures read again 0.24), builders 12.71 (14.35, 11 % less), judges 7.85 (8.33).
+  13 states gathered, other names than the first time, the same chain; the 13 path
+  operations built, recorded and judged first, the 13 states reached, no problem of
+  `check`, no gap of a state. 938 scenarios (1071 before: the readers wrote fewer rules).
+  Two defects seen, fixed:
+  - 18 of the 37 other builders used no state, all or nothing by builder; one said it
+    could not find the step name a hole needs. The names are now in the task. Six of them
+    run again: 105 of 121 scenarios from a state, 1.76 → 1.35 USD.
+  - Four reading operations whose scenarios all start from a state written by another
+    actor were never recorded nor judged, the extraction ending ok: the check told
+    without the target took the path's actor for unknown. Fixed; `extract` again finished
+    them (1.97 USD more with the six rebuilt).
+  After: 50 operations judged, 941 scenarios, 341 from a state in 25 operations; 784
+  `holds` (83 %), 149 `not-shown`, 8 `contradicted` — 87 % held before. From a state 81 %
+  hold, the others 84 %: not looked into rule by rule. The 13 path operations start from
+  no state — they are built before any is reached — and cost 4.50 USD of the 12.71.
+  The page read on this run: the sheet "The states" shows each with its sentence, its
+  verdict, the rules it serves and the scenarios that start from it.
 
 ## Backlog
 
-- [ ] A full run on `trainings`, from the reading to the judgement.
+- [ ] An operation whose check of what is built fails is skipped by the recording and by
+  its judge, and the extraction ends ok: nothing says it is left. Seen on the full run.
+- [ ] From a state, 81 % of the scenarios hold against 84 % of the others: read the
+  `not-shown` of the scenarios that start from a state.
+- [ ] Before a merge, the history: fold "check and status show what states.yaml fails
+  on" into "check reads states.yaml"; the fix of the path's actors into the commit that
+  replaces a state step; "a builder chooses the situation…" is a `feat`, "checkBuilt is
+  told the states…" a `refactor`.
 - [ ] `serves` is checked by the states' reader alone and read by the page alone: a rule
   renamed later leaves a dead link there.
 - [ ] In the first wave one path's builder failing stops the evidence of every operation;
