@@ -69,7 +69,7 @@ are of the computed path only and are not drawn there.
 proof           scenario, step, evidence, side effect, judgement    points at the specification
 specification   operation, rule, fact, structure, field, service, condition, state    points at nothing below it
 bindings        projection, trigger, detects, renders    the only shapes that know both sides
-target          target, interface, protocol, observable (a provider is one)    points at nothing above it
+target          target, interface, observable (a provider is one)    points at nothing above it
 ```
 
 **What survives the target being rewritten is of the specification; what may not is of the

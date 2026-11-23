@@ -4,6 +4,8 @@ Status: Accepted (2026-11-20) — the cut settled with the user after the challe
 wider design and said "change": what it kept is here, what it cut is under Alternatives.
 Its last decision, "a scenario's steps stay requests", superseded by
 [ADR-0024](0024-a-scenarios-step-calls-an-operation-the-trigger-gives-the-request.md).
+Its decision "a rule about the wire is the target's" superseded by
+[ADR-0028](0028-the-wire-is-described-not-proven.md): the concept `protocol` is removed.
 
 ## Context
 
