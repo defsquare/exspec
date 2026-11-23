@@ -37,6 +37,12 @@ export async function* sessionRounds({
 }: Rounds): AsyncGenerator<Event, boolean> {
   let { prompt } = session;
   let resume: string | undefined;
+  // A resumed session's result carries the total its transcript saved, the earlier rounds
+  // in it:   results say 0.20, 0.23  ->  events say 0.20, 0.03
+  // A result may carry no such total (a crash's zeroed values, a transcript that saved
+  // none): a figure below what was spent is passed as it is. One above it, of a round
+  // that did not carry the total, is under-reported.
+  let spent = 0;
   for (let round = 0; ; round++) {
     const driven = drive({
       ...session,
@@ -47,7 +53,11 @@ export async function* sessionRounds({
     let next = await driven.next();
     for (; !next.done; next = await driven.next()) {
       if (next.value.type === "agent-said") said = next.value.text;
-      yield label(next.value);
+      if (next.value.type === "agent-ended" && next.value.cost !== undefined) {
+        const { cost } = next.value;
+        yield label({ ...next.value, cost: cost < spent ? cost : cost - spent });
+        spent = Math.max(spent, cost);
+      } else yield label(next.value);
     }
     const ended = next.value;
     if (!ended.ok) {
