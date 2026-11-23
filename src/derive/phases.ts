@@ -69,7 +69,8 @@ export function stepDone(step: SessionStep, examined: Examined): boolean {
 
 // A phase is done when the files say so, and the one before it is done: the target is not
 // started to find out. With no interface, nothing is read, built or judged.
-//   target         both its sessions' steps done
+//   target         both its sessions' steps done, every provider declared read and its
+//                  twin written
 //   specification  structures, common, common-trigger and states.yaml not left, every
 //                  interface read
 //   proof          no scenario left to build, no finding of the builder's check, none to
@@ -80,7 +81,10 @@ export function phasesOf(examined: Examined, left: Left): Phases {
     left.interfaces.length > 0 &&
     read.length === left.interfaces.length &&
     read.every(holds);
-  const target = stepDone("target", examined) && stepDone("interfaces", examined);
+  const target =
+    stepDone("target", examined) &&
+    stepDone("interfaces", examined) &&
+    left.providers.every(({ reading, twin }) => !reading && !twin);
   const specification =
     target &&
     !left.structures &&

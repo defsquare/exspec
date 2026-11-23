@@ -1,3 +1,4 @@
+import { checkPointedAtProxy } from "../derive/check-pointed-at-proxy.ts";
 import { pathsFirst } from "../derive/paths-first.ts";
 import {
   declaredIn,
@@ -20,8 +21,9 @@ import {
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Target } from "../shapes/target.ts";
 import { under, writesOf } from "./access.ts";
-import { type Drive, phaseTools, type Session } from "./drive.ts";
+import { type Drive, type Session, sessionTools } from "./drive.ts";
 import type { Instructions } from "./instructions.ts";
+import { runProviderReaders, runTwinWriters } from "./providers.ts";
 import { type RolesRun, type RolesSetting, rolesRunOf } from "./roles.ts";
 import { runBuilders } from "./roles-build.ts";
 import { runJudges } from "./roles-judge.ts";
@@ -39,16 +41,22 @@ export type Extracting = {
   readonly effort: Session["effort"];
   readonly instructions: Instructions;
   readonly drive: Drive;
+  // the io of every phase but the proof
   readonly io: Io;
+  // the providers the target declares stood, and the io that goes with them, which the
+  // proof plays with; called once, when the proof starts
+  readonly ioForProof: (target: Target) => Promise<Io>;
   // the files under <dir>/exspec, read again before every gate: the agent changes them
   readonly readFiles: (dir: string) => Promise<readonly SourceFile[]>;
+  // the files directly under <dir>/exspec/target/: what starts the target
+  readonly readStartFiles: (dir: string) => Promise<readonly SourceFile[]>;
   // path relative to <dir>/exspec: what the tool writes itself, never the agent
   readonly writeFile: (dir: string, path: string, text: string) => Promise<void>;
   readonly removeFile: (dir: string, path: string) => Promise<void>;
 };
 
 const failedGate =
-  "The check of this phase failed. Fix what follows, then end with the same short message.";
+  "The check of this session failed. Fix what follows, then end with the same short message.";
 
 // the findings of a failed gate go back to the session this many times at most
 const rounds = 3;
@@ -65,7 +73,11 @@ async function phasesNow({ dir, readFiles }: Extracting) {
   const examined = declaredIn(files);
   return phasesOf(
     examined,
-    leftOf({ files, interfaces: examined.extraction.interfaces }),
+    leftOf({
+      files,
+      interfaces: examined.extraction.interfaces,
+      providers: examined.extraction.target?.observables ?? [],
+    }),
   );
 }
 
@@ -91,7 +103,8 @@ async function* lifecycleGate(
   }
 }
 
-// the files first; then, for the target, the target itself
+// the files first; then, for the target, each provider named at the proxy by what starts
+// it, then the target itself
 async function* gate(
   step: SessionStep,
   extracting: Extracting,
@@ -100,6 +113,12 @@ async function* gate(
   const found = staticFindings(step, examined);
   const { target } = examined.extraction;
   if (found.length > 0 || step === "interfaces" || target === undefined) return found;
+  const { dir, readStartFiles } = extracting;
+  const pointing = checkPointedAtProxy(
+    target,
+    (await readStartFiles(dir)).map(({ text }) => text),
+  );
+  if (pointing.length > 0) return pointing;
   return yield* lifecycleGate(target, extracting);
 }
 
@@ -116,9 +135,9 @@ const owned: Readonly<Record<SessionStep, (path: string) => boolean>> = {
 
 const confinement: Readonly<Record<SessionStep, string>> = {
   target:
-    "This phase writes only exspec/target.yaml, exspec/.gitignore and under exspec/target/: the list of interfaces is written by the session after this one.",
+    "This session writes only exspec/target.yaml, exspec/.gitignore and under exspec/target/: the list of interfaces is written by the session after this one.",
   interfaces:
-    "This phase writes only exspec/interfaces.yaml: how the target starts is settled, and the rest is written after this session.",
+    "This session writes only exspec/interfaces.yaml: how the target starts is settled, and the rest is written after this session.",
 };
 
 export const stepWrites = (dir: string, step: SessionStep) => writesOf(dir, owned[step]);
@@ -133,11 +152,11 @@ function sessionStep(
   return sessionRounds({
     drive,
     session: {
-      prompt: instructions.steps[step],
+      prompt: instructions.sessions[step],
       system: instructions.system,
       cwd: dir,
       model,
-      tools: phaseTools,
+      tools: sessionTools,
       mayRead: () => true,
       mayWrite: stepWrites(dir, step),
       confinement: confinement[step],
@@ -156,13 +175,20 @@ function sessionStep(
   });
 }
 
-// each session in order, skipped with no event when its files pass what its gate checks
-async function* targetPhase(extracting: Extracting): AsyncGenerator<Event, boolean> {
+// each session in order, skipped with no event when its files pass what its gate checks;
+// then, when target.yaml declares providers, their readers, then their twins' writers
+async function* targetPhase(
+  extracting: Extracting,
+  rolesRun: RolesRun,
+): AsyncGenerator<Event, boolean> {
   for (const step of sessionStepSchema.options) {
     if (stepDone(step, await examineAgain(extracting))) continue;
     if (!(yield* sessionStep(step, extracting))) return false;
   }
-  return true;
+  const providers = (await examineAgain(extracting)).extraction.target?.observables ?? [];
+  if (providers.length === 0) return true;
+  if (!(yield* runProviderReaders(rolesRun, providers))) return false;
+  return yield* runTwinWriters(rolesRun, providers);
 }
 
 // What the roles run in a phase, on the target and interfaces declared. In the proof, the
@@ -200,35 +226,11 @@ function rolesPhase(
   }
 }
 
-async function* runPhase(
-  phase: Phase,
-  extracting: Extracting,
-  rolesRun: RolesRun,
-): AsyncGenerator<Event, boolean> {
-  try {
-    if (phase === "target") return yield* targetPhase(extracting);
-    const { extraction, problems } = await examineAgain(extracting);
-    const { target, interfaces } = extraction;
-    const failures = [
-      ...problems.map(problemLine),
-      ...(target === undefined ? ["no target is declared"] : []),
-      ...(interfaces.length === 0 ? ["no interface is declared"] : []),
-    ];
-    for (const message of failures) yield { type: "command-failed", message };
-    if (target === undefined || failures.length > 0) return false;
-    return yield* rolesPhase(phase, rolesRun, { target, interfaces });
-  } catch (error) {
-    yield { type: "command-failed", message: messageOf(error) };
-    return false;
-  }
-}
-
-// The phases in order, each skipped when the files say it is done; the first that fails
-// ends the extraction. A phase named runs alone, and does what is left of it.
-export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
-  const { dir, only, model, jobs, effort, drive, io, readFiles, writeFile, removeFile } =
+// the roles' run of a phase, with the io given
+function rolesRunWith(extracting: Extracting, io: Io): RolesRun {
+  const { dir, model, jobs, effort, drive, readFiles, writeFile, removeFile } =
     extracting;
-  const rolesRun = rolesRunOf({
+  return rolesRunOf({
     dir,
     jobs,
     model,
@@ -239,6 +241,42 @@ export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
     writeFile,
     removeFile,
   });
+}
+
+async function* runPhase(
+  phase: Phase,
+  extracting: Extracting,
+): AsyncGenerator<Event, boolean> {
+  const { io, ioForProof } = extracting;
+  try {
+    if (phase === "target") {
+      return yield* targetPhase(extracting, rolesRunWith(extracting, io));
+    }
+    const { extraction, problems } = await examineAgain(extracting);
+    const { target, interfaces } = extraction;
+    const failures = [
+      ...problems.map(problemLine),
+      ...(target === undefined ? ["no target is declared"] : []),
+      ...(interfaces.length === 0 ? ["no interface is declared"] : []),
+    ];
+    for (const message of failures) yield { type: "command-failed", message };
+    if (target === undefined || failures.length > 0) return false;
+    // the proof plays: its builders, recording and replays see the providers stood
+    const played = phase === "proof" ? await ioForProof(target) : io;
+    return yield* rolesPhase(phase, rolesRunWith(extracting, played), {
+      target,
+      interfaces,
+    });
+  } catch (error) {
+    yield { type: "command-failed", message: messageOf(error) };
+    return false;
+  }
+}
+
+// The phases in order, each skipped when the files say it is done; the first that fails
+// ends the extraction. A phase named runs alone, and does what is left of it.
+export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
+  const { dir, only } = extracting;
   yield { type: "command-started", command: "extract", dir };
   for (const phase of phaseSchema.options) {
     if (only !== undefined && phase !== only) continue;
@@ -247,7 +285,7 @@ export async function* extract(extracting: Extracting): AsyncGenerator<Event> {
       continue;
     }
     yield { type: "phase-started", phase };
-    const ok = yield* runPhase(phase, extracting, rolesRun);
+    const ok = yield* runPhase(phase, extracting);
     yield { type: "phase-finished", phase, ok };
     if (!ok) {
       yield { type: "command-finished", command: "extract", ok: false };

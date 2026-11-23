@@ -13,13 +13,18 @@ const nothingLeft: Left = {
   commonTrigger: false,
   states: false,
   interfaces: [],
+  providers: [],
 };
 
 function phasesAt(files: ReturnType<typeof filesOf>) {
   const examined = declaredIn(files);
   return phasesOf(
     examined,
-    leftOf({ files, interfaces: examined.extraction.interfaces }),
+    leftOf({
+      files,
+      interfaces: examined.extraction.interfaces,
+      providers: examined.extraction.target?.observables ?? [],
+    }),
   );
 }
 
@@ -128,6 +133,7 @@ test("a phase is done only when the one before it is", () => {
         judge: [],
       },
     ],
+    providers: [],
   };
   expect(phasesOf(declaredIn(sourceOf(declared)), left)).toEqual({
     target: "done",
@@ -143,4 +149,33 @@ test("the target's findings are its problems and a missing declaration", () => {
       declaredIn(sourceOf({ "interfaces.yaml": "interfaces: []\nx: 1" })),
     ),
   ).toEqual(['interfaces.yaml: Unrecognized key: "x"', "no target is declared"]);
+});
+
+const withProvider: Files = {
+  ...declared,
+  "target.yaml": `${target}proxy: {port: 9100}\nobservables: [{observable: p, kind: provider}]\n`,
+};
+
+const providerRead: Files = {
+  "providers/p/interfaces.yaml":
+    'interfaces: [{interface: make, method: post, pattern: /items, responses: {"200": {body: any}}}]',
+  "providers/p/provider.yaml": `
+provider: p
+renders: items
+state: {shape: {made: int}, says: made counts what was made}
+expects:
+  - {expect: make-gives-key, on: make, says: a made item is answered with its key, source: src/a/b.ts}
+`,
+  "services/items.yaml": "{service: items, says: makes items, conditions: []}",
+};
+
+test("the target's phase is done once every provider declared is read and has its twin", () => {
+  expect({
+    none: phasesAt(sourceOf(declared)).target,
+    declared: phasesAt(sourceOf(withProvider)).target,
+    read: phasesAt(sourceOf({ ...withProvider, ...providerRead })).target,
+    twin: phasesAt(
+      sourceOf({ ...withProvider, ...providerRead, "providers/p/twin.ts": "t" }),
+    ).target,
+  }).toEqual({ none: "done", declared: "to-do", read: "to-do", twin: "done" });
 });

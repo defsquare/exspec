@@ -29,23 +29,25 @@ function fakeAgent(
     };
   };
   const readFiles = async () => [...files].map(([path, text]) => ({ path, text }));
+  const readStartFiles = async () =>
+    (await readFiles()).filter(({ path }) => /^target\/[^/]+$/.test(path));
   const writeFile = async (_dir: string, path: string, text: string) => {
     files.set(path, text);
   };
   const removeFile = async (_dir: string, path: string) => {
     files.delete(path);
   };
-  return { drive, readFiles, writeFile, removeFile, received, files };
+  return { drive, readFiles, readStartFiles, writeFile, removeFile, received, files };
 }
 
 const instructions = {
   system: "system",
-  steps: { target: "target", interfaces: "interfaces" },
+  sessions: { target: "target", interfaces: "interfaces" },
 };
 
 const failed = (...findings: string[]) =>
   [
-    "The check of this phase failed. Fix what follows, then end with the same short message.",
+    "The check of this session failed. Fix what follows, then end with the same short message.",
     "",
     ...findings,
   ].join("\n");
@@ -62,8 +64,9 @@ function extracting(
   agent: ReturnType<typeof fakeAgent>,
   io: Extracting["io"],
   only?: Extracting["only"],
+  ioForProof: Extracting["ioForProof"] = async () => io,
 ): Extracting {
-  const { drive, readFiles, writeFile, removeFile } = agent;
+  const { drive, readFiles, readStartFiles, writeFile, removeFile } = agent;
   return {
     dir: "/d",
     model: "m",
@@ -72,7 +75,9 @@ function extracting(
     instructions,
     drive,
     io,
+    ioForProof,
     readFiles,
+    readStartFiles,
     writeFile,
     removeFile,
     ...(only === undefined ? {} : { only }),
@@ -523,5 +528,140 @@ test("each of the two sessions writes its own files, never the other's", () => {
   }).toEqual({
     target: ["exspec/target.yaml", "exspec/.gitignore", "exspec/target/seed.sh"],
     interfaces: ["exspec/interfaces.yaml"],
+  });
+});
+
+const withProvider = `${target}proxy: {port: 9100}
+observables: [{observable: p, kind: provider}]
+`;
+
+const providerFiles = {
+  "providers/p/interfaces.yaml":
+    'interfaces: [{interface: make, method: post, pattern: /items, responses: {"200": {body: any}}}]',
+  "providers/p/provider.yaml": `
+provider: p
+renders: items
+state: {shape: {made: int}, says: made counts what was made}
+expects:
+  - {expect: make-gives-key, on: make, says: a made item is answered with its key, source: src/a/b.ts}
+`,
+  "services/items.yaml": "{service: items, says: makes items, conditions: []}",
+};
+
+test("from nothing, the target's phase runs its two sessions, then the provider's reader and its twin's writer", async () => {
+  const agent = fakeAgent({}, [
+    {
+      writes: {
+        "target.yaml": withProvider,
+        "target/env": "P_URL=http://127.0.0.1:9100/p\n",
+      },
+    },
+    { writes: { "interfaces.yaml": interfaces } },
+    { writes: providerFiles },
+    { writes: { "providers/p/twin.ts": "t" } },
+  ]);
+  const { io } = fakeIo({});
+  const tried = { ...io, tryTwin: async () => ({ fresh: {}, again: {}, given: [] }) };
+  const events = await Array.fromAsync(extract(extracting(agent, tried, "target")));
+  const reader = { role: "provider-reader", provider: "p" } as const;
+  const writer = { role: "twin-writer", provider: "p" } as const;
+  const roleEvents = (by: typeof reader | typeof writer): Event[] => [
+    { type: "roles-queued", role: by.role, count: 1 },
+    { type: "role-started", ...by },
+    { type: "agent-ended", ...by, turns: 1, seconds: 1 },
+    { type: "gate-checked", ...by, ok: true, findings: [] },
+    { type: "role-finished", ...by, ok: true },
+  ];
+  expect(events).toEqual([
+    { type: "command-started", command: "extract", dir: "/d" },
+    { type: "phase-started", phase: "target" },
+    ended("target"),
+    ...step("stop"),
+    ...step("start"),
+    ...step("alive"),
+    ...step("seed"),
+    ...step("reset"),
+    ...step("stop"),
+    { type: "gate-checked", phase: "target", step: "target", ok: true, findings: [] },
+    ended("interfaces"),
+    { type: "gate-checked", phase: "target", step: "interfaces", ok: true, findings: [] },
+    ...roleEvents(reader),
+    ...roleEvents(writer),
+    { type: "phase-finished", phase: "target", ok: true },
+    { type: "command-finished", command: "extract", ok: true },
+  ]);
+});
+
+test("a provider that nothing starting the target names at the proxy fails the target's gate before the lifecycle", async () => {
+  const agent = fakeAgent({}, [{ writes: { "target.yaml": withProvider } }]);
+  const { io, lines } = fakeIo({});
+  const events = await Array.fromAsync(extract(extracting(agent, io, "target")));
+  expect({ gate: events[3], lines }).toEqual({
+    gate: {
+      type: "gate-checked",
+      phase: "target",
+      step: "target",
+      ok: false,
+      findings: [
+        'target.yaml: the provider "p" is declared and nothing that starts the target names it at the proxy — expected http://127.0.0.1:9100/p in the start lines or in a file of exspec/target/',
+      ],
+    },
+    lines: [],
+  });
+});
+
+test("the providers are stood once, when the proof starts, and only there", async () => {
+  const log: (Event | "stood")[] = [];
+  const effect = {
+    observable: "p",
+    request: { method: "post", path: "/items" },
+    response: { status: 200, body: null },
+  } as const;
+  const { io } = fakeIo({
+    "http://h/f/x": [
+      { status: 404, body: null },
+      { status: 404, body: null },
+    ],
+  });
+  const stand: Extracting["ioForProof"] = async () => {
+    log.push("stood");
+    return {
+      ...io,
+      takeSideEffects: async () => [effect],
+      resetProviders: async () => {},
+    };
+  };
+  const files = { ...reading, ...points["played once"] };
+  const run = (only: Extracting["only"]) =>
+    extract(extracting(fakeAgent(files, []), io, only, stand));
+  for (const only of ["target", "specification"] as const) {
+    for await (const event of run(only)) log.push(event);
+  }
+  const before = log.length;
+  for await (const event of run("proof")) log.push(event);
+  const proof = log.slice(before);
+  expect({
+    before: log.slice(0, before).filter((one) => one === "stood"),
+    head: proof.slice(0, 4),
+    evidence: proof.flatMap((one) =>
+      one !== "stood" && one.type === "steps-played" ? [one.evidence.exchanges] : [],
+    ),
+  }).toEqual({
+    before: [],
+    head: [
+      { type: "command-started", command: "extract", dir: "/d" },
+      { type: "phase-started", phase: "proof" },
+      "stood",
+      { type: "roles-queued", role: "builder", count: 1 },
+    ],
+    evidence: [1, 2].map(() => [
+      {
+        when: "call",
+        as: "u",
+        request: { method: "get", path: "/f/x" },
+        response: { status: 404, body: null },
+        "side-effects": [effect],
+      },
+    ]),
   });
 });

@@ -47,6 +47,9 @@ api: {base-url: "http://localhost:18080/api"}
 credentials: exspec/target/credentials.json
 runs-with:
   - {setting: "security is on", source: "exspec/target/compose.yaml:12"}
+proxy: {port: 9100}
+observables:
+  - {observable: mail, kind: provider}
 ```
 
 `start`, `seed`, `reset`, `stop` are shell lines run from the checkout. `alive` is a
@@ -55,6 +58,10 @@ request (path relative to `base-url`) that answers `status` once the target is u
 request headers that sign it in — `{"ann": {"Authorization": "Bearer …"}}`.
 `runs-with` (optional): what the start sets that changes how the system answers, each
 setting with the file and line that sets it.
+`proxy` and `observables` (optional, together or not at all): `proxy` is the port where
+the systems the target calls are answered for it while it is tried; each entry of
+`observables` is one such system, a `provider`, named in lower-case words joined by dashes,
+and reached by the target at `http://127.0.0.1:<port>/<name>`.
 
 ### `interfaces.yaml`
 

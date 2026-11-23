@@ -157,7 +157,9 @@ them in; each of the first five is a branch of its own.
 - **Seen.** The gate of the target catches any error, a bug of exspec's included, and
   hands it to the agent as a finding. In the scenarios phase a `stop` that fails hides the
   session's error. The examples of the agent's instructions parse one by one and do not
-  make one consistent extraction: copied literally, the tool flags them.
+  make one consistent extraction: copied literally, the tool flags them. An interruption
+  that arrives while the proxy and the twins are being stood finds nothing to stop yet:
+  what was started stays (`src/cli/main.ts`, every command that plays).
 - **Settled.** The instructions' examples are parsed by a test.
 - **Next.** Each is small and independent: let through what is not a failure of the
   target's own commands; keep the first error; make the examples one extraction the
@@ -413,7 +415,7 @@ them in; each of the first five is a branch of its own.
   the second.
 - **Done.** (4): `extract` runs the roles in five phases named for what they produce —
   target, interfaces, reading, evidence, judgement — each doing what is left of it
-  (ADR-0014, ADR-0006 superseded). Before it, Petclinic read whole by the roles with the
+  (ADR-0014, ADR-0006 superseded; three phases since ADR-0029). Before it, Petclinic read whole by the roles with the
   reads held: 336 rules on 37 interfaces for 8.98 USD, 308 hold, 13 contradicted or
   refused by the target, 14 not shown, where `extract` the same day wrote 140 rules and
   verified 103.
@@ -424,8 +426,8 @@ them in; each of the first five is a branch of its own.
   since ADR-0024; the older path's own call (`{operation, with, caller}`) and its
   judging by status go; and the items of this backlog that grow the computed terms are
   dropped with them, each with its reason. `status` goes with them: it prints the
-  counts and the verdicts of the computed files beside the five phases — "0 operations"
-  for "not looked at" in a checkout the roles read, 140 rules beside three phases to do in
+  counts and the verdicts of the computed files beside the phases — "0 operations"
+  for "not looked at" in a checkout the roles read, 140 rules beside phases to do in
   one that holds a computed specification. Then (1), with its ADR: ADR-0010's first
   alternative is taken up — after (3), since `operations/` is read with the computed
   path's schema until it is deprecated. `on` (ADR-0011) is kept: the roles' shape has
@@ -531,8 +533,9 @@ them in; each of the first five is a branch of its own.
     (ADR-0016, ADR-0020). And the flow of the terminal passes over a role skipped that
     has no interface. Source: `src/shapes/event.ts` (`bySchema`), `src/cli/flow.ts`.
   - *A misused command stands its providers before its usage is printed*: a proxy and a
-    process started for a command that plays nothing. Next: the usage checked before
-    `standDeclaredProviders`. Source: `src/cli/main.ts`.
+    process started for a command that plays nothing — `roles build`, `record`, `play`,
+    `replay`; `extract` stands them when its proof starts (ADR-0029). Next: the usage
+    checked before `standDeclaredProviders`. Source: `src/cli/main.ts`.
   - *A structure nothing is filed under.* A structure no operation takes or answers has
     no operation in `view`; nothing says a structure is shown, where the terms had a
     projection. Derivable: shown when an operation that answers it has `answers` judged
@@ -561,7 +564,7 @@ them in; each of the first five is a branch of its own.
     interface waits, the judge is given every evidence of the folder — played once, no
     longer of its scenario — and judges while the builder's check of the interface fails.
     Give it the references only.
-  - *The two agent phases of `extract` keep a shell.* The hook holds each to its own
+  - *The two sessions of the target's phase keep a shell.* The hook holds each to its own
     files — `target.yaml`, `.gitignore`, `target/` for the first, `interfaces.yaml` for
     the second — through the file tools only: a redirection in a shell writes anywhere.
   - *Names the challenger left:* `RolesSetting` for `{target, interfaces}` and `declaredIn`
@@ -661,8 +664,10 @@ them in; each of the first five is a branch of its own.
     ending after `quiet` ms of silence (ADR-0021). A call later than that after the last
     step is lost, and that step records `[]` — read as "nothing is sent". A wrong proof,
     with no signal.
-  - *A provider declared, the target not pointed at the proxy.* Its start lines still
-    call the real address, or none: every step records `[]`, read the same way.
+  - *A provider declared, the target pointed elsewhere than at the proxy.* The gate of
+    the target's session refuses a start that names no address of the proxy for a
+    provider (ADR-0029); a host the target cannot reach, a port mapped otherwise, or a
+    start changed after the session pass it: every step records `[]`, read the same way.
   - *A key in a query or a body.* No header is kept, so a key sent in one never reaches a
     versioned file; one sent in a query or a body would.
   - *What stood for each provider.* An evidence does not say whether a twin, and which,
@@ -831,7 +836,7 @@ them in; each of the first five is a branch of its own.
 - **Source.** ADR-0017, its alternatives and consequences; `docs/branches/feat-logo.md` at
   `5038184`, its Journal.
 
-## An operation left by the evidence phase is said left
+## An operation left by the proof is said left
 
 - **Seen.** On the full run on `trainings`, four reading operations whose check of what
   was built failed were passed over by the recording and by their judge, and `extract`
@@ -841,7 +846,7 @@ them in; each of the first five is a branch of its own.
   first again at each extraction.
 - **Settled.** What is left is computed (`leftOf`), never stored; a state not reached is a
   gap, a path refuted a problem (ADR-0026).
-- **Next.** At the end of the evidence phase, an operation whose built check fails is a
+- **Next.** Once the proof has built and recorded, an operation whose built check fails is a
   finding the command ends on, with the check's own words — a test on a fixture whose
   scenario names an unknown actor. Then the first wave: let the operations no failed path
   serves go on.

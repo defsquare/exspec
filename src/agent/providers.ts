@@ -1,6 +1,6 @@
 import { checkProvider, providerFolderOf } from "../derive/check-provider.ts";
 import { checkService, serviceFileOf } from "../derive/check-service.ts";
-import { textAt } from "../derive/roles-files.ts";
+import { providerLeft } from "../derive/roles-left.ts";
 import { valueOfShape } from "../derive/shape-value.ts";
 import type { Event } from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
@@ -29,10 +29,7 @@ async function* providerReader(
   { observable: name }: Observable,
 ): AsyncGenerator<Event, boolean> {
   const { dir, only, readFiles } = rolesRun;
-  if (
-    only === undefined &&
-    checkProvider(await readFiles(dir), name).findings.length === 0
-  ) {
+  if (only === undefined && !providerLeft(await readFiles(dir), name).reading) {
     return yield* roleSkipped(
       "provider-reader",
       name,
@@ -116,13 +113,9 @@ function twinWriterSkip(
   files: readonly SourceFile[],
   name: string,
 ): string | undefined {
-  if (checkProvider(files, name).findings.length > 0) {
-    return "its interfaces and expectations do not pass their check";
-  }
-  return only === undefined &&
-    textAt(files, `${providerFolderOf(name)}/twin.ts`) !== undefined
-    ? "its twin is written"
-    : undefined;
+  const { reading, twin } = providerLeft(files, name);
+  if (reading) return "its interfaces and expectations do not pass their check";
+  return only === undefined && !twin ? "its twin is written" : undefined;
 }
 
 async function* twinWriter(

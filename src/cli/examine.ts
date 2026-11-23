@@ -57,7 +57,11 @@ export async function* examine(
       type: "extraction-phases",
       phases: phasesOf(
         declared,
-        leftOf({ files, interfaces: declared.extraction.interfaces }),
+        leftOf({
+          files,
+          interfaces: declared.extraction.interfaces,
+          providers: declared.extraction.target?.observables ?? [],
+        }),
       ),
     };
     yield { type: "extraction-judged", ...countJudged(judged) };

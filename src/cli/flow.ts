@@ -48,8 +48,9 @@ export type Flow = {
   >;
   // the judgements of the run by verdict, once counted
   readonly verdicts?: Extract<Event, { type: "roles-counted" }>["verdicts"];
-  // the running phase's panel, all of it cleared at phase-started
-  // the session's step that spoke last; none once a role's event comes after it
+  // The running phase's panel, from step to skips, all of it cleared at phase-started.
+  // step: the session's step that spoke last, the target's from the target's phase
+  // starting; none once a role's event comes after it
   readonly step?: SessionStep;
   readonly gate?: { readonly round: number; readonly findings: readonly string[] };
   readonly said?: string;
@@ -96,6 +97,8 @@ const runningPhase = (flow: Flow): Phase | undefined =>
 
 // a command of the roles stands for the phase it does part of
 export const phaseOfCommand: Readonly<Partial<Record<Command, Phase>>> = {
+  "providers-read": "target",
+  "providers-write-twin": "target",
   "roles-read": "specification",
   "roles-build": "proof",
   "roles-record": "proof",
@@ -215,8 +218,11 @@ export function flowAfter(flow: Flow, event: Event, at: number): Flow {
       return { ...flow, failures: [...flow.failures, event.message] };
     case "target-step":
       return { ...flow, target: { step: event.step, state: event.state } };
-    case "phase-started":
-      return startedPhase(flow, event.phase, at);
+    case "phase-started": {
+      // the target's phase opens on its first session, which has not spoken yet
+      const started = startedPhase(flow, event.phase, at);
+      return event.phase === "target" ? { ...started, step: "target" } : started;
+    }
     case "phase-skipped":
       return inBox(flow, event.phase, (box) => ({ ...box, state: "skipped" }));
     case "phase-finished":

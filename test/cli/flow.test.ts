@@ -597,3 +597,39 @@ test("the interfaces passed over are counted by the reason given", () => {
     next: [],
   });
 });
+
+test("the target's phase started shows its first session at round one, before it speaks", () => {
+  expect(
+    panelOf(flowAfter(emptyFlow, { type: "phase-started", phase: "target" }, 1), 3),
+  ).toEqual({
+    kind: "session",
+    phase: "target",
+    step: "target",
+    running: { round: 1 },
+    findings: [],
+    more: 0,
+  });
+});
+
+test("a command of the providers is folded as the target's phase, its panel the roles'", () => {
+  const events: readonly Event[] = [
+    { type: "command-started", command: "providers-read", dir: "/d" },
+    { type: "roles-queued", role: "provider-reader", count: 1 },
+    { type: "role-started", role: "provider-reader", provider: "p" },
+  ];
+  const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
+  expect({
+    box: flow.boxes.find(({ phase }) => phase === "target"),
+    panel: panelOf(flow, 3),
+  }).toEqual({
+    box: { phase: "target", state: "running", round: 1, startedAt: 1 },
+    panel: {
+      kind: "roles",
+      phase: "target",
+      running: true,
+      sessions: [{ role: "provider-reader", provider: "p", startedAt: 1, round: 1 }],
+      troubles: [],
+      more: 0,
+    },
+  });
+});

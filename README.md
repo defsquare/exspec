@@ -73,10 +73,10 @@ target          target, interface, observable (a provider is one)    points at n
 
 A rewrite of the system keeps the specification and the scenarios, and rewrites the bindings.
 
-A target that calls providers (a service is what the system needs of someone else, a
-provider the system it calls to get it) is set up in this order: `proxy` and `observables`
-written by hand in `target.yaml`; `exspec providers read`; `exspec providers write-twin`;
-then `extract` or the `roles` commands. `extract` reads no provider.
+`extract` sets up a target that calls providers (a service is what the system needs of
+someone else, a provider the system it calls to get it) itself: its target's phase declares
+them, reads each and writes its twin; `exspec providers read` and `write-twin` remain, for
+one provider.
 
 ## Status
 

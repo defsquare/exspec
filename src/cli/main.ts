@@ -21,6 +21,7 @@ import { replay } from "../run/replay.ts";
 import { down, play, up } from "../run/target-commands.ts";
 import { type Event, phaseSchema } from "../shapes/event.ts";
 import { parseExtraction } from "../shapes/extraction.ts";
+import type { Target } from "../shapes/target.ts";
 import { againstTarget } from "./against-target.ts";
 import { check } from "./check.ts";
 import { askedOf } from "./command-line.ts";
@@ -136,9 +137,9 @@ if (command === "view") {
   await new Promise(() => {});
 }
 
-// the commands that play the roles' scenarios against the target
+// the commands that play the roles' scenarios against the target, from their start;
+// extract stands the providers itself, when its proof starts
 const plays = new Set<string | undefined>([
-  "extract",
   "roles-build",
   "roles-play",
   "roles-record",
@@ -192,9 +193,24 @@ const jobs =
     ? Number(values.jobs)
     : undefined;
 
-async function eventsOf(
-  providers: StoodProviders | undefined,
-): Promise<AsyncIterable<Event> | undefined> {
+// 0: the command finished ok; 1: it did not; 2: it was misused
+let exit = 1;
+// what is stood, stopped by the end of the command and by a signal, wherever it was stood
+let providers: StoodProviders | undefined;
+
+// extract's proof: the providers target.yaml declares, stood once, kept to be stopped
+async function standForProof(target: Target): Promise<Io> {
+  if (target.proxy !== undefined) {
+    providers = await standProviders({
+      dir: examination.dir,
+      proxy: target.proxy,
+      observables: target.observables ?? [],
+    });
+  }
+  return ioOf(providers);
+}
+
+async function eventsOf(): Promise<AsyncIterable<Event> | undefined> {
   const asked = { dir: examination.dir, paths };
   switch (command) {
     case "status":
@@ -230,6 +246,7 @@ async function eventsOf(
         jobs,
         effort: effort.data,
         io: await ioOf(providers),
+        ioForProof: standForProof,
       });
     }
     case "roles-read":
@@ -271,9 +288,6 @@ async function eventsOf(
 // drawn as a flow on a terminal: extract, and a command of the roles that does a phase
 const flowed = new Set<string | undefined>(["extract", ...Object.keys(phaseOfCommand)]);
 
-// 0: the command finished ok; 1: it did not; 2: it was misused
-let exit = 1;
-let providers: StoodProviders | undefined;
 // an interrupted command leaves no proxy and no twin behind it
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
@@ -284,7 +298,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 }
 try {
   providers = await standDeclaredProviders();
-  const events = await eventsOf(providers);
+  const events = await eventsOf();
   if (events === undefined) {
     console.error(usage);
     exit = 2;

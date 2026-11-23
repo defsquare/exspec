@@ -41,6 +41,27 @@ export async function readExtractionFiles(dir: string): Promise<readonly SourceF
   );
 }
 
+// most a file of exspec/target/ may weigh to be read: past it, a build's output, not a script
+const targetFileMost = 256 * 1024;
+
+// the files directly under <dir>/exspec/target/, path relative to exspec/: what starts the
+// target; none of its subfolders, where the scripts put what they produce
+//   exspec/target/start.sh, exspec/target/run/a.log -> [{path: "target/start.sh", text}]
+export async function readStartFiles(dir: string): Promise<readonly SourceFile[]> {
+  const root = join(dir, "exspec", "target");
+  if (!(await directoryExists(root))) return [];
+  const paths = await Array.fromAsync(new Bun.Glob("*").scan(root));
+  const read = await Promise.all(
+    paths.sort().map(async (path) => {
+      const file = Bun.file(join(root, path));
+      return file.size > targetFileMost
+        ? []
+        : [{ path: `target/${path}`, text: await file.text() }];
+    }),
+  );
+  return read.flat();
+}
+
 export async function directoryExists(path: string): Promise<boolean> {
   return stat(path).then(
     (s) => s.isDirectory(),

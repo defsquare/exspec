@@ -1,6 +1,4 @@
 import type { Role, SessionStep } from "../shapes/event.ts";
-import interfaces from "./instructions/phase-interfaces.md" with { type: "text" };
-import target from "./instructions/phase-target.md" with { type: "text" };
 import builder from "./instructions/role-builder.md" with { type: "text" };
 import commonReader from "./instructions/role-common-reader.md" with { type: "text" };
 import judge from "./instructions/role-judge.md" with { type: "text" };
@@ -11,11 +9,13 @@ import structuresReader from "./instructions/role-structures-reader.md" with {
   type: "text",
 };
 import twinWriter from "./instructions/role-twin-writer.md" with { type: "text" };
+import interfaces from "./instructions/session-interfaces.md" with { type: "text" };
+import target from "./instructions/session-target.md" with { type: "text" };
 import system from "./instructions/system.md" with { type: "text" };
 
 export type Instructions = {
   readonly system: string;
-  readonly steps: Readonly<Record<SessionStep, string>>;
+  readonly sessions: Readonly<Record<SessionStep, string>>;
 };
 
 // commandLine: "bun '/abs/src/cli/main.ts'" from the sources, "'/abs/exspec'" compiled
@@ -23,7 +23,7 @@ export function instructionsFor(commandLine: string): Instructions {
   const fill = (text: string) => text.replaceAll("{{exspec}}", commandLine);
   return {
     system: fill(system),
-    steps: {
+    sessions: {
       target: fill(target),
       interfaces: fill(interfaces),
     },

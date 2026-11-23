@@ -1,7 +1,8 @@
 import type { SourceFile } from "../shapes/extraction.ts";
-import type { Interface } from "../shapes/target.ts";
+import type { Interface, Observable } from "../shapes/target.ts";
 import { builtOf } from "./built-of.ts";
 import type { Callable } from "./callables.ts";
+import { checkProvider, providerFolderOf } from "./check-provider.ts";
 import { checkCommon, checkCommonTrigger, checkStructuresFile } from "./check-reader.ts";
 import { isAsWritten } from "./evidence.ts";
 import {
@@ -36,6 +37,14 @@ export type InterfaceLeft =
       readonly judge: readonly string[];
     };
 
+// What is left of one provider, each true while left: its reading while its files fail
+// their check; its twin while twin.ts is missing
+export type ProviderLeft = {
+  readonly provider: string;
+  readonly reading: boolean;
+  readonly twin: boolean;
+};
+
 export type Left = {
   // each file, true when it is missing or fails its check
   readonly structures: boolean;
@@ -44,7 +53,18 @@ export type Left = {
   // true when states.yaml is missing: once written it is the user's, no role rewrites it
   readonly states: boolean;
   readonly interfaces: readonly InterfaceLeft[];
+  readonly providers: readonly ProviderLeft[];
 };
+
+// what is left of one provider: leftOf for it alone
+export const providerLeft = (
+  files: readonly SourceFile[],
+  name: string,
+): ProviderLeft => ({
+  provider: name,
+  reading: checkProvider(files, name).findings.length > 0,
+  twin: textAt(files, `${providerFolderOf(name)}/twin.ts`) === undefined,
+});
 
 // what is left of one interface: leftOf for it alone
 export function interfaceLeft(
@@ -107,13 +127,15 @@ export function interfaceLeft(
 }
 
 // What is left for each role, told from the files alone, the target neither started nor
-// asked: one interface entry per interface, in the order given.
+// asked: one entry per interface and per provider, in the order given.
 export function leftOf({
   files,
   interfaces,
+  providers = [],
 }: {
   readonly files: readonly SourceFile[];
   readonly interfaces: readonly Interface[];
+  readonly providers?: readonly Observable[];
 }): Left {
   const callables = callablesOf(files);
   const common = checkCommon(textAt(files, commonFile));
@@ -125,5 +147,6 @@ export function leftOf({
         .length > 0,
     states: textAt(files, "states.yaml") === undefined,
     interfaces: interfaces.map((bound) => interfaceLeft(files, bound, callables)),
+    providers: providers.map(({ observable }) => providerLeft(files, observable)),
   };
 }

@@ -22,7 +22,11 @@ flowchart TD
         G1{{"gate: start, seed, reset, stop"}}
         A2(["agent: interfaces"])
         F2["interfaces.yaml"]
-        A1 --> F1 --> G1 --> A2 --> F2
+        PR(["provider reader — one per provider"])
+        FP["services/&lt;service&gt;.yaml<br/>providers/&lt;name&gt;/interfaces.yaml, provider.yaml"]
+        TW(["twin writer — one per provider"])
+        FT["providers/&lt;name&gt;/twin.ts"]
+        A1 --> F1 --> G1 --> A2 --> F2 --> PR --> FP --> TW --> FT
     end
 
     subgraph P2["Phase 2 — specification"]
@@ -51,6 +55,7 @@ flowchart TD
 
     code --> A1
     code --> A2
+    code --> PR
     code --> R1
     code --> R2
     code --> R3
@@ -65,9 +70,9 @@ flowchart TD
     classDef agent fill:#e8f0fe,stroke:#3b6fd4,color:#111;
     classDef tool fill:#fff4d6,stroke:#b8860b,color:#111;
     classDef file fill:#f4f4f4,stroke:#888,color:#111;
-    class A1,A2,R1,R2,R3,R4,B,J agent;
+    class A1,A2,PR,TW,R1,R2,R3,R4,B,J agent;
     class G1,T1,V tool;
-    class F1,F2,F3,F4,F5,F6,F7,F8,F9 file;
+    class F1,F2,FP,FT,F3,F4,F5,F6,F7,F8,F9 file;
 ```
 
 Three roles are kept apart on purpose: a **reader** sees the code and never runs the
@@ -79,8 +84,10 @@ the rule.
 
 | Phase | Step | Reads | Writes | Its check |
 |---|---|---|---|---|
-| target | the target's session | the checkout | `target.yaml`, `target/` | the target starts, is seeded, is reset, stops |
+| target | the target's session | the checkout | `target.yaml`, `target/` | each provider declared is named at the proxy where the target is started; the target starts, is seeded, is reset, stops |
 | target | the interfaces' session | the contract, else the code | `interfaces.yaml` | the file passes its check |
+| target | provider reader, one per provider declared | the checkout, `target.yaml`, `target/`, `services/` | `services/<service>.yaml`, `providers/<name>/interfaces.yaml`, `provider.yaml` | the provider's files and its service pass their check |
+| target | twin writer, one per provider read | its provider's files and service only | `providers/<name>/twin.ts` | the twin is served, its state put back, each condition taken |
 | specification | structures reader | the code | `structures.yaml` | the structures' file |
 | specification | common reader | the code | `common.yaml`, `common-trigger.yaml` | both files |
 | specification | reader, one per interface | the code, the structures, the common files, `services/` | `operations/<interface>/rules.yaml`, `hints.yaml`, `trigger.yaml` | the three files pass their check |
@@ -91,6 +98,13 @@ the rule.
 
 A session's step is skipped when its file passes its check: it runs again when its file is
 removed, not when its phase is named.
+
+The target's session declares the providers the target calls — `proxy` and `observables`
+in `target.yaml` — and points the target at the proxy, `http://127.0.0.1:<port>/<name>`;
+a target that calls none declares neither, and its phase has its two sessions only. The
+providers' two roles are skipped as their files pass. Nothing stands in front of the
+providers before the proof: the proxy and the twins are stood when the proof starts, from
+`target.yaml` as it is then, and stopped when `extract` ends or is interrupted.
 
 A check that fails sends its findings back to the same session, three times at most.
 
@@ -148,8 +162,8 @@ exspec/
   interfaces.yaml          every interface, what it accepts and answers        target
   structures.yaml          the business concepts, named once for all readers   specification
   states.yaml              the named states, each with its path
-  services/<service>.yaml  what the system needs of someone else               providers read
-  providers/<name>/        the provider this target calls, its twin            providers write-twin
+  services/<service>.yaml  what the system needs of someone else               target
+  providers/<name>/        the provider this target calls, its twin            target
   common.yaml              what holds for every operation
   common-trigger.yaml      how each shared refusal leaves, the error bodies
   operations/<interface>/
@@ -166,8 +180,7 @@ or only declared from these files every time.
 
 ## Beside the extraction
 
-- **Providers**, before `extract`, on a target that calls other systems: a provider
-  reader writes `services/` and `providers/<name>/`, a twin writer writes the twin that
-  stands for the provider while scenarios are played.
+- **Providers** (`providers read`, `providers write-twin`): the target's phase's two
+  roles, run for one provider (`--only`) or alone.
 - **Replay** (`roles replay`): each reference played once more and compared outside its
   noise — what tells that the target changed.

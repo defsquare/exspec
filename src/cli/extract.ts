@@ -5,11 +5,13 @@ import { instructionsFor } from "../agent/instructions.ts";
 import {
   directoryExists,
   readExtractionFiles,
+  readStartFiles,
   removeExtractionFile,
   writeExtractionFile,
 } from "../io/files.ts";
 import type { Io } from "../run/io.ts";
 import type { Event, Phase } from "../shapes/event.ts";
+import type { Target } from "../shapes/target.ts";
 
 export class ClaudeNotFound extends Error {
   readonly type = "claude-not-found";
@@ -60,6 +62,7 @@ export async function* extractCommand({
   jobs,
   effort,
   io,
+  ioForProof,
 }: {
   readonly dir: string;
   readonly only: Phase | undefined;
@@ -67,6 +70,7 @@ export async function* extractCommand({
   readonly jobs: number;
   readonly effort: Session["effort"];
   readonly io: Io;
+  readonly ioForProof: (target: Target) => Promise<Io>;
 }): AsyncGenerator<Event> {
   // found before any phase starts a target
   const executable = claudeExecutable();
@@ -80,7 +84,9 @@ export async function* extractCommand({
     drive: (session) =>
       driveAgent(executable === undefined ? session : { ...session, executable }),
     io,
+    ioForProof,
     readFiles,
+    readStartFiles,
     writeFile: writeExtractionFile,
     removeFile: removeExtractionFile,
   });

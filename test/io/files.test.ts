@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { compareWithReference } from "../../src/derive/compare.ts";
 import {
   readExtractionFiles,
+  readStartFiles,
   writeExtractionFile,
   writeReference,
 } from "../../src/io/files.ts";
@@ -73,6 +74,26 @@ test("an extraction with protocol.yaml is refused, to be extracted again", async
     await expect(readExtractionFiles(dir)).rejects.toThrow(
       "exspec/protocol.yaml is of an extraction made when the wire's rules were proven: remove common.yaml, protocol.yaml, states.yaml and operations/ under exspec/, then extract again",
     );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("the target's files read are those directly under exspec/target/, none past 256 KB", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "exspec-"));
+  try {
+    for (const [path, text] of [
+      ["target.yaml", "t"],
+      ["target/start.sh", "s"],
+      ["target/run/a.log", "l"],
+      ["target/big.sql", "x".repeat(256 * 1024 + 1)],
+    ] as const) {
+      await writeExtractionFile(dir, path, text);
+    }
+    expect({
+      none: await readStartFiles(join(dir, "none")),
+      read: await readStartFiles(dir),
+    }).toEqual({ none: [], read: [{ path: "target/start.sh", text: "s" }] });
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

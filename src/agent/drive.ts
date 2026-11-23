@@ -56,7 +56,7 @@ export type Drive = (session: Session) => AsyncGenerator<AgentEvent, Ended>;
 export const agentMark = "EXSPEC_AGENT";
 
 // a phase's tools: no web, no sub-agent, no todo list, no notebook
-export const phaseTools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
+export const sessionTools = ["Read", "Glob", "Grep", "Write", "Edit", "Bash"];
 
 const writing = new Set(["Write", "Edit"]);
 

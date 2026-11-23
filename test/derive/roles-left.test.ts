@@ -32,6 +32,7 @@ const done = (
       judge: left.judge ?? [],
     },
   ],
+  providers: [],
 });
 
 const leftAt = (point: keyof typeof points) =>
@@ -45,6 +46,7 @@ test("with only the target and its interfaces declared, everything is left to re
     commonTrigger: true,
     states: true,
     interfaces: [{ interface: "f", reading: "to-do" }],
+    providers: [],
   });
 });
 

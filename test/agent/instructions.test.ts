@@ -14,7 +14,7 @@ import {
 } from "../../src/shapes/roles.ts";
 import { structureSchema } from "../../src/shapes/specification.ts";
 
-const { system, steps } = instructionsFor("exspec");
+const { system, sessions } = instructionsFor("exspec");
 
 const examples = [
   ...system.matchAll(/^### `([^`]+)`\n[\s\S]*?^```yaml\n([\s\S]*?)^```$/gm),
@@ -34,9 +34,9 @@ test("every example of a file in the instructions parses as that file", () => {
 });
 
 test("the command line replaces every placeholder", () => {
-  expect([system, ...Object.values(steps)].filter((text) => text.includes("{{"))).toEqual(
-    [],
-  );
+  expect(
+    [system, ...Object.values(sessions)].filter((text) => text.includes("{{")),
+  ).toEqual([]);
 });
 
 test("every example of a file in a role's instructions parses as that file", () => {

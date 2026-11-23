@@ -1,4 +1,4 @@
-# This phase: make the target startable, seedable and resettable
+# This session: make the target startable, seedable and resettable
 
 Write `exspec/target.yaml` and, under `exspec/target/`, whatever it runs. Do not
 write `exspec/interfaces.yaml`: listing the interfaces is the next session's task, and
@@ -55,6 +55,17 @@ cache, a pool of identifiers), say so in your final message.
 Scripts find their files relative to their own location, are executable, and write
 nothing outside `exspec/target/`. Add `exspec/.gitignore` for what they produce (the
 credentials, the snapshot).
+
+**The systems the target calls.** Find the outside systems the target calls over HTTP — a
+mail service, a document renderer, a payment API — in its configuration, its clients, its
+environment. Declare each in `target.yaml` as an observable of kind `provider`, with a
+short name in lower-case words joined by dashes; choose a free port for `proxy` (check it
+with `lsof -i :PORT`). Then make what starts the target point each of them at
+`http://127.0.0.1:<port>/<name>` in place of its real address — from a container, the
+host as the container sees it (`host.docker.internal`, for instance) — with any key its
+client insists on set to a placeholder. A target that calls no outside system declares
+neither `proxy` nor `observables`. Nothing answers at that address while this session
+runs: do not test a call that goes out.
 
 **`exspec/target.yaml`**, as described. `alive` is a cheap request that needs no caller.
 Under `runs-with`, say what the start you wrote sets that changes how the system answers —

@@ -38,7 +38,8 @@ exspec roles play <dir> <interface>/<slug>                  # on a target up: re
 
 ## The providers a target calls
 
-Before `extract`, on a target whose `target.yaml` says its `proxy` and `observables`.
+`extract` runs both in its target's phase; these run one of them, or one provider, on a
+target whose `target.yaml` says its `proxy` and `observables`.
 
 ```
 exspec providers read <dir> [--only <provider>] [--jobs n]         # a reader per provider the target calls -> exspec/services/<service>.yaml, exspec/providers/<name>/interfaces.yaml, provider.yaml

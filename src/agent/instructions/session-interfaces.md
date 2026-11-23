@@ -1,4 +1,4 @@
-# This phase: the interfaces
+# This session: the interfaces
 
 Write `exspec/interfaces.yaml`: every interface the target exposes to its callers, each
 with the shape of what it accepts and of what it answers.
