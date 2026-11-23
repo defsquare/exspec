@@ -35,7 +35,6 @@ export function builtOf(
   return checkBuilt({
     bound,
     rules,
-    protocol: trigger.protocol ?? [],
     actors: actors ?? actorsNamed(written, paths),
     services: servicesIn(files),
     callables,

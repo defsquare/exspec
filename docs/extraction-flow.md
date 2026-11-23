@@ -31,7 +31,7 @@ flowchart TD
         R1(["structures reader"])
         F3["structures.yaml"]
         R2(["common reader"])
-        F4["common.yaml<br/>protocol.yaml"]
+        F4["common.yaml<br/>common-trigger.yaml"]
         R3(["reader — one per interface"])
         F5["operations/&lt;interface&gt;/<br/>rules.yaml, hints.yaml, trigger.yaml"]
         R4(["states reader"])
@@ -89,7 +89,7 @@ the rule.
 | target | agent, one session | the checkout | `target.yaml`, `target/` | the target starts, is seeded, is reset, stops |
 | interfaces | agent, one session | the contract, else the code | `interfaces.yaml` | the file passes its check |
 | reading | structures reader | the code | `structures.yaml` | the structures' file |
-| reading | common reader | the code | `common.yaml`, `protocol.yaml` | both files |
+| reading | common reader | the code | `common.yaml`, `common-trigger.yaml` | both files |
 | reading | reader, one per interface | the code, the structures, the common files, `services/` | `operations/<interface>/rules.yaml`, `hints.yaml`, `trigger.yaml` | the three files pass their check |
 | reading | states reader, once | `exspec/` only: structures, interfaces, every rule and hint | `states.yaml` | each state serves rules of two operations at least |
 | evidence | builder, one per interface | its rules and hints, `states.yaml`, the paths of the states; **the system through `play` only** | `scenarios/<slug>.yaml` | every scenario is well formed and plays |
@@ -158,7 +158,7 @@ exspec/
   services/<service>.yaml  what the system needs of someone else               providers read
   providers/<name>/        the provider this target calls, its twin            providers write-twin
   common.yaml              what holds for every operation
-  protocol.yaml            the rules of the protocol
+  common-trigger.yaml      how each shared refusal leaves, the error bodies
   operations/<interface>/
     rules.yaml             what the operation requires, does and answers       phase 3
     hints.yaml             for each rule, a situation and how to reach it

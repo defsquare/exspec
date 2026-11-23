@@ -2,13 +2,12 @@ import { expect, test } from "bun:test";
 import { z } from "zod";
 import { instructionsFor, roleInstructions } from "../../src/agent/instructions.ts";
 import { checkProvider } from "../../src/derive/check-provider.ts";
-import { triggerSchema } from "../../src/shapes/bindings.ts";
+import { commonTriggerSchema, triggerSchema } from "../../src/shapes/bindings.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
 import {
   commonSchema,
   hintsSchema,
   judgedSchema,
-  protocolSchema,
   readYaml,
   roleScenarioSchema,
   rulesSchema,
@@ -46,7 +45,10 @@ test("every example of a file in a role's instructions parses as that file", () 
       ([, block = ""]) => block,
     );
   const [rules = "", trigger = "", hints = ""] = blocks(roleInstructions.reader, "yaml");
-  const [common = "", protocol = ""] = blocks(roleInstructions["common-reader"], "yaml");
+  const [common = "", commonTrigger = ""] = blocks(
+    roleInstructions["common-reader"],
+    "yaml",
+  );
   const read = (file: string, text: string, schema: Parameters<typeof readYaml>[2]) => {
     const parsed = readYaml(file, text, schema);
     return "value" in parsed ? [] : parsed.findings;
@@ -56,7 +58,7 @@ test("every example of a file in a role's instructions parses as that file", () 
       read("structures.yaml", text, z.array(structureSchema)),
     ),
     read("common.yaml", common, commonSchema),
-    read("protocol.yaml", protocol, protocolSchema),
+    read("common-trigger.yaml", commonTrigger, commonTriggerSchema),
     read("rules.yaml", rules, rulesSchema),
     read("trigger.yaml", trigger, triggerSchema),
     read("hints.yaml", hints, hintsSchema),

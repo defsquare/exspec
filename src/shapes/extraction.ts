@@ -121,7 +121,7 @@ function readSourceFile(file: SourceFile): Outcome {
   switch (path) {
     case "states.yaml":
     case "common.yaml":
-    case "protocol.yaml":
+    case "common-trigger.yaml":
       return nothing;
     case "target.yaml":
       return parseFile(file, targetSchema, (target) => ({ target }));

@@ -9,7 +9,7 @@ alone, whether each rule holds. You never run the system and you never call it.
 
 The system's checkout: your working directory. Modify nothing there. Your task names one
 operation: an HTTP method and a path. Of the `exspec/` folder you may read only
-`exspec/common.yaml`, `exspec/protocol.yaml`, `exspec/structures.yaml` and
+`exspec/common.yaml`, `exspec/common-trigger.yaml`, `exspec/structures.yaml` and
 your own folder: the rest is someone else's work, it would bias you.
 
 A search (a grep, a glob) runs inside the folders that hold the code (`src/`, for
@@ -17,11 +17,10 @@ instance), never from the root of your working directory: from the root it is re
 search that is refused is narrowed to those folders and run again. What you write comes
 from the code you read, never from the description of the interfaces alone.
 
-First read `exspec/common.yaml` and `exspec/protocol.yaml`: what holds for
-every operation of this system has been read once — the rules every operation shares, and
-on the wire how it is started, how an error becomes an answer, how a request's fields are
-checked, where the contract and the code differ, the rules about the wire alone. What they
-settle is settled: do not read it again, do not doubt it again, do not write it again.
+First read `exspec/common.yaml` and `exspec/common-trigger.yaml`: what holds for
+every operation of this system has been read once — the rules every operation shares, how
+each of their refusals is answered, and how a refusal is answered by kind. What they settle
+is settled: do not read it again, do not doubt it again, do not write it again.
 
 Read `exspec/structures.yaml` too: the business concepts of the system, each with its
 fields. You name them as that file does.
@@ -88,7 +87,6 @@ answers: {status: [200]}                # every status an accepted call is answe
 refuses:                                # one entry per refusal rules.yaml names
   not-found: {status: 404, body: "{error: {code: THING_NOT_FOUND, message: 'Thing <id> not found'}}"}
   name-too-long: {status: 400}
-protocol: [json-object-body]            # the rules of protocol.yaml that hold on this operation, by name
 ```
 
 Rules of writing:
@@ -99,15 +97,16 @@ Rules of writing:
 - An outcome that is neither the accepted answer nor the refusal of a situation — a
   service unavailable, a document that cannot be made — is a requirement resting on its
   service, refused by name; the trigger says its status.
-- A rule that is about the wire and nothing else — a header that must be sent, the form of
-  a body, a caching header, the order in which two checks are made — is not a rule of this
-  file: it is the protocol's. Name under the trigger's `protocol` the rules of
-  `protocol.yaml` that hold on this operation.
+- A rule is written only if it would still hold were the system rewritten on another
+  framework or another protocol. How something is carried — a header that must be sent,
+  the form of a body, an envelope, a caching header, the order in which two checks are
+  made — is written nowhere.
 - Two rules refuse by the same name only when they refuse the same way; a different status
   or body is a different refusal, with a name of its own.
-- `refuses` has an entry for each refusal `rules.yaml` names, those of the rules of
-  `common.yaml` it lists included, unless `protocol.yaml` already says it the same way under
-  its `refuses`.
+- `refuses` has an entry for each refusal `rules.yaml` names that `common-trigger.yaml`
+  does not say. A refusal said under `refuses` in `common-trigger.yaml` is never said
+  again here: where this operation answers it another way, it is another refusal, with a
+  name of its own.
 - What the system sends to another system — an email, a document asked of someone, any
   call it makes outward — is an effect of its own, one per thing sent: what is sent and
   to whom or about what, and in which situation (`when`). Where your task names services,
@@ -141,7 +140,7 @@ Rules of writing:
   at run time is named between angle brackets (`Session <id> not found`).
 - `common` names the rules of `common.yaml` that apply here; check each applies by this
   operation's own code. A rule this operation adds to them is a requirement of this file,
-  its refusal answered as `protocol.yaml` says for that kind.
+  its refusal's `body` quoted as `common-trigger.yaml` says for its kind, under `errors`.
 - A status is a number. A status you cannot settle is your best reading, with the doubt
   under `unsure`.
 - `unsure` holds only what is about this operation: its `rule` is a rule of this file, a

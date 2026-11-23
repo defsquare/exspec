@@ -65,3 +65,15 @@ test("an extraction still under roles/ is refused with the script to run", async
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("an extraction with protocol.yaml is refused, to be extracted again", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "exspec-"));
+  try {
+    await Bun.write(join(dir, "exspec", "protocol.yaml"), "target: t\n");
+    await expect(readExtractionFiles(dir)).rejects.toThrow(
+      "exspec/protocol.yaml is of an extraction made when the wire's rules were proven: remove common.yaml, protocol.yaml, states.yaml and operations/ under exspec/, then extract again",
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

@@ -3,7 +3,7 @@ import { checkBuilt } from "../derive/check-built.ts";
 import { checkProvider, providerFolderOf } from "../derive/check-provider.ts";
 import {
   checkCommon,
-  checkProtocol,
+  checkCommonTrigger,
   checkStructuresFile,
 } from "../derive/check-reader.ts";
 import { checkService, servicesIn } from "../derive/check-service.ts";
@@ -13,9 +13,9 @@ import {
   actorsNamed,
   callablesOf,
   commonFile,
+  commonTriggerFile,
   judgementsIn,
   operationFolderOf,
-  protocolFile,
   readerFilesOf,
   slugsIn,
   statesOf,
@@ -83,7 +83,10 @@ function readingsOf(files: readonly SourceFile[]) {
     ),
   );
   const common = checkCommon(textAt(files, commonFile));
-  const protocol = checkProtocol(textAt(files, protocolFile));
+  const commonTrigger = checkCommonTrigger(
+    textAt(files, commonTriggerFile),
+    common.common,
+  );
   const structures = checkStructuresFile(textAt(files, "structures.yaml"));
   const { providers, findings } = readAndCheckProviders(files);
   const callables = callablesOf(files);
@@ -114,7 +117,6 @@ function readingsOf(files: readonly SourceFile[]) {
         : checkBuilt({
             bound,
             rules,
-            protocol: trigger?.protocol ?? [],
             actors: actorsNamed(written, paths),
             services: servicesIn(files),
             callables,
@@ -144,13 +146,13 @@ function readingsOf(files: readonly SourceFile[]) {
     target: extraction.target,
     structures: extraction.structures,
     common: common.common,
-    protocol: protocol.protocol,
+    commonTrigger: commonTrigger.commonTrigger,
     findings: [
       ...structures.findings,
       ...states.findings,
       ...ofPaths,
       ...common.findings,
-      ...protocol.findings,
+      ...commonTrigger.findings,
       ...findings,
     ],
     gaps: unreachedGaps,

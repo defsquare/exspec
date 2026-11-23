@@ -10,7 +10,7 @@ const sourceOf = (files: Files) =>
 const nothingLeft: Left = {
   structures: false,
   common: false,
-  protocol: false,
+  commonTrigger: false,
   states: false,
   interfaces: [],
 };
@@ -137,7 +137,7 @@ test("a phase is done only when the one before it is", () => {
   const left: Left = {
     structures: true,
     common: false,
-    protocol: false,
+    commonTrigger: false,
     states: false,
     interfaces: [
       {

@@ -7,9 +7,9 @@ import { operationsTold } from "../derive/operations-told.ts";
 import {
   callablesOf,
   commonFile,
+  commonTriggerFile,
   evidenceAt,
   operationFolderOf,
-  protocolFile,
   slugsIn,
   statesOf,
   textAt,
@@ -227,7 +227,7 @@ async function* builder(
       "states.yaml",
       ...pathsOfStates,
       commonFile,
-      protocolFile,
+      commonTriggerFile,
       `${folder}/rules.yaml`,
       `${folder}/hints.yaml`,
       `${folder}/trigger.yaml`,
@@ -248,7 +248,7 @@ async function* builder(
         tools,
         mayRead: readsOf(dir, { checkout: false, allowed: own }),
         mayWrite: writesOf(dir, writable),
-        confinement: `This session reads only exspec/interfaces.yaml, exspec/common.yaml, exspec/protocol.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, exspec/states.yaml and the scenario file each state of it names, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
+        confinement: `This session reads only exspec/interfaces.yaml, exspec/common.yaml, exspec/common-trigger.yaml, in exspec/${folder}/, rules.yaml, hints.yaml, trigger.yaml and scenarios/, exspec/states.yaml and the scenario file each state of it names, and exspec/services/; it writes only scenarios/<slug>.yaml in its folder. The system is reached through play alone.`,
         // a state step replaced by its path's steps; one that cannot be: nothing is played
         play: async (steps) => {
           const { paths, unreached } = pathsOf(await readFiles(dir));

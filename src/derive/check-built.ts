@@ -31,14 +31,10 @@ function pathMatches(pattern: string, path: string): boolean {
 }
 
 // the names a scenario may be of: the rules of the reading, the names under its common,
-// those under its trigger's protocol, and "answers"
-export const ownersOf = (
-  rules: Rules,
-  protocol: readonly string[],
-): readonly string[] => [
+// and "answers"
+export const ownersOf = (rules: Rules): readonly string[] => [
   ...[...rules.requires, ...rules.effects].map(({ rule }) => rule),
   ...rules.common,
-  ...protocol,
   "answers",
 ];
 
@@ -138,7 +134,6 @@ function checkScenario(
     from,
     bound,
     rules,
-    protocol,
     actors,
     services,
     callables,
@@ -159,10 +154,10 @@ function checkScenario(
       : undefined;
   };
   const findings = [
-    ...(ownersOf(rules, protocol).includes(rule)
+    ...(ownersOf(rules).includes(rule)
       ? []
       : [
-          `"${rule}" is not a rule of rules.yaml, nor a name under its common or under its trigger's protocol, nor "answers"`,
+          `"${rule}" is not a rule of rules.yaml, nor a name under its common, nor "answers"`,
         ]),
     ...(slug.startsWith(rule) ? [] : [`the file's name does not start with "${rule}"`]),
     ...(calls.length === 1 ? [] : [`${calls.length} call steps, where one is expected`]),
@@ -226,8 +221,6 @@ function checkScenario(
 type Checking = {
   readonly bound: Interface;
   readonly rules: Rules;
-  // the names under its trigger's protocol
-  readonly protocol: readonly string[];
   // the names of the credentials
   readonly actors: readonly string[];
   // the services of exspec/services/ that pass their check
@@ -256,7 +249,7 @@ export function checkBuilt(
   }[];
   readonly findings: readonly string[];
 } {
-  const { files, rules, protocol, paths, unreached, states } = checking;
+  const { files, rules, paths, unreached, states } = checking;
   const read = files.map(({ slug, text }) => {
     const file = `scenarios/${slug}.yaml`;
     const parsed = readYaml(file, text, roleScenarioSchema);
@@ -286,7 +279,7 @@ export function checkBuilt(
   const exercised = new Set(read.flatMap(({ rule }) => rule ?? []));
   const unexercised = [...rules.requires, ...rules.effects]
     .map(({ rule }) => rule)
-    .concat(rules.common, protocol)
+    .concat(rules.common)
     .filter((rule) => !exercised.has(rule))
     .map((rule) => `no scenario for the rule "${rule}"`);
   const ofPaths = states.flatMap(({ state, path }) => {

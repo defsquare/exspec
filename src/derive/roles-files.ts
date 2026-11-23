@@ -12,12 +12,12 @@ import {
   type Step,
   type WrittenStep,
 } from "../shapes/roles.ts";
-import { type Interface, interfacesFileSchema } from "../shapes/target.ts";
+import { type Interface, interfacesFileSchema, targetSchema } from "../shapes/target.ts";
 import { type Callable, callableOf } from "./callables.ts";
 import { ownersOf } from "./check-built.ts";
 import {
   checkCommon,
-  checkProtocol,
+  checkCommonTrigger,
   checkRulesAndHints,
   checkStructuresFile,
 } from "./check-reader.ts";
@@ -31,7 +31,7 @@ export const operationFolderOf = (name: string) => `operations/${name}`;
 
 // what is of no operation, at the root of the extraction
 export const commonFile = "common.yaml";
-export const protocolFile = "protocol.yaml";
+export const commonTriggerFile = "common-trigger.yaml";
 
 export const textAt = (files: readonly SourceFile[], path: string) =>
   files.find((file) => file.path === path)?.text;
@@ -107,7 +107,7 @@ export function callablesOf(files: readonly SourceFile[]): readonly Callable[] {
 // reader is told all there is to fix at once.
 export function readerFilesOf(files: readonly SourceFile[], name: string) {
   const { common } = checkCommon(textAt(files, commonFile));
-  const { protocol } = checkProtocol(textAt(files, protocolFile));
+  const { commonTrigger } = checkCommonTrigger(textAt(files, commonTriggerFile), common);
   const { structures } = checkStructuresFile(textAt(files, "structures.yaml"));
   const folder = operationFolderOf(name);
   const rulesText = textAt(files, `${folder}/rules.yaml`);
@@ -122,18 +122,18 @@ export function readerFilesOf(files: readonly SourceFile[], name: string) {
   const parsed =
     rulesText === undefined ? undefined : readYaml("rules.yaml", rulesText, rulesSchema);
   if (parsed === undefined || !("value" in parsed))
-    return { common, protocol, findings: read.findings };
+    return { common, commonTrigger, findings: read.findings };
   const { trigger, findings } = checkTrigger({
     name,
     interfaces: interfacesNamed(files),
     rules: parsed.value,
     common,
-    protocol,
+    commonTrigger,
     text: textAt(files, `${folder}/trigger.yaml`),
   });
   return read.rules === undefined || trigger === undefined
-    ? { common, protocol, findings: [...read.findings, ...findings] }
-    : { common, protocol, rules: read.rules, trigger, findings };
+    ? { common, commonTrigger, findings: [...read.findings, ...findings] }
+    : { common, commonTrigger, rules: read.rules, trigger, findings };
 }
 
 // The actors its scenarios name, for a check told without the target: the credentials are
@@ -169,7 +169,7 @@ export function unownedScenarios(
 ): readonly string[] {
   const { rules, trigger } = readerFilesOf(files, name);
   if (rules === undefined || trigger === undefined) return [];
-  const owners = ownersOf(rules, trigger.protocol ?? []);
+  const owners = ownersOf(rules);
   return slugsIn(files, `${operationFolderOf(name)}/scenarios`)
     .map(({ slug }) => slug)
     .filter((slug) => !owners.some((rule) => slug.startsWith(rule)));
@@ -223,6 +223,14 @@ export function recordingsRead(
   });
 }
 
+// what target.yaml says the system runs with; nothing when it does not parse
+function runsWithOf(files: readonly SourceFile[]) {
+  const text = textAt(files, "target.yaml");
+  const read =
+    text === undefined ? undefined : readYaml("target.yaml", text, targetSchema);
+  return read !== undefined && "value" in read ? read.value["runs-with"] : undefined;
+}
+
 // the task of one interface's judge on these recordings, when its reading passes and there
 // is one at least; each state whose path is one of them is judged on it too:
 //   {state: s, path: f/a}, a given -> states: [{state: s, seen: "…", slug: a}]
@@ -231,7 +239,7 @@ export function judgeTaskOf(
   bound: Interface,
   recordings: readonly { readonly slug: string; readonly evidence: Evidence }[],
 ) {
-  const { common, protocol, rules, trigger } = readerFilesOf(files, bound.interface);
+  const { common, commonTrigger, rules, trigger } = readerFilesOf(files, bound.interface);
   if (rules === undefined || trigger === undefined || recordings.length === 0)
     return undefined;
   const states = statesOf(files).states.flatMap(({ state, seen, path }) => {
@@ -240,6 +248,15 @@ export function judgeTaskOf(
       ? [{ state, seen, slug }]
       : [];
   });
-  const task = judgeTask({ bound, common, protocol, rules, trigger, recordings, states });
+  const task = judgeTask({
+    bound,
+    common,
+    commonTrigger,
+    runsWith: runsWithOf(files),
+    rules,
+    trigger,
+    recordings,
+    states,
+  });
   return { ...task, recordings, states };
 }

@@ -57,6 +57,9 @@ nothing outside `exspec/target/`. Add `exspec/.gitignore` for what they produce 
 credentials, the snapshot).
 
 **`exspec/target.yaml`**, as described. `alive` is a cheap request that needs no caller.
+Under `runs-with`, say what the start you wrote sets that changes how the system answers —
+security switched on, a profile, a mail service pointed elsewhere — each with the file and
+line that sets it (`source: "exspec/target/compose.yaml:12"`).
 
 ## Check your work
 

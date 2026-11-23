@@ -777,18 +777,28 @@ them in; each of the first five is a branch of its own.
   - *A body paraphrased.* Two contradictions of `admin-issue-convention` are a trigger
     saying "Session not found." where the target answers "Session introuvable.": written
     before the readers were told to quote. They stay until that interface is read again.
-  - *Every operation needs a scenario per rule of the protocol it lists*: four more by
-    interface on that target, the same four each time.
 - **Settled.** By the user: a refusal says one status; a refusal's body quotes the
   target; an interface described with a form is always sent one. A request a call says
   exactly is a finding, so a request left is one no call says.
 - **Next.** The two pages described in `interfaces.yaml`, then the builder on the
   scenarios that look at them. A place for a list — decide whether a trigger's place may
-  step into every element, as a projection's does. For the protocol: whether a rule of
-  the wire is proven once for the target rather than once per operation.
+  step into every element, as a projection's does.
 - **Source.** ADR-0023, ADR-0024; `src/derive/input-places.ts`,
   `src/derive/answer-place.ts`, `src/derive/steps-as-calls.ts`;
   `docs/branches/feat-operation-apart-from-interface.md` at `cbab752`, Journal.
+
+## A shared rule is proven on every operation
+
+- **Seen.** On `trainings`, 107 evidences of 1071 are of the 3 rules of `common.yaml`:
+  "the caller presents a valid key" is built, recorded and judged on 47 operations of 50.
+  The rules of the wire, 332 more, are no longer written (ADR-0028).
+- **Settled.** Nothing: left out of the branch that removed the wire's rules.
+- **Next.** Decide what a shared rule's proof is — a scenario on every operation that
+  lists it, as today, or on one, and what the others then show; count what a build and a
+  judgement of them cost on one target first.
+- **Source.** ADR-0028; `src/derive/check-built.ts` (`ownersOf`);
+  `docs/branches/feat-wire-described.md`, Journal, at the commit before the one that
+  deletes it.
 
 ## An actor is a set of headers behind a name
 
@@ -796,8 +806,9 @@ them in; each of the first five is a branch of its own.
   name stands for (ADR-0004). Who may do what survives the target being rewritten
   (ADR-0019) — the headers do not — and the specification declares no actor: a rule says
   "the key has scope write" in a sentence, and the view draws the actors from the
-  scenarios' `as`. Two rules about authentication went to the protocol with the header
-  they are about (ADR-0023); "the caller is authenticated" is written nowhere.
+  scenarios' `as`. The header a key travels in is of the interface and in no rule
+  (ADR-0028); "the caller is authenticated" is a shared rule where a common reader wrote
+  it, and names no actor.
 - **Settled.** Left open by ADR-0024.
 - **Next.** A design, challenged first: an actor declared in the specification — a name
   and what it may do — and its credentials on the target's side, a binding between them;

@@ -11,8 +11,7 @@ show too little: you do not know which.
 
 Your task holds everything, as data: the operation, its rules, how the system answers it
 on its wire — the statuses an accepted call is answered with, and for each refusal the
-status and what its body carries —, the system's rules about its wire alone that hold on
-it, and one recording per scenario. A recording names the rule it is meant to exercise and lists its exchanges in the
+status and what its body carries —, and one recording per scenario. A recording names the rule it is meant to exercise and lists its exchanges in the
 order they were played: `arrange` (calls that set the situation up), `before` (calls made
 just before the one call to the operation), `call` (that one call), `after` (calls made
 after it). Each exchange has who sent it (`as`, an actor's name or null for nobody), the
@@ -34,9 +33,8 @@ the system did. `side-effects: []` means the system sent nothing during that exc
 rule about it is `not-shown`. A value `{bytes, sha256}` stands for a file: the same digest
 twice is the same file.
 
-A recording's rule is a requirement, an effect, `answers` — what the reader says an
-accepted call answers —, or `protocol`: a rule about the wire alone, judged on the
-exchanges it applies to.
+A recording's rule is a requirement, an effect, or `answers` — what the reader says an
+accepted call answers.
 
 A recording may be given a second time, named `state:<name>`, with a `state` in place
 of its rule: one sentence that says what reading the system shows once the recording's

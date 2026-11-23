@@ -2,15 +2,15 @@ import type { SourceFile } from "../shapes/extraction.ts";
 import type { Interface } from "../shapes/target.ts";
 import { builtOf } from "./built-of.ts";
 import type { Callable } from "./callables.ts";
-import { checkCommon, checkProtocol, checkStructuresFile } from "./check-reader.ts";
+import { checkCommon, checkCommonTrigger, checkStructuresFile } from "./check-reader.ts";
 import { isAsWritten } from "./evidence.ts";
 import {
   callablesOf,
   commonFile,
+  commonTriggerFile,
   evidenceAt,
   judgementsIn,
   judgeTaskOf,
-  protocolFile,
   stateJudgementsIn,
   textAt,
 } from "./roles-files.ts";
@@ -40,7 +40,7 @@ export type Left = {
   // each file, true when it is missing or fails its check
   readonly structures: boolean;
   readonly common: boolean;
-  readonly protocol: boolean;
+  readonly commonTrigger: boolean;
   // true when states.yaml is missing: once written it is the user's, no role rewrites it
   readonly states: boolean;
   readonly interfaces: readonly InterfaceLeft[];
@@ -116,10 +116,13 @@ export function leftOf({
   readonly interfaces: readonly Interface[];
 }): Left {
   const callables = callablesOf(files);
+  const common = checkCommon(textAt(files, commonFile));
   return {
     structures: checkStructuresFile(textAt(files, "structures.yaml")).findings.length > 0,
-    common: checkCommon(textAt(files, commonFile)).findings.length > 0,
-    protocol: checkProtocol(textAt(files, protocolFile)).findings.length > 0,
+    common: common.findings.length > 0,
+    commonTrigger:
+      checkCommonTrigger(textAt(files, commonTriggerFile), common.common).findings
+        .length > 0,
     states: textAt(files, "states.yaml") === undefined,
     interfaces: interfaces.map((bound) => interfaceLeft(files, bound, callables)),
   };

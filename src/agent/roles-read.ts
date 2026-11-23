@@ -2,15 +2,15 @@ import { ownersOf } from "../derive/check-built.ts";
 import { checkGathered } from "../derive/check-gathered.ts";
 import {
   checkCommon,
-  checkProtocol,
+  checkCommonTrigger,
   checkStructuresFile,
 } from "../derive/check-reader.ts";
 import { serviceFileOf, servicesIn } from "../derive/check-service.ts";
 import {
   commonFile,
+  commonTriggerFile,
   interfacesOf,
   operationFolderOf,
-  protocolFile,
   readerFilesOf,
   statesOf,
   textAt,
@@ -66,7 +66,7 @@ function structuresReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
 
 function commonReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
   const { dir, readFiles } = rolesRun;
-  const own = [commonFile, protocolFile];
+  const own = [commonFile, commonTriggerFile];
   return roleJob("common-reader", undefined, () =>
     roleRounds({
       rolesRun,
@@ -75,7 +75,7 @@ function commonReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
       rounds,
       session: {
         prompt:
-          "Read what holds for every operation of the system checked out in your working directory, and write exspec/common.yaml and exspec/protocol.yaml.",
+          "Read what holds for every operation of the system checked out in your working directory, and write exspec/common.yaml and exspec/common-trigger.yaml.",
         tools,
         mayRead: readsOf(dir, {
           checkout: true,
@@ -85,13 +85,14 @@ function commonReader(rolesRun: RolesRun): AsyncGenerator<Event, boolean> {
         }),
         mayWrite: writesOf(dir, (path) => own.includes(path)),
         confinement:
-          "Of exspec/ this session reads only target.yaml, interfaces.yaml, target/, common.yaml and protocol.yaml, and a search is given a folder of the checkout other than exspec/ as its path (src, for instance), never the root; it writes only exspec/common.yaml and exspec/protocol.yaml.",
+          "Of exspec/ this session reads only target.yaml, interfaces.yaml, target/, common.yaml and common-trigger.yaml, and a search is given a folder of the checkout other than exspec/ as its path (src, for instance), never the root; it writes only exspec/common.yaml and exspec/common-trigger.yaml.",
       },
       gate: async () => {
         const files = await readFiles(dir);
+        const { common, findings } = checkCommon(textAt(files, commonFile));
         return [
-          ...checkCommon(textAt(files, commonFile)).findings,
-          ...checkProtocol(textAt(files, protocolFile)).findings,
+          ...findings,
+          ...checkCommonTrigger(textAt(files, commonTriggerFile), common).findings,
         ];
       },
     }),
@@ -132,12 +133,16 @@ async function* reader(
         mayRead: readsOf(dir, {
           checkout: true,
           allowed: (path) =>
-            [commonFile, protocolFile, "structures.yaml", ...own, ...services].includes(
-              path,
-            ),
+            [
+              commonFile,
+              commonTriggerFile,
+              "structures.yaml",
+              ...own,
+              ...services,
+            ].includes(path),
         }),
         mayWrite: writesOf(dir, (path) => own.includes(path)),
-        confinement: `Of exspec/ this session reads only common.yaml, protocol.yaml, structures.yaml, the three files of its folder and the services named, and a search is given a folder of the checkout other than exspec/ as its path (src, for instance), never the root; it writes only exspec/${folder}/rules.yaml, hints.yaml and trigger.yaml.`,
+        confinement: `Of exspec/ this session reads only common.yaml, common-trigger.yaml, structures.yaml, the three files of its folder and the services named, and a search is given a folder of the checkout other than exspec/ as its path (src, for instance), never the root; it writes only exspec/${folder}/rules.yaml, hints.yaml and trigger.yaml.`,
       },
       gate: async () => {
         return readerFilesOf(await readFiles(dir), name).findings;
@@ -155,7 +160,7 @@ function gatheredFindings(files: readonly SourceFile[]): readonly string[] {
     const { rules, trigger } = readerFilesOf(files, name);
     return rules === undefined || trigger === undefined
       ? []
-      : ownersOf(rules, trigger.protocol ?? []).map((rule) => `${name}/${rule}`);
+      : ownersOf(rules).map((rule) => `${name}/${rule}`);
   });
   return [...findings, ...checkGathered({ states, rules })];
 }
@@ -223,9 +228,15 @@ export async function* runReaders(
       )
     : yield* structuresReader(rolesRun);
   if (!read) return false;
-  const ready = !leftOf({ files: await readFiles(dir), interfaces: [] }).common
-    ? yield* roleSkipped("common-reader", undefined, "common.yaml passes its check")
-    : yield* commonReader(rolesRun);
+  const left = leftOf({ files: await readFiles(dir), interfaces: [] });
+  const ready =
+    !left.common && !left.commonTrigger
+      ? yield* roleSkipped(
+          "common-reader",
+          undefined,
+          "common.yaml and common-trigger.yaml pass their check",
+        )
+      : yield* commonReader(rolesRun);
   if (!ready) return false;
   yield { type: "roles-queued", role: "reader", count: interfaces.length };
   const done = yield* inParallel(

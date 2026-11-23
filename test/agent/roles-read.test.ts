@@ -56,7 +56,11 @@ interfaces:
       role: "structures-reader",
       why: "structures.yaml passes its check",
     },
-    { type: "role-skipped", role: "common-reader", why: "common.yaml passes its check" },
+    {
+      type: "role-skipped",
+      role: "common-reader",
+      why: "common.yaml and common-trigger.yaml pass their check",
+    },
     { type: "roles-queued", role: "reader", count: 2 },
     { type: "role-started", ...a },
     { type: "role-failed", ...a, message: "the agent's session ended in error (x)" },
@@ -64,6 +68,45 @@ interfaces:
     { type: "role-started", ...b },
     { type: "role-failed", ...b, message: "e" },
     { type: "role-finished", ...b, ok: false },
+    { type: "command-finished", command: "roles-read", ok: false },
+  ]);
+});
+
+test("the common reader runs when common-trigger.yaml alone is missing", async () => {
+  const drive: Drive = async function* () {
+    yield* [];
+    return { session: "s", ok: false, how: "x" };
+  };
+  const { io } = fakeIo({});
+  const events = await Array.fromAsync(
+    rolesRead({
+      dir: "/d",
+      jobs: 1,
+      model: "m",
+      drive,
+      io,
+      readFiles: async () =>
+        Object.entries(reading)
+          .filter(([path]) => path !== "common-trigger.yaml")
+          .map(([path, text]) => ({ path, text })),
+      writeFile: async () => {},
+      removeFile: async () => {},
+    }),
+  );
+  expect(events).toEqual([
+    { type: "command-started", command: "roles-read", dir: "/d" },
+    {
+      type: "role-skipped",
+      role: "structures-reader",
+      why: "structures.yaml passes its check",
+    },
+    { type: "role-started", role: "common-reader" },
+    {
+      type: "role-failed",
+      role: "common-reader",
+      message: "the agent's session ended in error (x)",
+    },
+    { type: "role-finished", role: "common-reader", ok: false },
     { type: "command-finished", command: "roles-read", ok: false },
   ]);
 });
@@ -109,7 +152,11 @@ const readersSkipped: Event[] = [
     role: "structures-reader",
     why: "structures.yaml passes its check",
   },
-  { type: "role-skipped", role: "common-reader", why: "common.yaml passes its check" },
+  {
+    type: "role-skipped",
+    role: "common-reader",
+    why: "common.yaml and common-trigger.yaml pass their check",
+  },
   { type: "roles-queued", role: "reader", count: 1 },
   {
     type: "role-skipped",

@@ -2,6 +2,10 @@ import { z } from "zod";
 
 export const methodSchema = z.enum(["get", "post", "put", "patch", "delete"]);
 
+export const sourceSchema = z
+  .string()
+  .regex(/\.\w+:\d+/, "a source is path/to/File.ext:line or :from-to");
+
 // {observable: p, kind: provider}: a system the target calls, stood in for by its twin
 // exspec/providers/p/twin.ts, served by exspec on a port of its own
 export const observableSchema = z
@@ -37,6 +41,12 @@ export const targetSchema = z
     credentials: z.string().optional(),
     proxy: proxySchema.optional(),
     observables: z.array(observableSchema).readonly().optional(),
+    // what the start sets that changes how the system answers:
+    //   [{setting: "a is on", source: "exspec/target/compose.yaml:12"}]
+    "runs-with": z
+      .array(z.strictObject({ setting: z.string(), source: sourceSchema }).readonly())
+      .readonly()
+      .optional(),
   })
   .refine(
     ({ proxy, observables }) => (proxy === undefined) === (observables === undefined),

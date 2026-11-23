@@ -28,7 +28,7 @@ export const reading: Files = {
   ...declared,
   "structures.yaml": "- {structure: S, identity: a, fields: {a: {type: string}}}",
   "common.yaml": "target: t",
-  "protocol.yaml": "target: t",
+  "common-trigger.yaml": "refuses: {}",
   "operations/f/trigger.yaml":
     "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
   "operations/f/rules.yaml": `

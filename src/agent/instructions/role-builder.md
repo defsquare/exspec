@@ -14,12 +14,9 @@ requests of your scenarios and the system's answers.
   rule, drop one, or reword one.
 - In the same folder, `trigger.yaml`: how the system answers this operation on its wire —
   the statuses an accepted call is answered with, and the status of each refusal the rules
-  name (`refuses`); under `protocol`, the names of the system's rules about its wire alone
-  that hold on this operation. A status tells you whether your scenario reached the case
-  you meant.
-- `exspec/common.yaml`: the shared rules. `exspec/protocol.yaml`: what holds for
-  the whole system on its wire — its rules about the wire alone, how a shared rule's
-  refusal is answered, how it is started.
+  name (`refuses`). A status tells you whether your scenario reached the case you meant.
+- `exspec/common.yaml`: the shared rules. `exspec/common-trigger.yaml`: how a shared
+  rule's refusal is answered, and how a refusal is answered by kind.
 - In your task, the operations a step may call: for each, its inputs by name with what
   each says, and the structure it answers with its fields.
 - `exspec/interfaces.yaml`: the system's HTTP interfaces, with the shape of what each
@@ -46,7 +43,7 @@ One file per scenario, `scenarios/<slug>.yaml`, in the folder your task names; `
 the rule's name, or the rule's name and a suffix (`exists-2`) when a rule gets several:
 
 ```yaml
-rule: exists                    # the rule this scenario exercises: one of rules.yaml, of its `common`, of its trigger's `protocol`; or `answers`
+rule: exists                    # the rule this scenario exercises: one of rules.yaml, of its `common`; or `answers`
 situation: an id that no item has
 reached: yes                    # or "no — <what stopped you>"
 steps:
@@ -76,9 +73,8 @@ steps:
   task lists its fields — an identifier the system generated, for instance. Alone in a
   string, the value keeps its type (a number stays a number). An operation that answers no
   structure a hole can read is named by no hole.
-- A `request` is written only for what no call says: a rule about the wire (a body that is
-  a list where an object is due), a page or a route no operation covers, a body no input
-  names. `request`: `method` (lower case), `path` (relative to the base URL), and when
+- A `request` is written only for what no call says: a body that is a list where an
+  object is due, a page or a route no operation covers, a body no input names. `request`: `method` (lower case), `path` (relative to the base URL), and when
   needed `query` (a map) and `body`; an interface whose description has `form` takes a
   `form`, a flat map of field to scalar, never a `body`
   (`request: {method: post, path: /a, form: {to: "x", copy: true}}`). A hole that names a
@@ -113,8 +109,7 @@ steps:
   steps the situation still needs (a second item, an item given a label). A rule that
   names several things that can go wrong is not shown by the one a state makes easiest to
   reach.
-- Every rule of `requires` and `effects`, every name under `common` and under the
-  trigger's `protocol`, gets at least one
+- Every rule of `requires` and `effects`, every name under `common`, gets at least one
   scenario. A rule with several situations (its `when`, its hint, or a doubt of the reader
   under `unsure` names more than one) gets one scenario per situation. A scenario about
   what an accepted call answers, or about a doubt of the reader on it, has `rule: answers`.

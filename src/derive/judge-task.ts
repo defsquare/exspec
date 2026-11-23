@@ -1,13 +1,6 @@
-import type { Trigger } from "../shapes/bindings.ts";
-import type {
-  Common,
-  Evidence,
-  Protocol,
-  ProtocolRule,
-  Requirement,
-  Rules,
-} from "../shapes/roles.ts";
-import type { Interface } from "../shapes/target.ts";
+import type { CommonTrigger, Trigger } from "../shapes/bindings.ts";
+import type { Common, Evidence, Requirement, Rules } from "../shapes/roles.ts";
+import type { Interface, Target } from "../shapes/target.ts";
 import { acceptedStatuses } from "./accepted.ts";
 
 const yaml = (value: unknown) => Bun.YAML.stringify(value, null, 2).trimEnd();
@@ -32,20 +25,15 @@ function withoutSource<T extends { readonly source: string }>({
   return entry;
 }
 
-// the target's rules about its wire that hold on this operation, as its trigger lists them
-const protocolOf = (trigger: Trigger, protocol: Protocol | undefined) =>
-  (protocol?.rules ?? []).filter(({ rule }) => trigger.protocol?.includes(rule));
-
 // How this operation leaves on this target: the statuses it is accepted with, and how each
-// refusal is answered — as its trigger says it, else as the protocol says it for the whole
-// target
+// refusal is answered — as its trigger says it, else as the shared trigger says it
 //   {accepted: [200], refuses: {r: {status: 404, body: "…"}}}
 function wireOf(
   requirements: readonly { readonly otherwise: string }[],
   trigger: Trigger,
-  protocol: Protocol | undefined,
+  commonTrigger: CommonTrigger | undefined,
 ) {
-  const shared = protocol?.refuses ?? {};
+  const shared = commonTrigger?.refuses ?? {};
   return {
     accepted: acceptedStatuses(trigger),
     refuses: {
@@ -60,23 +48,15 @@ function wireOf(
   };
 }
 
-// the rule a recording names, as the judge reads it: a requirement, a rule of the target's
-// wire, an effect, or what an accepted call answers — its sentence only, never the
-// structure the reader named
-function ruleEntry(
-  rule: string,
-  rules: Rules,
-  common: Common | undefined,
-  wire: readonly ProtocolRule[],
-) {
+// the rule a recording names, as the judge reads it: a requirement, an effect, or what an
+// accepted call answers — its sentence only, never the structure the reader named
+function ruleEntry(rule: string, rules: Rules, common: Common | undefined) {
   const own = rules.requires.find((r) => r.rule === rule);
   if (own !== undefined) return { requirement: requirementForJudge(own) };
   const shared = rules.common.includes(rule)
     ? common?.rules.find((r) => r.rule === rule)
     : undefined;
   if (shared !== undefined) return { requirement: withoutSource(shared) };
-  const ofWire = wire.find((r) => r.rule === rule);
-  if (ofWire !== undefined) return { protocol: withoutSource(ofWire) };
   if (rule === "answers") return { answers: rules.answers.says };
   const effect = rules.effects.find((r) => r.rule === rule);
   return effect === undefined
@@ -93,7 +73,7 @@ function ruleEntry(
 
 // The text a judge is given for one operation, and per recording the hash of its part:
 //   the operation, what the system runs with, every requirement once, how this target
-//   answers it, the target's rules about its wire on it, then per recording (slug order)
+//   answers it, then per recording (slug order)
 //   its name, its rule, the reader's doubts about it, its exchanges; after it, per state
 //   whose path it is (state order), the recording again with the state's sentence:
 //     {recording: "state:s", state: "reading the a shows …", exchanges: […]}
@@ -103,7 +83,8 @@ function ruleEntry(
 export function judgeTask({
   bound,
   common,
-  protocol,
+  commonTrigger,
+  runsWith,
   rules,
   trigger,
   recordings,
@@ -111,7 +92,9 @@ export function judgeTask({
 }: {
   readonly bound: Interface;
   readonly common: Common | undefined;
-  readonly protocol: Protocol | undefined;
+  readonly commonTrigger: CommonTrigger | undefined;
+  // what target.yaml says the system runs with
+  readonly runsWith: Target["runs-with"];
   readonly rules: Rules;
   readonly trigger: Trigger;
   readonly recordings: readonly { readonly slug: string; readonly evidence: Evidence }[];
@@ -126,14 +109,13 @@ export function judgeTask({
   readonly ofStates: ReadonlyMap<string, string>;
 } {
   const sorted = [...recordings].sort((a, b) => (a.slug < b.slug ? -1 : 1));
-  const wire = protocolOf(trigger, protocol);
   const parts = sorted.map(({ slug, evidence: { rule, exchanges } }) => {
     const unsure = rules.unsure.filter((u) => u.rule === rule).map(({ what }) => what);
     return {
       slug,
       text: yaml({
         recording: slug,
-        rule: ruleEntry(rule, rules, common, wire),
+        rule: ruleEntry(rule, rules, common),
         ...(unsure.length === 0 ? {} : { unsure }),
         exchanges,
       }),
@@ -158,16 +140,13 @@ export function judgeTask({
     `The operation: ${bound.interface}, ${bound.method.toUpperCase()} ${bound.pattern}`,
     "",
     "What the system under trial runs with:",
-    ...(protocol?.["runs-with"] ?? []).map(({ setting }) => `- ${setting}`),
+    ...(runsWith ?? []).map(({ setting }) => `- ${setting}`),
     "",
     "Every requirement of the operation:",
     yaml(requirements),
     "",
     "How this target answers the operation:",
-    yaml(wireOf(requirements, trigger, protocol)),
-    "",
-    "The target's rules about its wire on this operation:",
-    yaml(wire.map(withoutSource)),
+    yaml(wireOf(requirements, trigger, commonTrigger)),
   ].join("\n");
   const texts = parts.flatMap(({ text, states }) => [
     text,

@@ -45,12 +45,16 @@ reset: ["./exspec/target/reset.sh"]
 stop: ["docker compose -f exspec/target/compose.yaml down -v"]
 api: {base-url: "http://localhost:18080/api"}
 credentials: exspec/target/credentials.json
+runs-with:
+  - {setting: "security is on", source: "exspec/target/compose.yaml:12"}
 ```
 
 `start`, `seed`, `reset`, `stop` are shell lines run from the checkout. `alive` is a
 request (path relative to `base-url`) that answers `status` once the target is up.
 `credentials` (optional) is a JSON file the seed writes: for each actor's name, the
 request headers that sign it in — `{"ann": {"Authorization": "Bearer …"}}`.
+`runs-with` (optional): what the start sets that changes how the system answers, each
+setting with the file and line that sets it.
 
 ### `interfaces.yaml`
 

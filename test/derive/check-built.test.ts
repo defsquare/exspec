@@ -58,7 +58,6 @@ test("a scenario per rule, each with one call to the operation, passes", () => {
       : checkBuilt({
           bound,
           rules,
-          protocol: [],
           actors: ["ann", "bob"],
           services: [],
           callables: [],
@@ -98,7 +97,6 @@ steps:
       : checkBuilt({
           bound,
           rules,
-          protocol: [],
           actors: ["ann", "bob"],
           services: [],
           callables: [],
@@ -116,7 +114,7 @@ steps:
     'scenarios/pet-gone-from-owner.yaml: step 1: a hole cites "owner", no step named before it',
     'scenarios/pet-gone-from-owner.yaml: step 2: a hole cites "owner", no step named before it',
     "scenarios/pet-gone-from-owner.yaml: step 2: body.a holds a hole inside a longer string; a hole outside the path is a whole string",
-    `scenarios/unknown.yaml: "unknown" is not a rule of rules.yaml, nor a name under its common or under its trigger's protocol, nor "answers"`,
+    `scenarios/unknown.yaml: "unknown" is not a rule of rules.yaml, nor a name under its common, nor "answers"`,
     "scenarios/broken.yaml: not YAML: YAML Parse error: Unexpected token",
     'no scenario for the rule "visits-removed"',
     'no scenario for the rule "other-pets-untouched"',
@@ -152,7 +150,6 @@ const findingsOfGiven = (steps: string) =>
     : checkBuilt({
         bound,
         rules,
-        protocol: [],
         actors: ["ann"],
         services: [service],
         callables: [],
@@ -190,28 +187,6 @@ test("a service step names a service read, one of its conditions, exactly what i
   ]);
 });
 
-test("a rule of the target's wire its trigger lists is a rule a scenario may be of, and must be", () => {
-  const findingsWith = (rulesOf: readonly string[]) =>
-    rules === undefined
-      ? undefined
-      : checkBuilt({
-          bound,
-          rules,
-          protocol: ["no-store"],
-          actors: ["ann"],
-          services: [],
-          callables: [],
-          paths: [],
-          unreached: [],
-          states: [],
-          files: rulesOf.map((rule) => ({ slug: rule, text: scenario(rule) })),
-        }).findings;
-  expect({
-    without: findingsWith(every),
-    with: findingsWith([...every, "no-store"]),
-  }).toEqual({ without: ['no scenario for the rule "no-store"'], with: [] });
-});
-
 const callables: readonly Callable[] = [
   {
     operation: "delete-pet",
@@ -247,7 +222,6 @@ const findingsOfCalls = (steps: string) =>
     : checkBuilt({
         bound,
         rules,
-        protocol: [],
         actors: ["ann"],
         services: [],
         callables,
@@ -340,7 +314,6 @@ const findingsOfState = (steps: string, path: Path = reached) =>
     : checkBuilt({
         bound,
         rules,
-        protocol: [],
         actors: ["ann"],
         services: [],
         callables: [],

@@ -16,7 +16,7 @@ interfaces:
   - {interface: f, method: get, pattern: "/f/{a}", responses: {200: {body: any}}}
 `,
   "common.yaml": "target: t",
-  "protocol.yaml": "target: t",
+  "common-trigger.yaml": "refuses: {}",
   "operations/f/trigger.yaml":
     "{trigger: f, interface: f, operation: f, answers: {status: 200}, refuses: {not-found: {status: 404, body: empty}}}",
   "operations/f/rules.yaml": `

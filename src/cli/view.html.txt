@@ -240,9 +240,6 @@ function lines(o) {
       say: [whenSay(e.when), thenSay(e.then)], short: typeof e.then === "string" ? "nothing changes" : "says" in e.then ? e.then.says : "changes what is kept" })),
   ];
 }
-// the target's rules about its wire that hold on an operation of the roles' reading, apart from its lines
-const protocolLines = (o) => (o.protocol ?? []).map((l) => ({ ...l, say: l.otherwise ? ["Refuses ", code(l.otherwise), " unless ", h("b", null, l.fact ?? "?")] : ["Always: ", l.fact ?? l.short] }));
-const allLines = (o) => [...lines(o), ...protocolLines(o)];
 // how a refusal or an accepted call leaves on this target, in the target's look: of the trigger, not of the specification
 const onTarget = (what) => h("span", { style: "color:var(--target)" }, `on this target: ${what}`);
 const acceptedOf = (t) => (t ? [t.answers.status].flat() : undefined);
@@ -570,7 +567,7 @@ function operationHead(o) {
 }
 function operationSheet(o, path, picked) {
   // a rule's panel lists its scenarios: only the ones no rule lists are left to list here
-  const listed = new Set(allLines(o).flatMap((l) => (judged(o.operation, l.rule)?.by ?? []).map((b) => b.scenario)));
+  const listed = new Set(lines(o).flatMap((l) => (judged(o.operation, l.rule)?.by ?? []).map((b) => b.scenario)));
   const unlisted = scenariosOf(o.operation).filter((e) => !listed.has(e.path));
   return [
     h("p", { class: "eyebrow" }, "Operation"), h("h1", null, o.operation), operationHead(o),
@@ -578,9 +575,6 @@ function operationSheet(o, path, picked) {
       (roles ? [["holds", "holds"], ["contradicted", "contradicted or refused unexpectedly"], ["not-shown", "not shown"], ["none", "unjudged"]] : [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]]).map(([key, word]) => h("span", null, dot(colors[key]), word)),
       path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof and its scenarios; a scenario draws its path. Under inputs, a mark is a requirement on that input alone."),
       h("span", { class: "keys" }, keys(["↑↓", "rule"], ["←→", "mark of an input"], ["⏎", "its proof"])))),
-    (o.protocol ?? []).length === 0 ? null : h("div", { class: "side" }, h("p", { class: "eyebrow" }, "On this target"), h("h2", null, "Rules of its wire"),
-      h("p", { class: "muted" }, "How this target says what it says on this interface. A rewritten target need not keep them: they are counted with no rule of the specification."),
-      protocolLines(o).map((l) => h("p", null, provenanceDot(provenanceOf(o.operation, l.rule)), h("a", { href: ruleRoute(o.operation, l.rule) }, code(l.rule)), " — ", l.short, l.otherwise ? [" Otherwise ", code(l.otherwise), ", ", l.status] : "", "."))),
     unlisted.length === 0 ? null : [h("p", { class: "eyebrow" }, "Scenarios no rule lists"), h("div", { class: "chips" }, unlisted.map((e) =>
       h("a", { class: `chip ${e.path === path ? "on" : ""}`, href: e.path === path ? route("operation", o.operation) : route("scenario", e.path) }, dot(scenarioColor(e.path)), e.path.split("/")[1])))],
   ];
@@ -619,7 +613,7 @@ function roleRulePanel(o, line) {
   const j = judged(o.operation, line.rule);
   return [
     h("a", { class: "close", href: route("operation", o.operation) }, "Close", h("kbd", null, "esc")),
-    h("p", { class: "eyebrow" }, `${line.kind === "protocol" ? "Rule of the target's wire" : line.shared ? "Shared rule" : "Rule"} of ${o.operation}`), h("h2", null, code(line.rule)), h("p", null, line.say),
+    h("p", { class: "eyebrow" }, `${line.shared ? "Shared rule" : "Rule"} of ${o.operation}`), h("h2", null, code(line.rule)), h("p", null, line.say),
     line.otherwise ? h("p", { class: "muted" }, code(line.otherwise), " ", line.status === undefined ? "has no status declared on this target." : onTarget(`refused with ${line.status}${line.body ? `, the body ${line.body}` : ""}`)) : null,
     h("p", null, provenanceDot(j?.provenance ?? unproven), h("b", null, j?.provenance ?? unproven), j?.reason ? ` — ${j.reason}` : ""),
     line.source ? h("p", { class: "muted" }, "Read in ", code(line.source)) : null,
@@ -709,19 +703,17 @@ function serviceSheet(name) {
 }
 // what the common reader wrote: what holds for every operation
 function commonSheet() {
-  const c = data.common, p = data.protocol;
+  const c = data.common, p = data.commonTrigger, runsWith = data.extraction.target?.["runs-with"] ?? [];
   if (!c) return [h("h1", null, "The common reading"), h("p", { class: "muted" }, "None parses yet.")];
   const wire = (refusal) => p?.refuses[refusal];
   return [
     h("p", { class: "eyebrow" }, "What holds for every operation"), h("h1", null, "The common reading"),
     h("h2", null, "Shared rules"), table(["Rule", "Applies to", "Fact", "Otherwise"], c.rules.map((r) => [code(r.rule), r["applies-to"], r.fact, [code(r.otherwise), wire(r.otherwise) ? [" ", onTarget(`${wire(r.otherwise).status}: ${wire(r.otherwise).body}`)] : ""]])),
     h("h2", null, "Doubts"), table(["About", "What"], c.unsure.map((u) => [u.about, u.what])),
-    h("div", { class: "side" }, h("p", { class: "eyebrow" }, "On this target"), !p ? h("p", null, "No protocol parses yet.") : [
-      h("h2", null, "Runs with"), table(["Setting", "Read in"], p["runs-with"].map((r) => [r.setting, code(r.source)])),
-      h("h2", null, "Rules of its wire"), table(["Rule", "Applies to", "Fact", "Otherwise"], p.rules.map((r) => [code(r.rule), r["applies-to"], r.fact, r.otherwise ? [code(r.otherwise.refusal), ` ${r.otherwise.status}: ${r.otherwise.body}`] : "refuses nothing"])),
-      h("h2", null, "Errors"), table(["Kind", "Status", "Body"], p.errors.map((e) => [e.kind, code(e.status), e.body])),
-      h("h2", null, "Contract and code"), p.contract.length === 0 ? h("p", { class: "muted" }, "None.") : p.contract.map((t) => h("p", null, t)),
-      h("h2", null, "Doubts"), table(["About", "What"], p.unsure.map((u) => [u.about, u.what]))]),
+    h("div", { class: "side" }, h("p", { class: "eyebrow" }, "On this target"),
+      h("h2", null, "Runs with"), table(["Setting", "Read in"], runsWith.map((r) => [r.setting, code(r.source)])),
+      !p ? h("p", null, "No common trigger parses yet.") : [
+      h("h2", null, "Errors"), table(["Kind", "Status", "Body"], p.errors.map((e) => [e.kind, code(e.status), e.body]))]),
   ];
 }
 
@@ -791,7 +783,7 @@ function overview() {
     return [h("p", { class: "eyebrow" }, title), h("div", { class: "bar" }, Object.entries(counts).map(([word, n]) => h("i", { style: `background:${colors[word] ?? colors.none};width:${total ? (100 * n) / total : 0}%` }))),
       h("p", null, Object.entries(counts).map(([word, n]) => [provenanceDot(word), `${n} ${word}   `]))]; };
   const why = (r) => r.reason ?? [...r.by.filter((b) => b.verdict === r.provenance), ...r.by].map((b) => b.reason ?? b.says).filter(Boolean)[0] ?? "";
-  const notHeld = data.rules.filter((r) => !r.protocol && !good(r.provenance));
+  const notHeld = data.rules.filter((r) => !good(r.provenance));
   // what is not held without being wrong: a shared rule is one line per word, its operations beside it; a rule of
   // one operation is a line of its own, two operations naming a rule alike not making it one rule
   //   shared r:  [{operation: "a", rule: "r"}, {operation: "b", rule: "r"}]  ->  r | a, b
@@ -830,7 +822,7 @@ function render() {
   const sc = concept === "scenario" ? scenarioAt(name) : undefined;
   const ruleOf = concept === "rule" ? { operation: decoded(rest[0] ?? ""), rule: decoded(rest[1] ?? "") } : undefined;
   const o = concept === "operation" ? operation(name) : sc ? operation(operationOfScenario(sc)) : ruleOf ? operation(ruleOf.operation) : undefined;
-  const line = o && ruleOf ? allLines(o).find((l) => l.rule === ruleOf.rule) : undefined;
+  const line = o && ruleOf ? lines(o).find((l) => l.rule === ruleOf.rule) : undefined;
   const groups = [...x.structures.map((st) => st.structure), transverse].filter((g) => g !== transverse || operationsOf(g).length > 0);
   const group = o ? groupOf(o.operation) : concept === "structure" && groups.includes(name) ? name : undefined;
   const cols = document.getElementById("cols"), was = { sheet: cols.querySelector(".sheet")?.scrollTop ?? 0, of: cols.dataset.operation };
@@ -857,7 +849,7 @@ function render() {
     h("p", { class: "keys" }, keys(["↑↓", "move"], ["←→", "fold"], ["⏎", "open"])));
   // a scenario sits on the rule it was reached from, or on the first it proves: closing it leads back there
   const proves = sc ? (sc.scenario?.proves ?? [sc.rule]) : [];
-  const under = sc && o ? allLines(o).find((l) => l.rule === (proves.includes(cols.dataset.rule) ? cols.dataset.rule : proves[0])) : undefined;
+  const under = sc && o ? lines(o).find((l) => l.rule === (proves.includes(cols.dataset.rule) ? cols.dataset.rule : proves[0])) : undefined;
   const back = sc ? (under ? ruleRoute(o.operation, under.rule) : route("operation", operationOfScenario(sc))) : undefined;
   const panel = sc ? (roles ? roleScenarioPanel(sc, back) : scenarioPanel(sc, back)) : line ? rulePanel(o, line) : null;
   const sheet = o ? operationSheet(o, sc?.path, line?.rule ?? under?.rule) : concept === "findings" ? findings() : concept === "common" ? commonSheet() : concept === "service" ? serviceSheet(name ?? "")

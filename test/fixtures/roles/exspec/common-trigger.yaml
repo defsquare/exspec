@@ -1,24 +1,10 @@
-target: petclinic
-runs-with: 
-  - setting: "security is on (HTTP Basic, every request authenticated)"
-    source: exspec/target/compose.yaml:24
-  - setting: "the database is PostgreSQL, the repository layer is Spring Data JPA"
-    source: exspec/target/compose.yaml:22
-  - setting: the shipped default is security off and an in-memory database; the run overrides both
-    source: src/main/resources/application.properties:49
-  - setting: "the service listens on 9966 inside the container, published as 18467, under the path /petclinic/"
-    source: exspec/target/compose.yaml:20
-  - setting: "three accounts exist: admin (owner admin, vet admin, admin roles), ann (owner admin), bob (vet admin)"
-    source: src/main/resources/db/postgres/data.sql; exspec/target/seed.sh:13-14
-rules: 
-  []
 refuses: 
   unauthenticated: 
     status: 401
     body: no problem-detail body is built by the application; the security filter answers before any controller
   forbidden: 
     status: 403
-    body: "not settled, see unsure"
+    body: "problem detail, title Forbidden"
   user-without-role: 
     status: 500
     body: "problem detail, title IllegalArgumentException, detail the generic unexpected-error text"
@@ -43,10 +29,3 @@ errors:
     status: 401
     body: "answered by the security filter, not by the advice; no problem detail"
     source: src/main/java/org/springframework/samples/petclinic/security/BasicAuthenticationConfig.java:38-40
-contract: 
-  - the contract (openapi.yml) declares no security scheme and no 401 or 403 answer on any operation; the code answers 401 to every unauthenticated call
-  - "the contract says an update answers 200 with the updated resource; the code answers 204, with the updated resource in the body"
-  - "the contract says a creation answers 201; the code does the same, with a Location header on creations of owners, pets, visits, pet types, vets and specialties; creating a user has none"
-  - the contract declares a 404 only for a missing resource; the code also answers 404 for a database constraint violation and for an empty list of owners
-  - "the contract declares a 500 on nearly every operation as a problem detail; the code builds it, and also builds it for what the contract has not planned"
-  - "the contract bounds fields (length, pattern); the code enforces them through bean validation on the generated request types, plus a birth-date rule on pets (not in the future, not over 50 years old)"

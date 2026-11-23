@@ -13,11 +13,23 @@ export class ExtractionUnderRoles extends Error {
   }
 }
 
+export class ExtractionWithProtocol extends Error {
+  readonly type = "extraction-with-protocol";
+  constructor() {
+    super(
+      "exspec/protocol.yaml is of an extraction made when the wire's rules were proven: remove common.yaml, protocol.yaml, states.yaml and operations/ under exspec/, then extract again",
+    );
+  }
+}
+
 // the YAML files, and the twins a twin writer wrote; an extraction still under roles/ is
-// refused, it would look empty
+// refused, it would look empty; one with protocol.yaml too: its judgements are all stale
+// and its triggers name refusals no rule names
 export async function readExtractionFiles(dir: string): Promise<readonly SourceFile[]> {
   const root = join(dir, "exspec");
   if (await directoryExists(join(root, "roles"))) throw new ExtractionUnderRoles();
+  if (await Bun.file(join(root, "protocol.yaml")).exists())
+    throw new ExtractionWithProtocol();
   const paths = [
     ...(await Array.fromAsync(new Bun.Glob("**/*.yaml").scan(root))),
     ...(await Array.fromAsync(new Bun.Glob("providers/*/twin.ts").scan(root))),

@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { noiseSchema, responseSchema, runSchema } from "./scenario.ts";
-import { methodSchema } from "./target.ts";
+import { methodSchema, sourceSchema as source } from "./target.ts";
 
 // The files of a reading by three roles kept apart, under exspec/:
 //   common.yaml                                what holds for the whole system, in its words
-//   protocol.yaml                              what the whole target says of its wire
+//   common-trigger.yaml                        how this target says the refusals of common.yaml
 //   operations/<op>/rules.yaml, hints.yaml     what one operation is supposed to do
 //   operations/<op>/trigger.yaml               how this target says it: its statuses, its refusals'
 //   operations/<op>/scenarios/<slug>.yaml      a scenario: calls, requests, a service's conditions
@@ -14,9 +14,6 @@ import { methodSchema } from "./target.ts";
 export const ruleName = z
   .string()
   .regex(/^[a-z][a-z0-9-]*$/, "a rule's name is lower-case words joined by dashes");
-const source = z
-  .string()
-  .regex(/\.\w+:\d+/, "a source is path/to/File.ext:line or :from-to");
 
 // service: the service of exspec/services/ the rule rests on
 // otherwise: the refusal's name; how it leaves is the trigger's
@@ -68,51 +65,6 @@ export const commonSchema = z
   .readonly();
 
 export type Common = z.infer<typeof commonSchema>;
-
-const wireSchema = z.strictObject({ status: z.int(), body: z.string() }).readonly();
-
-// A rule about the wire and nothing else; otherwise absent: it refuses nothing
-//   {rule: p, applies-to: "…", fact: "the body is a JSON object",
-//    otherwise: {refusal: malformed-body, status: 400, body: "…"}, source: "…"}
-export const protocolRuleSchema = z
-  .strictObject({
-    rule: ruleName,
-    "applies-to": z.string(),
-    fact: z.string(),
-    otherwise: z
-      .strictObject({ refusal: ruleName, status: z.int(), body: z.string() })
-      .readonly()
-      .optional(),
-    source,
-  })
-  .readonly();
-
-export type ProtocolRule = z.infer<typeof protocolRuleSchema>;
-
-// refuses: how a refusal of common.yaml leaves, {r: {status: 401, body: "…"}}
-export const protocolSchema = z
-  .strictObject({
-    target: z.string(),
-    "runs-with": z
-      .array(z.strictObject({ setting: z.string(), source }).readonly())
-      .readonly()
-      .default([]),
-    rules: z.array(protocolRuleSchema).readonly().default([]),
-    refuses: z.record(ruleName, wireSchema).readonly().default({}),
-    errors: z
-      .array(
-        z
-          .strictObject({ kind: z.string(), status: z.int(), body: z.string(), source })
-          .readonly(),
-      )
-      .readonly()
-      .default([]),
-    contract: z.array(z.string()).readonly().default([]),
-    unsure: unsureSchema,
-  })
-  .readonly();
-
-export type Protocol = z.infer<typeof protocolSchema>;
 
 const structureFieldSchema = z.tuple([z.string(), z.string()]).readonly();
 

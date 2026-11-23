@@ -22,7 +22,7 @@ Read what no single operation owns:
 
 - **How the system under trial is started**: the settings its start changes from the
   shipped defaults (a profile, a flag that switches security on, the database). What the
-  checkout ships by default matters less than what runs.
+  checkout ships by default matters less than what runs: read the handlers that run.
 - **Who a caller is**: how a call is authenticated, what an unauthenticated call is
   answered, which roles or permissions exist, how one is required of an operation and what
   a caller without it is answered. Which accounts the start creates, and what each may do.
@@ -31,13 +31,11 @@ Read what no single operation owns:
   raised to the answer, so that what is answered is read, not guessed.
 - **How what a call sends is checked**: where the constraints on a request's fields are
   declared, at which point they are enforced, and what a broken one is answered.
-- **The contract**, if the checkout has one (an API description): where it and the code
-  differ as a habit — a status, an error body, an answer never built — said once.
 
 ## What you write
 
 Two files. What holds for the system whatever answers for it goes in the first; how this
-system says it on the wire goes in the second.
+system answers each refusal of the first goes in the second.
 
 `exspec/common.yaml` — the requirements every operation, or a family of them, shares,
 in the business's words:
@@ -55,39 +53,27 @@ unsure:                          # what reading could not settle; empty list if 
     what: "the handler for any failure may take it first"
 ```
 
-`exspec/protocol.yaml` — what this system says of its wire:
+`exspec/common-trigger.yaml` — how each of those refusals leaves this system, and how a
+refusal is answered, by kind:
 
 ```yaml
-target: <its name>
-runs-with:                       # what the start of the system under trial sets
-  - setting: "security is on"
-    source: "path/to/compose.yaml:12"
-rules:                           # rules about the wire and nothing else
-  - rule: json-object-body
-    applies-to: "every write"
-    fact: the body is empty or a JSON object
-    otherwise: {refusal: malformed-body, status: 400, body: "{error: {code: MALFORMED_BODY, message: 'Body of <path> is not a JSON object'}}"}
-    source: "path/to/Body.ext:65-79"
-  - rule: responses-not-cached            # a rule that refuses nothing has no otherwise
-    applies-to: "every operation"
-    fact: every answer says it is not to be cached
-    source: "path/to/Index.ext:31-34"
-refuses:                         # how each refusal of common.yaml leaves
+refuses:                         # one entry per refusal a rule of common.yaml names
   unauthenticated: {status: 401, body: "{error: {code: UNAUTHENTICATED, message: 'No valid credentials'}}"}
 errors:                          # how a refusal is answered, by kind
   - kind: "a field of the request breaks a constraint"
     status: 400
     body: "{error: {code: INVALID_FIELD, message: '<field> must be <constraint>'}}"
     source: "path/to/Errors.ext:60-80"
-contract:                        # the habits by which the contract and the code differ
-  - "the contract says one status for a creation; the code answers another"
 ```
 
-- A rule of `common.yaml` names its refusal and says nothing of how it leaves: no status, no
-  header, no path, no body. How it leaves is said once, under `refuses` in `protocol.yaml`.
-- A rule that is about the wire and nothing else — a header that must be sent, the form of
-  a body, a caching header, the order in which two checks are made — is written in
-  `protocol.yaml`, not among the system's rules.
+- A rule is written only if it would still hold were the system rewritten on another
+  framework or another protocol. How something is carried — a header that must be sent,
+  the form of a body, an envelope, a caching header, the order in which two checks are
+  made — is written nowhere.
+- A rule of `common.yaml` names its refusal and says nothing of how it leaves: no status,
+  no header, no path, no body. How it leaves is said once, under `refuses` in
+  `common-trigger.yaml`: every refusal a rule names has its entry there, and no other name
+  has one.
 - Two rules refuse by the same name only when they refuse the same way.
 - Business words, not class names, except in `source` (`path/to/File.ext:line` or
   `:from-to`, relative to the checkout).
@@ -105,5 +91,4 @@ again.
 
 ## Your final message
 
-Under 60 words: the number of rules of the system, of rules of the wire, of error kinds,
-of doubts.
+Under 60 words: the number of rules of the system, of error kinds, of doubts.

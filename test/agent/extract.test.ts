@@ -305,7 +305,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
       ...declared,
       "structures.yaml": reading["structures.yaml"] ?? "",
       "common.yaml": reading["common.yaml"] ?? "",
-      "protocol.yaml": reading["protocol.yaml"] ?? "",
+      "common-trigger.yaml": reading["common-trigger.yaml"] ?? "",
     },
     [{ writes: {} }, { writes: {} }, { writes: {} }, { writes: {} }],
   );
@@ -332,7 +332,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
       {
         type: "role-skipped",
         role: "common-reader",
-        why: "common.yaml passes its check",
+        why: "common.yaml and common-trigger.yaml pass their check",
       },
       { type: "roles-queued", role: "reader", count: 1 },
       { type: "role-started", role: "reader", ...f },

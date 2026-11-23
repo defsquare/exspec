@@ -36,7 +36,6 @@ concepts:
   - {concept: provider, group: target, says: "an observable: a system the target calls", at: [1, 0]}
   - {concept: twin, group: target, says: "the program that stands for a provider", in: provider}
   - {concept: interface, group: target, says: "method, pattern, shapes", at: [2, 0]}
-  - {concept: protocol, group: target, says: "the rules of the wire", at: [2, 1]}
 
 # exception: a link that leaves the direction of the references, on purpose
 links:
@@ -68,7 +67,7 @@ links:
 
   - {from: trigger, to: operation, verb: binds}
   - {from: trigger, to: interface, verb: binds to}
-  - {from: trigger, to: protocol, verb: names rules of}
+  - {from: trigger, to: shared rule, verb: says how it is refused}
   - {from: renders, to: service, verb: renders}
   - {from: renders, to: provider, verb: rendered by}
 

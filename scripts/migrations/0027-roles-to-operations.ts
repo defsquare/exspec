@@ -2,8 +2,8 @@
 //   exspec/roles/common.yaml, protocol.yaml -> exspec/common.yaml, protocol.yaml
 //   exspec/roles/<op>/…                     -> exspec/operations/<op>/…
 // It moves nothing and exits 1 when a destination exists or a file of roles/ is of no
-// operation; run on an extraction already
-// rewritten, it changes nothing and says so.
+// operation; run on an extraction already rewritten, it changes nothing and says so.
+// Since ADR-0028 an extraction that has a protocol.yaml is not read: it is extracted again.
 //   bun scripts/migrations/0027-roles-to-operations.ts <dir>
 import { mkdir, readdir, rename, rmdir, stat } from "node:fs/promises";
 import { join } from "node:path";

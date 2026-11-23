@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ruleName } from "./roles.ts";
+import { sourceSchema } from "./target.ts";
 
 // "each" in a path steps into every element of a list: [articles, each]
 const showSchema = z
@@ -32,10 +33,9 @@ export const placeSchema = z.union([
 export type InputPlace = z.infer<typeof placeSchema>;
 
 // answers.status: the status an accepted call is answered with, or every one of them;
-// a refusal may say its body as it was read; protocol: the target's rules about its wire
-// that hold on this interface, by name
+// a refusal may say its body as it was read
 //   {trigger: f, interface: f, operation: f, answers: {status: [200, 302]},
-//    refuses: {r: {status: 422, body: "{error: X}"}}, protocol: [p]}
+//    refuses: {r: {status: 422, body: "{error: X}"}}}
 export const triggerSchema = z
   .strictObject({
     trigger: z.string(),
@@ -55,11 +55,37 @@ export const triggerSchema = z
       )
       .readonly()
       .default({}),
-    protocol: z.array(ruleName).readonly().optional(),
   })
   .readonly();
 
 export type Trigger = z.infer<typeof triggerSchema>;
+
+// The trigger of the shared rules, exspec/common-trigger.yaml:
+//   refuses: {r: {status: 401, body: "{error: X}"}}     how each refusal of common.yaml leaves
+//   errors: [{kind: "…", status: 400, body: "…", source: "…"}]     how a refusal is answered, by kind
+export const commonTriggerSchema = z
+  .strictObject({
+    refuses: z
+      .record(ruleName, z.strictObject({ status: z.int(), body: z.string() }).readonly())
+      .readonly()
+      .default({}),
+    errors: z
+      .array(
+        z
+          .strictObject({
+            kind: z.string(),
+            status: z.int(),
+            body: z.string(),
+            source: sourceSchema,
+          })
+          .readonly(),
+      )
+      .readonly()
+      .default([]),
+  })
+  .readonly();
+
+export type CommonTrigger = z.infer<typeof commonTriggerSchema>;
 
 export const bindingsFileSchema = z
   .strictObject({

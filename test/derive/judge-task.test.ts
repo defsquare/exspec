@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { judgeTask } from "../../src/derive/judge-task.ts";
-import type { Trigger } from "../../src/shapes/bindings.ts";
-import type { Common, Evidence, Protocol, Rules } from "../../src/shapes/roles.ts";
+import type { CommonTrigger, Trigger } from "../../src/shapes/bindings.ts";
+import type { Common, Evidence, Rules } from "../../src/shapes/roles.ts";
 import type { Interface } from "../../src/shapes/target.ts";
 
 const bound: Interface = {
@@ -26,29 +26,12 @@ const common: Common = {
   unsure: [],
 };
 
-const protocol: Protocol = {
-  target: "t",
-  "runs-with": [{ setting: "security is on", source: "c.yaml:1" }],
-  rules: [
-    {
-      rule: "no-store",
-      "applies-to": "every answer",
-      fact: "the answer is not to be cached",
-      source: "P.java:1",
-    },
-    {
-      rule: "json-body",
-      "applies-to": "every write",
-      fact: "the body is a JSON object",
-      otherwise: { refusal: "malformed", status: 400, body: "an error" },
-      source: "P.java:2",
-    },
-  ],
+const commonTrigger: CommonTrigger = {
   refuses: { unauthenticated: { status: 401, body: "nothing" } },
   errors: [],
-  contract: [],
-  unsure: [],
 };
+
+const runsWith = [{ setting: "security is on", source: "c.yaml:1" }];
 
 const trigger: Trigger = {
   trigger: "f",
@@ -57,7 +40,6 @@ const trigger: Trigger = {
   sends: {},
   answers: { status: 204, shows: [] },
   refuses: { "not-found": { status: 404, body: "empty" } },
-  protocol: ["no-store"],
 };
 
 const rules: Rules = {
@@ -97,7 +79,16 @@ const recordings = [
 
 test("the judge's task: the operation, its requirements once, each recording in slug order", () => {
   expect(
-    judgeTask({ bound, common, protocol, rules, trigger, recordings, states: [] }).text,
+    judgeTask({
+      bound,
+      common,
+      commonTrigger,
+      runsWith,
+      rules,
+      trigger,
+      recordings,
+      states: [],
+    }).text,
   ).toEqual(
     `The operation: f, DELETE /a/{id}
 
@@ -132,19 +123,6 @@ ${Bun.YAML.stringify(
       "not-found": { status: 404, body: "empty" },
     },
   },
-  null,
-  2,
-).trimEnd()}
-
-The target's rules about its wire on this operation:
-${Bun.YAML.stringify(
-  [
-    {
-      rule: "no-store",
-      "applies-to": "every answer",
-      fact: "the answer is not to be cached",
-    },
-  ],
   null,
   2,
 ).trimEnd()}
@@ -186,7 +164,8 @@ test("a recording's hash changes with its own part only", () => {
   const before = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     recordings,
@@ -195,7 +174,8 @@ test("a recording's hash changes with its own part only", () => {
   const after = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     states: [],
@@ -214,7 +194,8 @@ test("every recording's hash changes with what all of them are judged with", () 
   const before = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     recordings,
@@ -223,10 +204,8 @@ test("every recording's hash changes with what all of them are judged with", () 
   const after = judgeTask({
     bound,
     common,
-    protocol: {
-      ...protocol,
-      "runs-with": [{ setting: "security is off", source: "c.yaml:1" }],
-    },
+    commonTrigger,
+    runsWith: [{ setting: "security is off", source: "c.yaml:1" }],
     rules,
     trigger,
     states: [],
@@ -247,7 +226,8 @@ test("the judge is given nothing of the input a requirement is on", () => {
   const a = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules: on,
     trigger,
     recordings,
@@ -256,7 +236,8 @@ test("the judge is given nothing of the input a requirement is on", () => {
   const b = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     recordings,
@@ -273,7 +254,8 @@ test("a recording's hash does not move with the noise beside its evidence", () =
   const before = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     recordings,
@@ -282,7 +264,8 @@ test("a recording's hash does not move with the noise beside its evidence", () =
   const after = judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     states: [],
@@ -294,42 +277,14 @@ test("a recording's hash does not move with the noise beside its evidence", () =
   expect(after).toEqual(before);
 });
 
-test("a recording of a rule of the target's wire is given that rule", () => {
-  const { text } = judgeTask({
-    bound,
-    common,
-    protocol,
-    rules,
-    trigger,
-    states: [],
-    recordings: [{ slug: "no-store", evidence: evidence("no-store", 204) }],
-  });
-  expect(text.split("---\n")[1]).toEqual(
-    Bun.YAML.stringify(
-      {
-        recording: "no-store",
-        rule: {
-          protocol: {
-            rule: "no-store",
-            "applies-to": "every answer",
-            fact: "the answer is not to be cached",
-          },
-        },
-        exchanges: evidence("no-store", 204).exchanges,
-      },
-      null,
-      2,
-    ).trimEnd(),
-  );
-});
-
 const yaml = (value: unknown) => Bun.YAML.stringify(value, null, 2).trimEnd();
 
 const onState = (state: string, seen: string) =>
   judgeTask({
     bound,
     common,
-    protocol,
+    commonTrigger,
+    runsWith,
     rules,
     trigger,
     recordings: [{ slug: "removed", evidence: evidence("removed", 204) }],

@@ -5,7 +5,9 @@ const extraction = join(import.meta.dir, "fixtures/roles/exspec");
 
 export const structuresText = await Bun.file(join(extraction, "structures.yaml")).text();
 export const commonText = await Bun.file(join(extraction, "common.yaml")).text();
-export const protocolText = await Bun.file(join(extraction, "protocol.yaml")).text();
+export const commonTriggerText = await Bun.file(
+  join(extraction, "common-trigger.yaml"),
+).text();
 export const rulesText = await Bun.file(
   join(extraction, "operations/delete-pet/rules.yaml"),
 ).text();

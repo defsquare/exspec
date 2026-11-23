@@ -1,17 +1,17 @@
 import { expect, test } from "bun:test";
 import {
   checkCommon,
-  checkProtocol,
+  checkCommonTrigger,
   checkRulesAndHints,
   checkStructuresFile,
 } from "../../src/derive/check-reader.ts";
 import { checkTrigger } from "../../src/derive/check-trigger.ts";
 import { readerFilesOf } from "../../src/derive/roles-files.ts";
-import type { Protocol } from "../../src/shapes/roles.ts";
+import type { CommonTrigger } from "../../src/shapes/bindings.ts";
 import {
   commonText,
+  commonTriggerText,
   hintsText,
-  protocolText,
   rulesText,
   structuresText,
   triggerText,
@@ -20,7 +20,7 @@ import { filesOf } from "../roles-left-fixture.ts";
 
 const { common } = checkCommon(commonText);
 const { structures } = checkStructuresFile(structuresText);
-const { protocol } = checkProtocol(protocolText);
+const { commonTrigger } = checkCommonTrigger(commonTriggerText, common);
 
 const readRules = (rules: string) =>
   checkRulesAndHints({
@@ -35,7 +35,7 @@ const rules = readRules(rulesText).rules;
 
 const triggerFindings = (
   text: string | undefined,
-  wire: Protocol | undefined = protocol,
+  shared: CommonTrigger | undefined = commonTrigger,
 ) =>
   rules === undefined
     ? undefined
@@ -44,18 +44,18 @@ const triggerFindings = (
         interfaces: ["delete-pet"],
         rules,
         common,
-        protocol: wire,
+        commonTrigger: shared,
         text,
       }).findings;
 
-test("a trigger as a reader wrote it, beside its rules and the target's protocol, passes", () => {
+test("a trigger as a reader wrote it, beside its rules and the shared trigger, passes", () => {
   expect({
-    protocol: checkProtocol(protocolText).findings,
+    commonTrigger: checkCommonTrigger(commonTriggerText, common).findings,
     trigger: triggerFindings(triggerText),
-  }).toEqual({ protocol: [], trigger: [] });
+  }).toEqual({ commonTrigger: [], trigger: [] });
 });
 
-test("a trigger that says no accepted status, misses a refusal, names one no rule names, or a rule the protocol lacks gives a finding each", () => {
+test("a trigger that says no accepted status, misses a refusal, or names one no rule names gives a finding each", () => {
   expect(
     triggerFindings(`
 trigger: delete-pet
@@ -64,43 +64,53 @@ operation: remove-pet
 answers: {status: []}
 refuses:
   gone: {status: 404}
-  forbidden: {status: 403}
-protocol: [no-store]
 `),
   ).toEqual([
     'trigger.yaml: interface is "remove-pet", the folder is "delete-pet"',
     'trigger.yaml: interface "remove-pet" is not an interface of the target',
     `trigger.yaml: operation is "remove-pet", rules.yaml's is "delete-pet"`,
     "trigger.yaml: the trigger says no accepted status: answers.status lists each status an accepted call is answered with",
-    'trigger.yaml: refuses says nothing of "not-found", the refusal of "pet-exists", nor does protocol.yaml',
+    'trigger.yaml: refuses says nothing of "not-found", the refusal of "pet-exists", nor does common-trigger.yaml',
     'trigger.yaml: refuses names "gone", which no rule of this operation names',
-    'trigger.yaml: protocol names "no-store", which is not a rule of protocol.yaml',
   ]);
 });
 
-test("a refusal of a common rule is said by the trigger or by the protocol", () => {
+test("a refusal of a common rule is said by the trigger or by the shared trigger", () => {
   expect([
-    triggerFindings(triggerText, protocol && { ...protocol, refuses: {} }),
+    triggerFindings(triggerText, commonTrigger && { ...commonTrigger, refuses: {} }),
     triggerFindings(
       `${triggerText}  unauthenticated: {status: 401}\n  forbidden: {status: 403}\n`,
-      protocol && { ...protocol, refuses: {} },
+      commonTrigger && { ...commonTrigger, refuses: {} },
     ),
   ]).toEqual([
     [
-      'trigger.yaml: refuses says nothing of "unauthenticated", the refusal of "signed-in", nor does protocol.yaml',
-      'trigger.yaml: refuses says nothing of "forbidden", the refusal of "owner-admin-role", nor does protocol.yaml',
+      'trigger.yaml: refuses says nothing of "unauthenticated", the refusal of "signed-in", nor does common-trigger.yaml',
+      'trigger.yaml: refuses says nothing of "forbidden", the refusal of "owner-admin-role", nor does common-trigger.yaml',
     ],
     [],
   ]);
 });
 
-test("a reading with rules and no trigger, or no protocol written, is said so", () => {
+test("a shared refusal said again by a trigger, in any of its forms, is one finding", () => {
+  const saying = (refusal: string) =>
+    triggerFindings(`${triggerText}  unauthenticated: ${refusal}\n`);
+  const found = [
+    'trigger.yaml: "unauthenticated" is a shared refusal, said in common-trigger.yaml: not said again',
+  ];
+  expect([
+    saying('{status: 401, body: "{error: {code: X}}"}'),
+    saying("{status: 401}"),
+    saying('{status: 401, body: "{error: {code: X}}, header WWW-Authenticate: Bearer"}'),
+  ]).toEqual([found, found, found]);
+});
+
+test("a reading with rules and no trigger, or no shared trigger written, is said so", () => {
   expect({
     trigger: triggerFindings(undefined),
-    protocol: checkProtocol(undefined),
+    commonTrigger: checkCommonTrigger(undefined, common),
   }).toEqual({
     trigger: ["trigger.yaml: missing"],
-    protocol: { findings: ["protocol.yaml: missing"] },
+    commonTrigger: { findings: ["common-trigger.yaml: missing"] },
   });
 });
 
@@ -121,41 +131,20 @@ test("a rule that says a size or a limit passes, in a rule or a common rule", ()
   }).toEqual({ rules: [], common: [] });
 });
 
-test("a refusal said twice by the protocol, with another status or body, is a finding naming both", () => {
-  const rule = (name: string, status: number, body: string) =>
-    `  - {rule: ${name}, applies-to: x, fact: f, otherwise: {refusal: r, status: ${status}, body: "${body}"}, source: "a/b.ext:1"}`;
-  const wire = (rules: readonly string[], refuses: string) =>
-    checkProtocol(`target: t\nrules:\n${rules.join("\n")}\nrefuses:\n${refuses}`)
-      .findings;
+test("the shared trigger says each refusal of common.yaml, and none other", () => {
+  const { common: shared } = checkCommon(
+    'target: t\nrules: [{rule: a, applies-to: x, fact: f, otherwise: r, source: "a/b.ext:1"}]',
+  );
+  const check = (text: string) => checkCommonTrigger(text, shared).findings;
   expect([
-    wire([rule("a", 400, "x"), rule("b", 422, "x")], "  q: {status: 401, body: y}"),
-    wire([rule("a", 400, "x"), rule("b", 400, "z")], "  q: {status: 401, body: y}"),
-    wire([rule("a", 400, "x")], "  r: {status: 422, body: x}"),
-    wire([rule("a", 400, "x"), rule("b", 400, "x")], "  r: {status: 400, body: x}"),
+    check("refuses: {}"),
+    check("refuses: {r: {status: 401, body: x}, q: {status: 400, body: y}}"),
+    check("refuses: {r: {status: 401, body: x}}"),
   ]).toEqual([
-    [
-      'protocol.yaml: the refusal "r" is said by the rule "a" and by the rule "b" with another status',
-    ],
-    [
-      'protocol.yaml: the refusal "r" is said by the rule "a" and by the rule "b" with another body',
-    ],
-    [
-      'protocol.yaml: the refusal "r" is said by the rule "a" and by refuses with another status',
-    ],
+    ['common-trigger.yaml: refuses says nothing of "r", the refusal of "a"'],
+    ['common-trigger.yaml: no rule of common.yaml refuses by "q"'],
     [],
   ]);
-});
-
-test("an interface may say a common refusal with another status than the protocol", () => {
-  expect(
-    triggerFindings(
-      triggerText,
-      protocol && {
-        ...protocol,
-        refuses: { ...protocol.refuses, "not-found": { status: 410, body: "gone" } },
-      },
-    ),
-  ).toEqual([]);
 });
 
 test("a reader is told what its rules and its trigger lack at once", () => {
@@ -171,6 +160,6 @@ test("a reader is told what its rules and its trigger lack at once", () => {
   ).toEqual([
     'hints.yaml: no hint for the rule "exists"',
     "trigger.yaml: the trigger says no accepted status: answers.status lists each status an accepted call is answered with",
-    'trigger.yaml: refuses says nothing of "not-found", the refusal of "exists", nor does protocol.yaml',
+    'trigger.yaml: refuses says nothing of "not-found", the refusal of "exists", nor does common-trigger.yaml',
   ]);
 });

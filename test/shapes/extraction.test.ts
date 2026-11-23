@@ -253,11 +253,55 @@ test("the files of the roles' reading are no part of the extraction", () => {
   expect(
     parseExtraction([
       { path: "common.yaml", text: "x: 1" },
-      { path: "protocol.yaml", text: "x: 1" },
+      { path: "common-trigger.yaml", text: "x: 1" },
       { path: "operations/a/rules.yaml", text: "x: 1" },
       { path: "operations/a/scenarios/b.yaml", text: "x: 1" },
     ]).problems,
   ).toEqual([]);
+});
+
+test("target.yaml may say what the system runs with, a setting and the line that sets it", () => {
+  expect(
+    parseExtraction([
+      {
+        path: "target.yaml",
+        text: [
+          "target: t",
+          "start: [s]",
+          "alive: {method: get, path: /a, status: 200}",
+          "seed: []",
+          "reset: []",
+          "stop: []",
+          "api: {base-url: u}",
+          'runs-with: [{setting: "a is on", source: "exspec/target/c.yaml:1"}]',
+        ].join("\n"),
+      },
+      { path: "common-trigger.yaml", text: "refuses: {}" },
+    ]),
+  ).toEqual({
+    extraction: {
+      target: {
+        target: "t",
+        start: ["s"],
+        alive: { method: "get", path: "/a", status: 200 },
+        seed: [],
+        reset: [],
+        stop: [],
+        api: { "base-url": "u" },
+        "runs-with": [{ setting: "a is on", source: "exspec/target/c.yaml:1" }],
+      },
+      structures: [],
+      interfaces: [],
+      schemas: [],
+      operations: [],
+      facts: [],
+      scenarios: [],
+      references: [],
+      projections: [],
+      triggers: [],
+    },
+    problems: [],
+  });
 });
 
 test("operations/<name>.yaml is still an operation of the computed path", () => {

@@ -1,10 +1,9 @@
 import { z } from "zod";
+import { type CommonTrigger, commonTriggerSchema } from "../shapes/bindings.ts";
 import {
   type Common,
   commonSchema,
   hintsSchema,
-  type Protocol,
-  protocolSchema,
   type Rules,
   readYaml,
   rulesSchema,
@@ -26,44 +25,42 @@ export function checkCommon(text: string | undefined): {
   return { common: read.value, findings: [] };
 }
 
-// undefined text: the file is not there
-export function checkProtocol(text: string | undefined): {
-  readonly protocol?: Protocol;
-  readonly findings: readonly string[];
-} {
-  if (text === undefined) return { findings: ["protocol.yaml: missing"] };
-  const read = readYaml("protocol.yaml", text, protocolSchema);
+// undefined text: the file is not there; common undefined: common.yaml does not parse, and
+// names no refusal. A finding:
+//   common.yaml {rule: a, otherwise: r}, refuses {}   -> 'common-trigger.yaml: refuses says nothing of "r", the refusal of "a"'
+//   common.yaml no rule, refuses {r: …}              -> 'common-trigger.yaml: no rule of common.yaml refuses by "r"'
+export function checkCommonTrigger(
+  text: string | undefined,
+  common: Common | undefined,
+): { readonly commonTrigger?: CommonTrigger; readonly findings: readonly string[] } {
+  if (text === undefined) return { findings: ["common-trigger.yaml: missing"] };
+  const read = readYaml("common-trigger.yaml", text, commonTriggerSchema);
   if (!("value" in read)) return read;
-  return { protocol: read.value, findings: refusalsSaidTwice(read.value) };
-}
-
-// A refusal said by two places of the file, with a status or a body that differ:
-//   rules [{rule: a, otherwise: {refusal: r, status: 400, body: "x"}}], refuses {r: {status: 422, body: "x"}}
-//   -> 'protocol.yaml: the refusal "r" is said by the rule "a" and by refuses with another status'
-function refusalsSaidTwice({ rules, refuses }: Protocol): readonly string[] {
-  const said = [
-    ...rules.flatMap(({ rule, otherwise }) =>
-      otherwise === undefined ? [] : [{ by: `the rule "${rule}"`, ...otherwise }],
-    ),
-    ...Object.entries(refuses).map(([refusal, wire]) => ({
-      refusal,
-      by: "refuses",
-      ...wire,
-    })),
-  ];
-  return said.flatMap((one) => {
-    const first = said.find(({ refusal }) => refusal === one.refusal);
-    if (first === undefined || first === one) return [];
-    const differs = [
-      ...(first.status === one.status ? [] : ["status"]),
-      ...(first.body === one.body ? [] : ["body"]),
-    ];
-    return differs.length === 0
-      ? []
-      : [
-          `protocol.yaml: the refusal "${one.refusal}" is said by ${first.by} and by ${one.by} with another ${differs.join(" and ")}`,
-        ];
-  });
+  const { refuses } = read.value;
+  const rules = common?.rules ?? [];
+  const named = rules.filter(
+    ({ otherwise }, i) => rules.findIndex((one) => one.otherwise === otherwise) === i,
+  );
+  return {
+    commonTrigger: read.value,
+    findings:
+      common === undefined
+        ? []
+        : [
+            ...named
+              .filter(({ otherwise }) => !Object.hasOwn(refuses, otherwise))
+              .map(
+                ({ rule, otherwise }) =>
+                  `common-trigger.yaml: refuses says nothing of "${otherwise}", the refusal of "${rule}"`,
+              ),
+            ...Object.keys(refuses)
+              .filter((refusal) => !rules.some(({ otherwise }) => otherwise === refusal))
+              .map(
+                (refusal) =>
+                  `common-trigger.yaml: no rule of common.yaml refuses by "${refusal}"`,
+              ),
+          ],
+  };
 }
 
 const bounds = ["min-length", "max-length", "min", "max"] as const;

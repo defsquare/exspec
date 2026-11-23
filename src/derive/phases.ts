@@ -53,7 +53,7 @@ export function staticFindings(
 
 // A phase is done when the files say so, and the one before it is done: the target is not
 // started to find out. With no interface, nothing is read, built or judged.
-//   reading    structures, common, protocol and states.yaml not left, every interface read
+//   reading    structures, common, common-trigger and states.yaml not left, every interface read
 //   evidence   no scenario left to build, no finding of the builder's check, none to record
 //   judgement  no reference left to judge
 export function phasesOf(examined: Examined, left: Left): Phases {
@@ -73,7 +73,7 @@ export function phasesOf(examined: Examined, left: Left): Phases {
     interfaces &&
     !left.structures &&
     !left.common &&
-    !left.protocol &&
+    !left.commonTrigger &&
     !left.states &&
     every(() => true);
   const evidence =

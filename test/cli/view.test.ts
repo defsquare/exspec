@@ -1,14 +1,9 @@
 import { expect, test } from "bun:test";
 import { dataOf } from "../../src/cli/view.ts";
 import { judgeTask } from "../../src/derive/judge-task.ts";
-import { triggerSchema } from "../../src/shapes/bindings.ts";
+import { commonTriggerSchema, triggerSchema } from "../../src/shapes/bindings.ts";
 import { parseExtraction } from "../../src/shapes/extraction.ts";
-import {
-  commonSchema,
-  evidenceSchema,
-  protocolSchema,
-  rulesSchema,
-} from "../../src/shapes/roles.ts";
+import { commonSchema, evidenceSchema, rulesSchema } from "../../src/shapes/roles.ts";
 import { target } from "../files.ts";
 
 const interfaces = `
@@ -40,10 +35,7 @@ unsure:
   - {rule: exists, what: a negative id is not checked}
 `;
 
-const protocol = `
-target: t
-runs-with:
-  - {setting: security is on, source: "c.yaml:1"}
+const commonTrigger = `
 refuses: {unauthenticated: {status: 401, body: empty}}
 `;
 
@@ -81,7 +73,8 @@ const of =
     : judgeTask({
         bound,
         common: commonSchema.parse(Bun.YAML.parse(common)),
-        protocol: protocolSchema.parse(Bun.YAML.parse(protocol)),
+        commonTrigger: commonTriggerSchema.parse(Bun.YAML.parse(commonTrigger)),
+        runsWith: extraction.target?.["runs-with"],
         rules: rulesSchema.parse(Bun.YAML.parse(rules)),
         trigger: triggerSchema.parse(Bun.YAML.parse(trigger)),
         states: [],
@@ -104,7 +97,7 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
       { path: "interfaces.yaml", text: interfaces },
       { path: "structures.yaml", text: structures },
       { path: "common.yaml", text: common },
-      { path: "protocol.yaml", text: protocol },
+      { path: "common-trigger.yaml", text: commonTrigger },
       { path: "operations/f/rules.yaml", text: rules },
       { path: "operations/f/trigger.yaml", text: trigger },
       { path: "operations/f/hints.yaml", text: hints },
@@ -168,7 +161,6 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
                 doubts: [],
               },
             ],
-            protocol: [],
           },
         },
       ],
@@ -203,7 +195,7 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
       references: [],
     },
     common: commonSchema.parse(Bun.YAML.parse(common)),
-    protocol: protocolSchema.parse(Bun.YAML.parse(protocol)),
+    commonTrigger: commonTriggerSchema.parse(Bun.YAML.parse(commonTrigger)),
     problems: [
       { file: "operations/f", at: "", message: 'no scenario for the rule "signed-in"' },
     ],
@@ -273,7 +265,7 @@ test("view draws a scenario's verdict the same with a state's judgement on it be
     { path: "interfaces.yaml", text: interfaces },
     { path: "structures.yaml", text: structures },
     { path: "common.yaml", text: common },
-    { path: "protocol.yaml", text: protocol },
+    { path: "common-trigger.yaml", text: commonTrigger },
     { path: "operations/f/rules.yaml", text: rules },
     { path: "operations/f/trigger.yaml", text: trigger },
     { path: "operations/f/hints.yaml", text: hints },
@@ -314,7 +306,7 @@ test("view draws each service with the provider rendering it, and tells a file t
     { path: "interfaces.yaml", text: interfaces },
     { path: "structures.yaml", text: structures },
     { path: "common.yaml", text: common },
-    { path: "protocol.yaml", text: protocol },
+    { path: "common-trigger.yaml", text: commonTrigger },
     { path: "operations/f/rules.yaml", text: rules },
     { path: "operations/f/trigger.yaml", text: trigger },
     { path: "operations/f/hints.yaml", text: hints },
@@ -373,7 +365,7 @@ test("view hands the page a scenario with no service step and no side effect as 
     { path: "interfaces.yaml", text: interfaces },
     { path: "structures.yaml", text: structures },
     { path: "common.yaml", text: common },
-    { path: "protocol.yaml", text: protocol },
+    { path: "common-trigger.yaml", text: commonTrigger },
     { path: "operations/f/rules.yaml", text: rules },
     { path: "operations/f/trigger.yaml", text: trigger },
     { path: "operations/f/hints.yaml", text: hints },
@@ -414,7 +406,7 @@ test("view lists what states.yaml says wrong, and each state not judged on its p
     { path: "interfaces.yaml", text: interfaces },
     { path: "structures.yaml", text: structures },
     { path: "common.yaml", text: common },
-    { path: "protocol.yaml", text: protocol },
+    { path: "common-trigger.yaml", text: commonTrigger },
     { path: "operations/f/rules.yaml", text: rules },
     { path: "operations/f/trigger.yaml", text: trigger },
     { path: "operations/f/hints.yaml", text: hints },
@@ -461,7 +453,7 @@ const readFolder = [
   { path: "interfaces.yaml", text: interfaces },
   { path: "structures.yaml", text: structures },
   { path: "common.yaml", text: common },
-  { path: "protocol.yaml", text: protocol },
+  { path: "common-trigger.yaml", text: commonTrigger },
   { path: "operations/f/rules.yaml", text: rules },
   { path: "operations/f/trigger.yaml", text: trigger },
   { path: "operations/f/hints.yaml", text: hints },

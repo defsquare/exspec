@@ -25,7 +25,7 @@ What `extract` runs in its last three phases, by hand: for one interface (`--onl
 again on purpose.
 
 ```
-exspec roles read <dir> [--only <interface>] [--jobs n]     # the structures, then a reader per interface -> exspec/operations/, common.yaml, protocol.yaml
+exspec roles read <dir> [--only <interface>] [--jobs n]     # the structures, then a reader per interface -> exspec/operations/, common.yaml, common-trigger.yaml
 exspec roles build <dir> [--only <interface>] [--jobs n]    # target up, a scenario builder per interface, each scenario played -> scenarios/, evidence/
 exspec roles record <dir> [--only <interface>] [--force]    # each scenario played again on fresh stacks: a reference, its noise beside it
 exspec roles judge <dir> [--only <interface>] [--jobs n]    # a judge per interface, no tool -> judgements.yaml

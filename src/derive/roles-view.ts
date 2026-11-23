@@ -1,10 +1,9 @@
-import type { Trigger } from "../shapes/bindings.ts";
+import type { CommonTrigger, Trigger } from "../shapes/bindings.ts";
 import type { Problem } from "../shapes/extraction.ts";
 import type {
   Common,
   Evidence,
   PlayableScenario,
-  Protocol,
   RuleJudgement,
   Rules,
   SideEffect,
@@ -54,11 +53,10 @@ const words: readonly Word[] = [
 ];
 
 // one line of an operation's reading, in the order it applies: the shared requirements it
-// names, its own, its effects, what it answers. A rule of the target's wire is a line of
-// kind protocol, apart. status and body: how the refusal leaves on this target, when its
-// trigger or the protocol says it
+// names, its own, its effects, what it answers. status and body: how the refusal leaves on
+// this target, when its trigger or the shared trigger says it
 export type Line = {
-  readonly kind: "requires" | "effect" | "answers" | "protocol";
+  readonly kind: "requires" | "effect" | "answers";
   readonly rule: string;
   readonly shared: boolean;
   readonly input?: string;
@@ -121,8 +119,6 @@ export type RuleView = {
   readonly rule: string;
   readonly provenance: Word;
   readonly reason?: string;
-  // a rule of the target's wire, not of the specification
-  readonly protocol?: true;
   readonly by: readonly {
     readonly scenario: string;
     readonly verdict: Word;
@@ -167,60 +163,26 @@ export function problemOf(folder: string, finding: string): Problem {
     : { file: folder === "" ? file : `${folder}/${file}`, at: "", message };
 }
 
-// how a refusal leaves on this target: as the trigger says it, else as the protocol does
+// how a refusal leaves on this target: as the trigger says it, else as the shared trigger
+// does
 //   "r", trigger refuses {r: {status: 404}} -> {status: 404}; a refusal neither says -> {}
 function wireOf(
   refusal: string,
   trigger: Trigger | undefined,
-  protocol: Protocol | undefined,
+  commonTrigger: CommonTrigger | undefined,
 ): { readonly status?: number; readonly body?: string } {
-  const wire = trigger?.refuses[refusal] ?? protocol?.refuses[refusal];
+  const wire = trigger?.refuses[refusal] ?? commonTrigger?.refuses[refusal];
   if (wire === undefined) return {};
   return wire.body === undefined
     ? { status: wire.status }
     : { status: wire.status, body: wire.body };
 }
 
-// the target's rules about its wire that its trigger says hold on the operation
-function protocolLinesOf(
-  trigger: Trigger | undefined,
-  protocol: Protocol | undefined,
-): readonly Line[] {
-  return (trigger?.protocol ?? []).map((rule): Line => {
-    const wire = protocol?.rules.find((r) => r.rule === rule);
-    if (wire === undefined)
-      return {
-        kind: "protocol",
-        rule,
-        shared: true,
-        short: "not a rule of protocol.yaml",
-        doubts: [],
-      };
-    const { fact, otherwise, source } = wire;
-    return {
-      kind: "protocol",
-      rule,
-      shared: true,
-      fact,
-      ...(otherwise === undefined
-        ? {}
-        : {
-            otherwise: otherwise.refusal,
-            status: otherwise.status,
-            body: otherwise.body,
-          }),
-      short: fact,
-      source,
-      doubts: [],
-    };
-  });
-}
-
 function linesOf(
   rules: Rules,
   common: Common | undefined,
   trigger: Trigger | undefined,
-  protocol: Protocol | undefined,
+  commonTrigger: CommonTrigger | undefined,
 ): readonly Line[] {
   const doubts = (rule: string) =>
     rules.unsure.filter((u) => u.rule === rule).map(({ what }) => what);
@@ -241,7 +203,7 @@ function linesOf(
             shared: true,
             fact: shared.fact,
             otherwise: shared.otherwise,
-            ...wireOf(shared.otherwise, trigger, protocol),
+            ...wireOf(shared.otherwise, trigger, commonTrigger),
             short: shared.fact,
             source: shared.source,
             doubts: doubts(rule),
@@ -257,7 +219,7 @@ function linesOf(
         ...(service === undefined ? {} : { service }),
         fact,
         otherwise,
-        ...wireOf(otherwise, trigger, protocol),
+        ...wireOf(otherwise, trigger, commonTrigger),
         short: fact,
         source,
         doubts: doubts(rule),
@@ -358,7 +320,7 @@ export function viewOfRoles({
   target,
   structures,
   common,
-  protocol,
+  commonTrigger,
   findings,
   gaps: ofStates = [],
   interfaces,
@@ -366,8 +328,8 @@ export function viewOfRoles({
   readonly target: Target | undefined;
   readonly structures: readonly Structure[];
   readonly common: Common | undefined;
-  readonly protocol: Protocol | undefined;
-  // of structures.yaml and common.yaml, each "file: message" relative to exspec/
+  readonly commonTrigger: CommonTrigger | undefined;
+  // of structures.yaml, common.yaml and common-trigger.yaml, each "file: message" relative to exspec/
   readonly findings: readonly string[];
   // of states.yaml: each state not judged on its path yet
   readonly gaps?: readonly RolesGap[];
@@ -388,7 +350,8 @@ export function viewOfRoles({
           : judgeTask({
               bound,
               common,
-              protocol,
+              commonTrigger,
+              runsWith: target?.["runs-with"],
               rules,
               trigger,
               recordings: evidence,
@@ -442,14 +405,11 @@ export function viewOfRoles({
       interface: { method: bound.method, pattern: bound.pattern },
       takes: rules.takes ?? {},
       answers: rules.answers,
-      lines: linesOf(rules, common, trigger, protocol),
-      protocol: protocolLinesOf(trigger, protocol),
+      lines: linesOf(rules, common, trigger, commonTrigger),
     },
   }));
-  // a rule of the target's wire is judged as a rule is, and marked so that nothing counts it
-  // with the specification's
-  const rules = operations.flatMap(({ operation: { operation, lines, protocol } }) =>
-    [...lines, ...protocol].map(({ rule, kind }): RuleView => {
+  const rules = operations.flatMap(({ operation: { operation, lines } }) =>
+    lines.map(({ rule }): RuleView => {
       const of = scenarios.filter((s) => s.operation === operation && s.rule === rule);
       const provenance = wordOf(of.flatMap(({ judgement }) => judgement?.verdict ?? []));
       const reason =
@@ -463,7 +423,6 @@ export function viewOfRoles({
         rule,
         provenance,
         ...(provenance === "unjudged" ? { reason } : {}),
-        ...(kind === "protocol" ? { protocol: true } : {}),
         by: of.map(({ path, judgement }) =>
           judgement === null
             ? { scenario: path, verdict: "unjudged" }
@@ -540,7 +499,7 @@ export function viewOfRoles({
       references: [],
     },
     common: common ?? null,
-    protocol: protocol ?? null,
+    commonTrigger: commonTrigger ?? null,
     problems: [
       ...findings.map((finding) => problemOf("", finding)),
       ...interfaces.flatMap(({ bound, findings }) =>
@@ -552,10 +511,7 @@ export function viewOfRoles({
     bindings: [],
     counts: {
       rules: Object.fromEntries(
-        words.map((word) => [
-          word,
-          rules.filter((r) => !r.protocol && r.provenance === word).length,
-        ]),
+        words.map((word) => [word, rules.filter((r) => r.provenance === word).length]),
       ),
     },
     placed,
