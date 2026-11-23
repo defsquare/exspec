@@ -62,8 +62,8 @@ already exists, and add none a target has not asked for: the spike's fit test
 Four groups, and the direction of every reference (`docs/brief/metamodel.md`):
 
 ```
-proof           scenario, call, side effect          points at the specification
-specification   operation, rule, fact, structure, field, service, condition    points at nothing below it
+proof           scenario, call, side effect, path    points at the specification
+specification   operation, rule, fact, structure, field, service, condition, state    points at nothing below it
 bindings        projection, trigger, detects, renders    the only shapes that know both sides
 target          target, interface, protocol, observable (a provider is one)    points at nothing above it
 ```
@@ -71,6 +71,15 @@ target          target, interface, protocol, observable (a provider is one)    p
 **What survives the target being rewritten is of the specification; what may not is of the
 target** (ADR-0019). A service — what the system needs of someone else — is of the
 specification; the provider this target calls to get it is of the target.
+
+**A state is a business situation a scenario starts from** (ADR-0025): a name, the
+structures it is about, and what a reading of the system shows once in it — never how it
+was reached, never a row of the store. It is of the specification. Its path — the scenario
+that reaches it, and the state's sentence judged on that scenario's recording — is of the
+proof; a state is reached when that judgement holds. One entry of `states.yaml` holds both,
+the state and the name of its path: the one place a file of the specification names a
+scenario. A state belongs to scenarios, not to a rule: the scenarios of one rule may start
+from different states.
 
 Three rules the design rests on — a change to one of them is an ADR:
 
@@ -127,8 +136,8 @@ lines, ask which step it is doing.
 - **Data is plain and immutable**: `readonly` objects and arrays, no class for a shape, no
   method on data. A variant is a discriminated union on a literal field, matched
   exhaustively (`never` in the default branch). One exception, decided by
-  ADR-0019 and ADR-0024: a scenario's step is told by the key it alone has — `call`,
-  `request` or `service`; no literal field repeats the notation.
+  ADR-0019, ADR-0024 and ADR-0025: a scenario's step is told by the key it alone has —
+  `call`, `request`, `service` or `state`; no literal field repeats the notation.
 - **No `any`, no non-null `!`, no `as` cast** outside a schema's parse boundary. What
   comes from outside (a file, an answer, the agent) is `unknown` until a schema parses it.
 - **Destructure by name.** A tuple wider than two is an object.
