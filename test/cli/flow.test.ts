@@ -4,29 +4,30 @@ import { countsOf, duration, panelOf } from "../../src/cli/flow-panel.ts";
 import type { Event } from "../../src/shapes/event.ts";
 
 test("a run is folded into its boxes, its panel and its totals", () => {
+  const ofStep = { phase: "target", step: "interfaces" } as const;
   const events: readonly (readonly [number, Event])[] = [
     [0, { type: "command-started", command: "extract", dir: "/abs/dir" }],
-    [1, { type: "phase-skipped", phase: "target" }],
-    [2, { type: "phase-started", phase: "interfaces" }],
-    [3, { type: "agent-said", phase: "interfaces", text: "a\nb" }],
-    [4, { type: "agent-used", phase: "interfaces", tool: "Read", about: "f.yaml" }],
-    [5, { type: "agent-ended", phase: "interfaces", turns: 3, seconds: 1, cost: 0.25 }],
+    [2, { type: "phase-started", phase: "target" }],
+    [3, { type: "agent-said", ...ofStep, text: "a\nb" }],
+    [4, { type: "agent-used", ...ofStep, tool: "Read", about: "f.yaml" }],
+    [5, { type: "agent-ended", ...ofStep, turns: 3, seconds: 1, cost: 0.25 }],
     [6, { type: "target-step", step: "alive", state: "done" }],
     [
       7,
       {
         type: "gate-checked",
-        phase: "interfaces",
+        ...ofStep,
         ok: false,
         findings: ["f.yaml a.0: m"],
       },
     ],
-    [8, { type: "agent-ended", phase: "interfaces", turns: 2, seconds: 1, cost: 0.5 }],
-    [9, { type: "gate-checked", phase: "interfaces", ok: true, findings: [] }],
-    [10, { type: "phase-finished", phase: "interfaces", ok: true }],
-    [11, { type: "agent-said", role: "reader", text: "ignored" }],
-    [12, { type: "command-failed", message: "m" }],
-    [13, { type: "command-finished", command: "extract", ok: false }],
+    [8, { type: "agent-ended", ...ofStep, turns: 2, seconds: 1, cost: 0.5 }],
+    [9, { type: "gate-checked", ...ofStep, ok: true, findings: [] }],
+    [10, { type: "phase-finished", phase: "target", ok: true }],
+    [11, { type: "phase-skipped", phase: "specification" }],
+    [12, { type: "agent-said", role: "reader", text: "ignored" }],
+    [13, { type: "command-failed", message: "m" }],
+    [14, { type: "command-finished", command: "extract", ok: false }],
   ];
   const flow = events.reduce(
     (folded, [at, event]) => flowAfter(folded, event, at),
@@ -36,8 +37,9 @@ test("a run is folded into its boxes, its panel and its totals", () => {
     command: "extract",
     dir: "/abs/dir",
     startedAt: 0,
-    endedAt: 13,
+    endedAt: 14,
     ok: false,
+    step: "interfaces",
     gate: { round: 1, findings: ["f.yaml a.0: m"] },
     said: "a",
     used: { tool: "Read", about: "f.yaml" },
@@ -47,31 +49,96 @@ test("a run is folded into its boxes, its panel and its totals", () => {
     troubles: [],
     skips: [],
     boxes: [
-      { phase: "target", state: "skipped", round: 0 },
       {
-        phase: "interfaces",
+        phase: "target",
         state: "done",
         round: 2,
         cost: 0.75,
         startedAt: 2,
         endedAt: 10,
       },
-      { phase: "reading", state: "to-do", round: 0 },
-      { phase: "evidence", state: "to-do", round: 0 },
-      { phase: "judgement", state: "to-do", round: 0 },
+      { phase: "specification", state: "skipped", round: 0 },
+      { phase: "proof", state: "to-do", round: 0 },
     ],
   };
   expect(flow).toEqual(expected);
 });
 
+test("a session's step starting counts its rounds from one, the last step's gate cleared", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "target" },
+    { type: "agent-ended", phase: "target", step: "target", turns: 1, seconds: 1 },
+    {
+      type: "gate-checked",
+      phase: "target",
+      step: "target",
+      ok: false,
+      findings: ["a"],
+    },
+    { type: "gate-checked", phase: "target", step: "target", ok: true, findings: [] },
+    { type: "agent-ended", phase: "target", step: "interfaces", turns: 1, seconds: 1 },
+  ];
+  const fold = (all: readonly Event[]) =>
+    all.reduce((flow, event) => flowAfter(flow, event, 1), emptyFlow);
+  expect({
+    target: panelOf(fold(events.slice(0, 4)), 3),
+    interfaces: panelOf(fold(events), 3),
+  }).toEqual({
+    target: {
+      kind: "session",
+      phase: "target",
+      step: "target",
+      running: { round: 2 },
+      findings: ["a"],
+      more: 0,
+    },
+    interfaces: {
+      kind: "session",
+      phase: "target",
+      step: "interfaces",
+      running: { round: 1 },
+      findings: [],
+      more: 0,
+    },
+  });
+});
+
+test("a role's event after a session's makes the panel the roles'", () => {
+  const events: readonly Event[] = [
+    { type: "phase-started", phase: "target" },
+    { type: "agent-ended", phase: "target", step: "interfaces", turns: 1, seconds: 1 },
+    { type: "roles-queued", role: "reader", count: 1 },
+    { type: "role-started", role: "reader", interface: "f" },
+  ];
+  expect(
+    panelOf(
+      events.reduce((flow, event) => flowAfter(flow, event, 1), emptyFlow),
+      3,
+    ),
+  ).toEqual({
+    kind: "roles",
+    phase: "target",
+    running: true,
+    sessions: [{ role: "reader", interface: "f", startedAt: 1, round: 1 }],
+    troubles: [],
+    more: 0,
+  });
+});
+
 test("a phase starting empties the panel", () => {
   const events: readonly Event[] = [
-    { type: "agent-said", phase: "target", text: "a" },
-    { type: "agent-used", phase: "target", tool: "t", about: "f" },
+    { type: "agent-said", phase: "target", step: "target", text: "a" },
+    { type: "agent-used", phase: "target", step: "target", tool: "t", about: "f" },
     { type: "target-step", step: "alive", state: "done" },
-    { type: "gate-checked", phase: "target", ok: false, findings: ["m"] },
+    {
+      type: "gate-checked",
+      phase: "target",
+      step: "target",
+      ok: false,
+      findings: ["m"],
+    },
     { type: "command-failed", message: "m" },
-    { type: "phase-started", phase: "interfaces" },
+    { type: "phase-started", phase: "specification" },
   ];
   expect(events.reduce((flow, event) => flowAfter(flow, event, 1), emptyFlow)).toEqual({
     failures: ["m"],
@@ -79,18 +146,16 @@ test("a phase starting empties the panel", () => {
     troubles: [],
     skips: [],
     boxes: [
-      { phase: "target", state: "to-do", round: 1 },
-      { phase: "interfaces", state: "running", round: 1, startedAt: 1 },
-      { phase: "reading", state: "to-do", round: 0 },
-      { phase: "evidence", state: "to-do", round: 0 },
-      { phase: "judgement", state: "to-do", round: 0 },
+      { phase: "target", state: "to-do", round: 2 },
+      { phase: "specification", state: "running", round: 1, startedAt: 1 },
+      { phase: "proof", state: "to-do", round: 0 },
     ],
   });
 });
 
 test("a roles' phase keeps its sessions that run and what is wrong by session", () => {
   const events: readonly (readonly [number, Event])[] = [
-    [1, { type: "phase-started", phase: "reading" }],
+    [1, { type: "phase-started", phase: "specification" }],
     [2, { type: "role-skipped", role: "structures-reader", why: "w" }],
     [3, { type: "role-started", role: "reader", interface: "f" }],
     [4, { type: "role-started", role: "reader", interface: "g" }],
@@ -135,7 +200,7 @@ test("a roles' phase keeps its sessions that run and what is wrong by session", 
     troubles: flow.troubles,
     gate: flow.gate,
     said: flow.said,
-    counts: countsOf("reading", flow),
+    counts: countsOf("specification", flow),
     panel: panelOf(flow, 1),
   }).toEqual({
     sessions: [
@@ -156,7 +221,7 @@ test("a roles' phase keeps its sessions that run and what is wrong by session", 
     counts: ["1 read", "1 running", "1 failed"],
     panel: {
       kind: "roles",
-      phase: "reading",
+      phase: "specification",
       running: true,
       sessions: [
         {
@@ -175,7 +240,7 @@ test("a roles' phase keeps its sessions that run and what is wrong by session", 
 
 test("a roles' phase takes the cost of its sessions", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "reading" },
+    { type: "phase-started", phase: "specification" },
     {
       type: "agent-ended",
       role: "reader",
@@ -194,8 +259,8 @@ test("a roles' phase takes the cost of its sessions", () => {
     },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
-  expect(flow.boxes.find(({ phase }) => phase === "reading")).toEqual({
-    phase: "reading",
+  expect(flow.boxes.find(({ phase }) => phase === "specification")).toEqual({
+    phase: "specification",
     state: "running",
     round: 1,
     cost: 0.1 + 0.2,
@@ -203,9 +268,9 @@ test("a roles' phase takes the cost of its sessions", () => {
   });
 });
 
-test("the evidence phase counts what it wrote, kept and found unstable", () => {
+test("the proof counts what it wrote, kept and found unstable", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "evidence" },
+    { type: "phase-started", phase: "proof" },
     { type: "reference-written", path: "p", noise: 0 },
     { type: "reference-kept", path: "q" },
     {
@@ -218,7 +283,7 @@ test("the evidence phase counts what it wrote, kept and found unstable", () => {
     },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
-  expect({ counts: countsOf("evidence", flow), troubles: flow.troubles }).toEqual({
+  expect({ counts: countsOf("proof", flow), troubles: flow.troubles }).toEqual({
     counts: ["1 reference", "1 unstable", "1 kept"],
     troubles: [{ by: "r", lines: ["unstable", "a: 1, then 2", "b: 1, then 2"] }],
   });
@@ -226,7 +291,7 @@ test("the evidence phase counts what it wrote, kept and found unstable", () => {
 
 test("a failed roles' phase gives every trouble once the extraction has failed", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "evidence" },
+    { type: "phase-started", phase: "proof" },
     {
       type: "gate-checked",
       role: "builder",
@@ -235,13 +300,13 @@ test("a failed roles' phase gives every trouble once the extraction has failed",
       findings: ["x", "y"],
     },
     { type: "role-finished", role: "builder", interface: "f", ok: false },
-    { type: "phase-finished", phase: "evidence", ok: false },
+    { type: "phase-finished", phase: "proof", ok: false },
     { type: "command-finished", command: "extract", ok: false },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
   expect(panelOf(flow, 1)).toEqual({
     kind: "roles",
-    phase: "evidence",
+    phase: "proof",
     running: false,
     sessions: [],
     troubles: [{ by: "f", lines: ["x", "y"] }],
@@ -263,11 +328,11 @@ test("the verdicts counted are kept", () => {
 
 test("a phase starting empties the sessions and the troubles", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "reading" },
+    { type: "phase-started", phase: "specification" },
     { type: "role-started", role: "reader", interface: "f" },
     { type: "gate-checked", role: "reader", interface: "f", ok: false, findings: ["x"] },
     { type: "roles-queued", role: "reader", count: 2 },
-    { type: "phase-started", phase: "evidence" },
+    { type: "phase-started", phase: "proof" },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
   expect({
@@ -283,7 +348,7 @@ test("a phase starting empties the sessions and the troubles", () => {
 
 test("a roles' step queued counts its sessions over, not the readers before it", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "reading" },
+    { type: "phase-started", phase: "specification" },
     { type: "role-skipped", role: "structures-reader", why: "w" },
     { type: "role-started", role: "common-reader" },
     { type: "role-finished", role: "common-reader", ok: true },
@@ -291,15 +356,15 @@ test("a roles' step queued counts its sessions over, not the readers before it",
     { type: "role-skipped", role: "reader", interface: "f", why: "w" },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
-  expect({ queued: flow.queued, counts: countsOf("reading", flow) }).toEqual({
-    queued: { phase: "reading", role: "reader", count: 2, done: 1 },
+  expect({ queued: flow.queued, counts: countsOf("specification", flow) }).toEqual({
+    queued: { phase: "specification", role: "reader", count: 2, done: 1 },
     counts: ["1 of 2 readers", "1 skipped"],
   });
 });
 
 test("a role's failure is its session's trouble, in place of its failed gate", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "reading" },
+    { type: "phase-started", phase: "specification" },
     { type: "role-started", role: "reader", interface: "f" },
     { type: "gate-checked", role: "reader", interface: "f", ok: false, findings: ["x"] },
     { type: "role-failed", role: "reader", interface: "f", message: "m" },
@@ -351,7 +416,7 @@ test("the recording of the references shows while no session runs, until the nex
   const fold = (events: readonly Event[]) =>
     events.reduce((flow, event) => flowAfter(flow, event, 1), emptyFlow);
   const recording: readonly Event[] = [
-    { type: "phase-started", phase: "evidence" },
+    { type: "phase-started", phase: "proof" },
     { type: "steps-played", interface: "f", scenario: "a", evidence },
   ];
   const withSession = fold([
@@ -361,11 +426,11 @@ test("the recording of the references shows while no session runs, until the nex
   expect({
     recording: panelOf(fold(recording), 3),
     withSession: panelOf(withSession, 3),
-    next: fold([...recording, { type: "phase-started", phase: "judgement" }]).played,
+    next: fold([...recording, { type: "phase-started", phase: "proof" }]).played,
   }).toEqual({
     recording: {
       kind: "roles",
-      phase: "evidence",
+      phase: "proof",
       running: true,
       played: "f/a",
       sessions: [],
@@ -374,7 +439,7 @@ test("the recording of the references shows while no session runs, until the nex
     },
     withSession: {
       kind: "roles",
-      phase: "evidence",
+      phase: "proof",
       running: true,
       sessions: [{ role: "builder", interface: "g", startedAt: 1, round: 1 }],
       troubles: [],
@@ -386,7 +451,7 @@ test("the recording of the references shows while no session runs, until the nex
 
 test("a box says what it counts: the scenarios, then the sessions", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "evidence" },
+    { type: "phase-started", phase: "proof" },
     { type: "roles-queued", role: "builder", count: 9 },
     { type: "role-skipped", role: "builder", interface: "f", why: "w" },
     { type: "role-started", role: "builder", interface: "g" },
@@ -397,7 +462,7 @@ test("a box says what it counts: the scenarios, then the sessions", () => {
     { type: "scenario-unstable", path: "r", differences: [] },
   ];
   const flow = events.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
-  expect(countsOf("evidence", flow)).toEqual([
+  expect(countsOf("proof", flow)).toEqual([
     "1 reference",
     "1 unstable",
     "1 kept",
@@ -422,15 +487,15 @@ test("a command of the roles is folded as the phase it does", () => {
     emptyFlow,
   );
   expect({
-    box: flow.boxes.find(({ phase }) => phase === "reading"),
-    counts: countsOf("reading", flow),
+    box: flow.boxes.find(({ phase }) => phase === "specification"),
+    counts: countsOf("specification", flow),
     panel: panelOf(flow, 3),
   }).toEqual({
-    box: { phase: "reading", state: "failed", round: 1, startedAt: 0, endedAt: 5 },
+    box: { phase: "specification", state: "failed", round: 1, startedAt: 0, endedAt: 5 },
     counts: ["1 failed"],
     panel: {
       kind: "roles",
-      phase: "reading",
+      phase: "specification",
       running: false,
       sessions: [],
       troubles: [{ by: "f", lines: ["m"] }],
@@ -451,8 +516,14 @@ test("duration writes a time short", () => {
 test("panelOf cuts a running phase's findings and gives a failed extraction all of them", () => {
   const failing: readonly Event[] = [
     { type: "phase-started", phase: "target" },
-    { type: "agent-ended", phase: "target", turns: 2, seconds: 1 },
-    { type: "gate-checked", phase: "target", ok: false, findings: ["a", "b", "c"] },
+    { type: "agent-ended", phase: "target", step: "target", turns: 2, seconds: 1 },
+    {
+      type: "gate-checked",
+      phase: "target",
+      step: "target",
+      ok: false,
+      findings: ["a", "b", "c"],
+    },
   ];
   const ending: readonly Event[] = [
     { type: "phase-finished", phase: "target", ok: false },
@@ -470,11 +541,18 @@ test("panelOf cuts a running phase's findings and gives a failed extraction all 
     running: {
       kind: "session",
       phase: "target",
+      step: "target",
       running: { round: 2 },
       findings: ["a", "b"],
       more: 1,
     },
-    failed: { kind: "session", phase: "target", findings: ["a", "b", "c"], more: 0 },
+    failed: {
+      kind: "session",
+      phase: "target",
+      step: "target",
+      findings: ["a", "b", "c"],
+      more: 0,
+    },
     box: {
       phase: "target",
       state: "failed",
@@ -501,7 +579,7 @@ test("a command of the roles keeps the problems of the files it reads first", ()
 
 test("the interfaces passed over are counted by the reason given", () => {
   const events: readonly Event[] = [
-    { type: "phase-started", phase: "judgement" },
+    { type: "phase-started", phase: "proof" },
     { type: "role-skipped", role: "judge", interface: "f", why: "w" },
     { type: "role-skipped", role: "judge", interface: "g", why: "x" },
     { type: "role-skipped", role: "judge", interface: "h", why: "w" },
@@ -510,7 +588,7 @@ test("the interfaces passed over are counted by the reason given", () => {
     all.reduce((folded, event) => flowAfter(folded, event, 1), emptyFlow);
   expect({
     skips: fold(events).skips,
-    next: fold([...events, { type: "phase-started", phase: "reading" }]).skips,
+    next: fold([...events, { type: "phase-started", phase: "specification" }]).skips,
   }).toEqual({
     skips: [
       { why: "w", count: 2 },

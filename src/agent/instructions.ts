@@ -1,5 +1,4 @@
-import type { AgentPhase } from "../derive/phases.ts";
-import type { Role } from "../shapes/event.ts";
+import type { Role, SessionStep } from "../shapes/event.ts";
 import interfaces from "./instructions/phase-interfaces.md" with { type: "text" };
 import target from "./instructions/phase-target.md" with { type: "text" };
 import builder from "./instructions/role-builder.md" with { type: "text" };
@@ -16,7 +15,7 @@ import system from "./instructions/system.md" with { type: "text" };
 
 export type Instructions = {
   readonly system: string;
-  readonly phases: Readonly<Record<AgentPhase, string>>;
+  readonly steps: Readonly<Record<SessionStep, string>>;
 };
 
 // commandLine: "bun '/abs/src/cli/main.ts'" from the sources, "'/abs/exspec'" compiled
@@ -24,7 +23,7 @@ export function instructionsFor(commandLine: string): Instructions {
   const fill = (text: string) => text.replaceAll("{{exspec}}", commandLine);
   return {
     system: fill(system),
-    phases: {
+    steps: {
       target: fill(target),
       interfaces: fill(interfaces),
     },

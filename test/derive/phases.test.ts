@@ -26,14 +26,12 @@ function phasesAt(files: ReturnType<typeof filesOf>) {
 test("an empty extraction has every phase to do", () => {
   expect(phasesOf(declaredIn([]), nothingLeft)).toEqual({
     target: "to-do",
-    interfaces: "to-do",
-    reading: "to-do",
-    evidence: "to-do",
-    judgement: "to-do",
+    specification: "to-do",
+    proof: "to-do",
   });
 });
 
-test("a target with a problem is to do, the interfaces too", () => {
+test("a target with a problem leaves every phase to do", () => {
   expect(
     phasesOf(
       declaredIn(
@@ -43,34 +41,28 @@ test("a target with a problem is to do, the interfaces too", () => {
     ),
   ).toEqual({
     target: "to-do",
-    interfaces: "to-do",
-    reading: "to-do",
-    evidence: "to-do",
-    judgement: "to-do",
+    specification: "to-do",
+    proof: "to-do",
   });
 });
 
-test("with no interface declared, nothing is read, built or judged", () => {
+test("with no interface declared, the target and the two after it are to do", () => {
   expect(phasesOf(declaredIn(sourceOf({ "target.yaml": target })), nothingLeft)).toEqual({
-    target: "done",
-    interfaces: "to-do",
-    reading: "to-do",
-    evidence: "to-do",
-    judgement: "to-do",
+    target: "to-do",
+    specification: "to-do",
+    proof: "to-do",
   });
 });
 
-test("an interface not read leaves the reading to do", () => {
+test("an interface not read leaves the specification and the proof to do", () => {
   expect(phasesAt(sourceOf(declared))).toEqual({
     target: "done",
-    interfaces: "done",
-    reading: "to-do",
-    evidence: "to-do",
-    judgement: "to-do",
+    specification: "to-do",
+    proof: "to-do",
   });
 });
 
-test("every interface read, the reading is to do while states.yaml is missing", () => {
+test("every interface read, the specification is to do while states.yaml is missing", () => {
   const files = filesOf(points.judged).filter(({ path }) => path !== "states.yaml");
   expect({
     missing: phasesAt(files),
@@ -78,58 +70,46 @@ test("every interface read, the reading is to do while states.yaml is missing", 
   }).toEqual({
     missing: {
       target: "done",
-      interfaces: "done",
-      reading: "to-do",
-      evidence: "to-do",
-      judgement: "to-do",
+      specification: "to-do",
+      proof: "to-do",
     },
     empty: {
       target: "done",
-      interfaces: "done",
-      reading: "done",
-      evidence: "done",
-      judgement: "done",
+      specification: "done",
+      proof: "done",
     },
   });
 });
 
-test("every interface read, a rule without its scenario leaves the evidence to do", () => {
+test("every interface read, a rule without its scenario leaves the proof to do", () => {
   expect(phasesAt(filesOf(points["no scenario"]))).toEqual({
     target: "done",
-    interfaces: "done",
-    reading: "done",
-    evidence: "to-do",
-    judgement: "to-do",
+    specification: "done",
+    proof: "to-do",
   });
 });
 
-test("an evidence played once leaves the evidence to do", () => {
+test("an evidence played once leaves the proof to do", () => {
   expect(phasesAt(filesOf(points["played once"]))).toEqual({
     target: "done",
-    interfaces: "done",
-    reading: "done",
-    evidence: "to-do",
-    judgement: "to-do",
+    specification: "done",
+    proof: "to-do",
   });
 });
 
-test("every scenario a reference, one not judged leaves the judgement to do", () => {
+test("every scenario a reference, one not judged leaves the proof to do", () => {
   expect(phasesAt(filesOf(points["a reference"]))).toEqual({
     target: "done",
-    interfaces: "done",
-    reading: "done",
-    evidence: "done",
-    judgement: "to-do",
+    specification: "done",
+    proof: "to-do",
   });
 });
 
-test("every reference judged has every phase done", () => {
+test("every reference judged has the three phases done", () => {
   expect(phasesAt(filesOf(points.judged))).toEqual({
     target: "done",
-    interfaces: "done",
-    reading: "done",
-    evidence: "done",
-    judgement: "done",
+    specification: "done",
+    proof: "done",
   });
 });
 
@@ -151,10 +131,8 @@ test("a phase is done only when the one before it is", () => {
   };
   expect(phasesOf(declaredIn(sourceOf(declared)), left)).toEqual({
     target: "done",
-    interfaces: "done",
-    reading: "to-do",
-    evidence: "to-do",
-    judgement: "to-do",
+    specification: "to-do",
+    proof: "to-do",
   });
 });
 

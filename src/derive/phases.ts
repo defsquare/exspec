@@ -1,4 +1,4 @@
-import type { Phase, Phases } from "../shapes/event.ts";
+import type { Phases, SessionStep } from "../shapes/event.ts";
 import {
   type Extraction,
   type Problem,
@@ -25,27 +25,43 @@ export function declaredIn(files: readonly SourceFile[]): Examined {
   };
 }
 
-// the phases an agent's session of extract writes, in the checkout
-export type AgentPhase = Extract<Phase, "target" | "interfaces">;
-
 // { file: "a.yaml", at: "b.0", message: "m" } -> "a.yaml b.0: m"
 export const problemLine = ({ file, at, message }: Problem) =>
   `${file}${at ? ` ${at}` : ""}: ${message}`;
 
-// what the files alone say against a phase's gate; [] when they pass it
+// what the files alone say against a session's gate; [] when they pass it
 export function staticFindings(
-  phase: AgentPhase,
+  step: SessionStep,
   { extraction, problems }: Examined,
 ): readonly string[] {
   const { target, interfaces } = extraction;
   const lines = problems.map(problemLine);
-  switch (phase) {
+  switch (step) {
     case "target":
       return target === undefined ? [...lines, "no target is declared"] : lines;
     case "interfaces":
       return interfaces.length === 0 ? [...lines, "no interface is declared"] : lines;
     default: {
-      const unreachable: never = phase;
+      const unreachable: never = step;
+      return unreachable;
+    }
+  }
+}
+
+// A session's step is done when its files pass what its gate checks of them: the target
+// declared with no problem of target.yaml; the interfaces with none of any file. The
+// interfaces are told done without the target.
+export function stepDone(step: SessionStep, examined: Examined): boolean {
+  switch (step) {
+    case "target":
+      return (
+        examined.extraction.target !== undefined &&
+        !examined.problems.some(({ file }) => file === "target.yaml")
+      );
+    case "interfaces":
+      return staticFindings("interfaces", examined).length === 0;
+    default: {
+      const unreachable: never = step;
       return unreachable;
     }
   }
@@ -53,44 +69,38 @@ export function staticFindings(
 
 // A phase is done when the files say so, and the one before it is done: the target is not
 // started to find out. With no interface, nothing is read, built or judged.
-//   reading    structures, common, common-trigger and states.yaml not left, every interface read
-//   evidence   no scenario left to build, no finding of the builder's check, none to record
-//   judgement  no reference left to judge
+//   target         both its sessions' steps done
+//   specification  structures, common, common-trigger and states.yaml not left, every
+//                  interface read
+//   proof          no scenario left to build, no finding of the builder's check, none to
+//                  record, no reference left to judge
 export function phasesOf(examined: Examined, left: Left): Phases {
-  const { extraction, problems } = examined;
   const read = left.interfaces.flatMap((one) => (one.reading === "done" ? [one] : []));
   const every = (holds: (one: (typeof read)[number]) => boolean) =>
     left.interfaces.length > 0 &&
     read.length === left.interfaces.length &&
     read.every(holds);
-  const target =
-    extraction.target !== undefined &&
-    !problems.some(({ file }) => file === "target.yaml");
-  const interfaces = staticFindings("interfaces", examined).length === 0;
-  // as today, the interfaces are told done without the target; what follows needs both
-  const reading =
+  const target = stepDone("target", examined) && stepDone("interfaces", examined);
+  const specification =
     target &&
-    interfaces &&
     !left.structures &&
     !left.common &&
     !left.commonTrigger &&
     !left.states &&
     every(() => true);
-  const evidence =
-    reading &&
+  const proof =
+    specification &&
     every(
-      ({ build, record }) =>
+      ({ build, record, judge }) =>
         build.findings.length === 0 &&
         build.scenarios.length === 0 &&
-        record.length === 0,
+        record.length === 0 &&
+        judge.length === 0,
     );
-  const judgement = evidence && every(({ judge }) => judge.length === 0);
   const progress = (done: boolean) => (done ? "done" : "to-do");
   return {
     target: progress(target),
-    interfaces: progress(interfaces),
-    reading: progress(reading),
-    evidence: progress(evidence),
-    judgement: progress(judgement),
+    specification: progress(specification),
+    proof: progress(proof),
   };
 }

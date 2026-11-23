@@ -39,18 +39,16 @@ exspec view <dir> > page.html   # one page, from a structure to its operations a
 exspec roles replay <dir>       # later: every recorded scenario played on a fresh stack, the differences shown
 ```
 
-`extract` runs five phases, each named for what it leaves in the files:
+`extract` runs three phases, each named for what it leaves in the files:
 
 ```
-target      how the target starts, its starting state, its reset
-interfaces  the list of its interfaces
-reading     the structures, what holds for every operation, the rules
-evidence    the scenarios, played and recorded as references
-judgement   a judge's word on each rule and its reference
+target          how the target starts, its starting state, its reset; its interfaces
+specification   the structures, what holds for every operation, the rules, the states
+proof           the scenarios, played and recorded as references, then judged
 ```
 
-A phase does only what the files say is left of it, and is skipped when nothing is:
-stopped, `extract` goes on from where the files stand. On a terminal it draws a flow;
+A phase is steps in order, each skipped when the files say it is done, and a phase with
+nothing left is skipped whole: stopped, `extract` goes on from where the files stand. On a terminal it draws a flow;
 piped, or with `--format json`, it prints every event.
 
 Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/commands.md). How an extraction flows, phase by phase: [`docs/extraction-flow.md`](docs/extraction-flow.md). The concepts and what names what: [`docs/metamodel.md`](docs/metamodel.md).

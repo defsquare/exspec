@@ -228,12 +228,12 @@ function Panel({ flow, now }: { flow: Flow; now: number }) {
       </Box>
     );
   }
-  const { phase, running, findings, more } = panel;
+  const { phase, step, running, findings, more } = panel;
   const { gate } = flow;
   return (
     <Box flexDirection="column" borderStyle="single" paddingX={1}>
       <Text bold>
-        {phase} · {running === undefined ? "failed" : `round ${running.round}`}
+        {phase} · {step} · {running === undefined ? "failed" : `round ${running.round}`}
       </Text>
       {gate === undefined ? null : (
         <>

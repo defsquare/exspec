@@ -4,7 +4,7 @@ import { partsOfPath } from "./check-states.ts";
 import { statesOf } from "./roles-files.ts";
 import { pathsOf } from "./states-files.ts";
 
-// The interfaces that go first in the evidence: those a path of a state not reached names,
+// The interfaces that go first in the proof: those a path of a state not reached names,
 // built, recorded and judged before every interface is, so that the others start from it.
 //   states [{state: s, path: f/answers}] not reached, interfaces [f, g, h]  -> [f]
 //   s reached                                                                -> []

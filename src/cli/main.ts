@@ -43,7 +43,7 @@ const usage = `usage: exspec <status|check|verdicts> <dir> [--format json]
        exspec target play <dir> [<operation>/<slug>…]
        exspec replay <dir> [<operation>/<slug>…]
        exspec record <dir> [<operation>/<slug>…] [--force]
-       exspec extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>] [--format json]
+       exspec extract <dir> [--phase <target|specification|proof>] [--model <model>] [--jobs n] [--effort <low|medium|high>] [--format json]
        exspec roles <read|build|judge> <dir> [--only <interface>] [--jobs n] [--model <model>] [--effort <low|medium|high>] [--format json]
        exspec roles play <dir> <interface>/<slug>
        exspec roles record <dir> [--only <interface>] [--force]

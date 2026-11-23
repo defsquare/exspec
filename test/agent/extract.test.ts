@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Drive } from "../../src/agent/drive.ts";
-import { type Extracting, extract, phaseWrites } from "../../src/agent/extract.ts";
-import type { Event, Phase } from "../../src/shapes/event.ts";
+import { type Extracting, extract, stepWrites } from "../../src/agent/extract.ts";
+import type { Event, SessionStep } from "../../src/shapes/event.ts";
 import type { Evidence } from "../../src/shapes/roles.ts";
 import { interfaces, target } from "../files.ts";
 import { declared, type Files, points, reading } from "../roles-left-fixture.ts";
@@ -40,7 +40,7 @@ function fakeAgent(
 
 const instructions = {
   system: "system",
-  phases: { target: "target", interfaces: "interfaces" },
+  steps: { target: "target", interfaces: "interfaces" },
 };
 
 const failed = (...findings: string[]) =>
@@ -50,9 +50,10 @@ const failed = (...findings: string[]) =>
     ...findings,
   ].join("\n");
 
-const ended = (phase: Phase): Event => ({
+const ended = (step: SessionStep): Event => ({
   type: "agent-ended",
-  phase,
+  phase: "target",
+  step,
   turns: 1,
   seconds: 1,
 });
@@ -87,8 +88,11 @@ const noVerdict = {
   "not-shown": 0,
 };
 
-test("the target phase runs its session, then the target's lifecycle once", async () => {
-  const agent = fakeAgent({}, [{ writes: { "target.yaml": target } }]);
+test("the target's session runs, then the target's lifecycle once, then the interfaces' session", async () => {
+  const agent = fakeAgent({}, [
+    { writes: { "target.yaml": target } },
+    { writes: { "interfaces.yaml": interfaces } },
+  ]);
   const { io, lines } = fakeIo({});
   const events = await Array.fromAsync(extract(extracting(agent, io, "target")));
   expect({ events, received: agent.received, lines }).toEqual({
@@ -102,11 +106,19 @@ test("the target phase runs its session, then the target's lifecycle once", asyn
       ...step("seed"),
       ...step("reset"),
       ...step("stop"),
-      { type: "gate-checked", phase: "target", ok: true, findings: [] },
+      { type: "gate-checked", phase: "target", step: "target", ok: true, findings: [] },
+      ended("interfaces"),
+      {
+        type: "gate-checked",
+        phase: "target",
+        step: "interfaces",
+        ok: true,
+        findings: [],
+      },
       { type: "phase-finished", phase: "target", ok: true },
       { type: "command-finished", command: "extract", ok: true },
     ],
-    received: [{ prompt: "target" }],
+    received: [{ prompt: "target" }, { prompt: "interfaces" }],
     lines: ["stop", "start", "seed", "reset", "stop"],
   });
 });
@@ -117,21 +129,28 @@ test("a failed gate resumes the session with its findings", async () => {
     { writes: { "interfaces.yaml": interfaces } },
   ]);
   const { io } = fakeIo({});
-  const events = await Array.fromAsync(extract(extracting(agent, io, "interfaces")));
+  const events = await Array.fromAsync(extract(extracting(agent, io, "target")));
   expect({ events, received: agent.received }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      { type: "phase-started", phase: "interfaces" },
+      { type: "phase-started", phase: "target" },
       ended("interfaces"),
       {
         type: "gate-checked",
-        phase: "interfaces",
+        phase: "target",
+        step: "interfaces",
         ok: false,
         findings: ["no interface is declared"],
       },
       ended("interfaces"),
-      { type: "gate-checked", phase: "interfaces", ok: true, findings: [] },
-      { type: "phase-finished", phase: "interfaces", ok: true },
+      {
+        type: "gate-checked",
+        phase: "target",
+        step: "interfaces",
+        ok: true,
+        findings: [],
+      },
+      { type: "phase-finished", phase: "target", ok: true },
       { type: "command-finished", command: "extract", ok: true },
     ],
     received: [
@@ -153,6 +172,7 @@ test("a gate still failing after three rounds ends the extraction", async () => 
   const gate: Event = {
     type: "gate-checked",
     phase: "target",
+    step: "target",
     ok: false,
     findings: ["no target is declared"],
   };
@@ -185,7 +205,7 @@ test("a session that ends in error fails its phase", async () => {
   ]);
 });
 
-test("every phase done: each is skipped, no session, the target never started", async () => {
+test("every phase done: the three are skipped, no session, the target never started", async () => {
   const agent = fakeAgent({ ...reading, ...points.judged }, []);
   const { io, lines } = fakeIo({});
   const events = await Array.fromAsync(extract(extracting(agent, io)));
@@ -193,10 +213,8 @@ test("every phase done: each is skipped, no session, the target never started", 
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
       { type: "phase-skipped", phase: "target" },
-      { type: "phase-skipped", phase: "interfaces" },
-      { type: "phase-skipped", phase: "reading" },
-      { type: "phase-skipped", phase: "evidence" },
-      { type: "phase-skipped", phase: "judgement" },
+      { type: "phase-skipped", phase: "specification" },
+      { type: "phase-skipped", phase: "proof" },
       { type: "command-finished", command: "extract", ok: true },
     ],
     received: [],
@@ -235,9 +253,8 @@ test("a scenario waiting for its second play: its reference recorded, then judge
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
       { type: "phase-skipped", phase: "target" },
-      { type: "phase-skipped", phase: "interfaces" },
-      { type: "phase-skipped", phase: "reading" },
-      { type: "phase-started", phase: "evidence" },
+      { type: "phase-skipped", phase: "specification" },
+      { type: "phase-started", phase: "proof" },
       { type: "roles-queued", role: "builder", count: 1 },
       {
         type: "role-skipped",
@@ -252,8 +269,6 @@ test("a scenario waiting for its second play: its reference recorded, then judge
       { type: "steps-played", ...f, scenario: "exists-a", evidence: second },
       { type: "reference-written", path: "f/exists-a", noise: 0 },
       ...step("stop"),
-      { type: "phase-finished", phase: "evidence", ok: true },
-      { type: "phase-started", phase: "judgement" },
       { type: "roles-queued", role: "judge", count: 1 },
       { type: "role-started", role: "judge", ...f },
       { type: "agent-said", role: "judge", ...f, text: answer },
@@ -269,21 +284,95 @@ test("a scenario waiting for its second play: its reference recorded, then judge
       { type: "gate-checked", role: "judge", ...f, ok: true, findings: [] },
       { type: "role-finished", role: "judge", ...f, ok: true },
       { type: "roles-counted", verdicts: { ...noVerdict, holds: 1 } },
-      { type: "phase-finished", phase: "judgement", ok: true },
+      { type: "phase-finished", phase: "proof", ok: true },
       { type: "command-finished", command: "extract", ok: true },
     ],
     lines: ["stop", "start", "seed", "reset", "stop"],
   });
 });
 
+test("a whole run: the target's session, the states' reader, then the proof", async () => {
+  const answer = JSON.stringify([
+    {
+      scenario: "exists-a",
+      situation: "yes",
+      verdict: "holds",
+      confidence: 1,
+      evidence: "e",
+    },
+  ]);
+  const {
+    "target.yaml": _target,
+    "states.yaml": _states,
+    ...rest
+  } = { ...reading, ...points["played once"] };
+  const agent = fakeAgent(rest, [
+    { writes: { "target.yaml": target } },
+    { writes: { "states.yaml": "[]" } },
+    { writes: {}, said: answer },
+  ]);
+  const { io } = fakeIo({ "http://h/f/x": [{ status: 404, body: null }] });
+  const events = await Array.fromAsync(extract(extracting(agent, io)));
+  expect({
+    phases: events.flatMap((event) =>
+      event.type === "phase-started" ||
+      event.type === "phase-skipped" ||
+      event.type === "phase-finished"
+        ? [event]
+        : [],
+    ),
+    sessions: events.flatMap((event): Event[] =>
+      event.type === "agent-ended" ? [event] : [],
+    ),
+  }).toEqual({
+    phases: [
+      { type: "phase-started", phase: "target" },
+      { type: "phase-finished", phase: "target", ok: true },
+      { type: "phase-started", phase: "specification" },
+      { type: "phase-finished", phase: "specification", ok: true },
+      { type: "phase-started", phase: "proof" },
+      { type: "phase-finished", phase: "proof", ok: true },
+    ],
+    sessions: [
+      ended("target"),
+      { type: "agent-ended", role: "states-reader", turns: 1, seconds: 1 },
+      { type: "agent-ended", role: "judge", ...f, turns: 1, seconds: 1 },
+    ],
+  });
+});
+
+test("the target's phase named on a target and interfaces already described runs no session", async () => {
+  const agent = fakeAgent({ "target.yaml": target, "interfaces.yaml": interfaces }, []);
+  const { io, lines } = fakeIo({});
+  const events = await Array.fromAsync(extract(extracting(agent, io, "target")));
+  expect({ events, received: agent.received, lines }).toEqual({
+    events: [
+      { type: "command-started", command: "extract", dir: "/d" },
+      { type: "phase-started", phase: "target" },
+      { type: "phase-finished", phase: "target", ok: true },
+      { type: "command-finished", command: "extract", ok: true },
+    ],
+    received: [],
+    lines: [],
+  });
+});
+
 test("a phase named with nothing left: its roles skipped, no session", async () => {
   const agent = fakeAgent({ ...reading, ...points.judged }, []);
   const { io } = fakeIo({});
-  const events = await Array.fromAsync(extract(extracting(agent, io, "judgement")));
+  const events = await Array.fromAsync(extract(extracting(agent, io, "proof")));
   expect({ events, received: agent.received }).toEqual({
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
-      { type: "phase-started", phase: "judgement" },
+      { type: "phase-started", phase: "proof" },
+      { type: "roles-queued", role: "builder", count: 1 },
+      {
+        type: "role-skipped",
+        role: "builder",
+        ...f,
+        why: "every scenario passes and has its evidence as written",
+      },
+      { type: "reference-kept", path: "f/exists-a" },
       { type: "roles-queued", role: "judge", count: 1 },
       {
         type: "role-skipped",
@@ -292,14 +381,14 @@ test("a phase named with nothing left: its roles skipped, no session", async () 
         why: "every reference as written has its judgement",
       },
       { type: "roles-counted", verdicts: { ...noVerdict, holds: 1 } },
-      { type: "phase-finished", phase: "judgement", ok: true },
+      { type: "phase-finished", phase: "proof", ok: true },
       { type: "command-finished", command: "extract", ok: true },
     ],
     received: [],
   });
 });
 
-test("a reader's gate failing its rounds ends the extraction at the reading", async () => {
+test("a reader's gate failing its rounds ends the extraction at the specification", async () => {
   const agent = fakeAgent(
     {
       ...declared,
@@ -322,8 +411,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
     events: [
       { type: "command-started", command: "extract", dir: "/d" },
       { type: "phase-skipped", phase: "target" },
-      { type: "phase-skipped", phase: "interfaces" },
-      { type: "phase-started", phase: "reading" },
+      { type: "phase-started", phase: "specification" },
       {
         type: "role-skipped",
         role: "structures-reader",
@@ -341,7 +429,7 @@ test("a reader's gate failing its rounds ends the extraction at the reading", as
         gate,
       ]),
       { type: "role-finished", role: "reader", ...f, ok: false },
-      { type: "phase-finished", phase: "reading", ok: false },
+      { type: "phase-finished", phase: "specification", ok: false },
       { type: "command-finished", command: "extract", ok: false },
     ],
     sessions: 4,
@@ -382,7 +470,7 @@ const rolesOf = (events: readonly Event[]) =>
       : [],
   );
 
-test("in the evidence, the interfaces a path of a state not reached names go first, as far as their judgement", async () => {
+test("in the proof, the interfaces a path of a state not reached names go first, as far as their judgement", async () => {
   const answer = JSON.stringify(
     ["answers", "exists-a", "state:s"].map((scenario) => ({
       scenario,
@@ -397,13 +485,14 @@ test("in the evidence, the interfaces a path of a state not reached names go fir
       { ...reading, ...points.judged, ...answersPath, "states.yaml": states },
       [{ writes: {}, said: answer }],
     );
-    return Array.fromAsync(extract(extracting(agent, fakeIo({}).io, "evidence")));
+    return Array.fromAsync(extract(extracting(agent, fakeIo({}).io, "proof")));
   };
   const builderSkipped = {
     type: "role-skipped",
     role: "builder",
     interface: "f",
   } as const;
+  const judgeSkipped = { ...builderSkipped, role: "judge" } as const;
   expect({
     unreached: rolesOf(await at("- {state: s, of: [S], seen: x, path: f/answers}")),
     none: rolesOf(await at("[]")),
@@ -412,12 +501,13 @@ test("in the evidence, the interfaces a path of a state not reached names go fir
       builderSkipped,
       { type: "role-started", role: "judge", interface: "f" },
       builderSkipped,
+      judgeSkipped,
     ],
-    none: [builderSkipped],
+    none: [builderSkipped, { type: "role-started", role: "judge", interface: "f" }],
   });
 });
 
-test("each of the two agent phases writes its own files, never the other's", () => {
+test("each of the two sessions writes its own files, never the other's", () => {
   const paths = [
     "exspec/target.yaml",
     "exspec/.gitignore",
@@ -428,8 +518,8 @@ test("each of the two agent phases writes its own files, never the other's", () 
     "src/a.ts",
   ];
   expect({
-    target: paths.filter(phaseWrites("/d", "target")),
-    interfaces: paths.filter(phaseWrites("/d", "interfaces")),
+    target: paths.filter(stepWrites("/d", "target")),
+    interfaces: paths.filter(stepWrites("/d", "interfaces")),
   }).toEqual({
     target: ["exspec/target.yaml", "exspec/.gitignore", "exspec/target/seed.sh"],
     interfaces: ["exspec/interfaces.yaml"],

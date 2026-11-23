@@ -7,11 +7,12 @@ A command exits 0 when it succeeded, 1 when it failed, 2 when it was mistyped.
 ## An extraction
 
 ```
-exspec extract <dir> [--phase <phase>] [--model <model>] [--jobs n] [--effort <low|medium|high>]
+exspec extract <dir> [--phase <target|specification|proof>] [--model <model>] [--jobs n] [--effort <low|medium|high>]
 ```
 
-What is left of each phase — `target`, `interfaces`, `reading`, `evidence`, `judgement` —
-in that order. `--phase` runs one; `--model` is the agent's model (`sonnet` when not
+What is left of each phase — `target`, `specification`, `proof` — in that order.
+`--phase` runs what is left of one, never a step already done: the target's and the
+interfaces' sessions run again when their file is removed. `--model` is the agent's model (`sonnet` when not
 given); `--jobs` is how many sessions run at once (4).
 
 ```
@@ -21,7 +22,7 @@ exspec view <dir> > page.html   # one page, from a structure to its operations a
 
 ## One step, or one interface
 
-What `extract` runs in its last three phases, by hand: for one interface (`--only`), or
+What `extract` runs in its last two phases, by hand: for one interface (`--only`), or
 again on purpose.
 
 ```

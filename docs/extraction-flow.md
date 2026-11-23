@@ -1,8 +1,10 @@
 # The flow of an extraction
 
-`exspec extract <dir>` runs five phases in order. Each phase is skipped when the files
-under `<dir>/exspec/` already pass its check, so a run stopped anywhere picks up what is
-left. This page shows who runs in each phase and which file each one writes; the commands
+`exspec extract <dir>` runs three phases in order, each named for the group of concepts it
+writes: the target, the specification, the proof. A phase is steps in order — a session of
+the agent, or a role on its subjects — and each step is skipped when the files under
+`<dir>/exspec/` already pass its check, so a run stopped anywhere picks up what is left. This
+page shows who runs in each step and which file each one writes; the commands
 are in [`commands.md`](commands.md), the reasons in [`adr/`](adr/README.md).
 
 ## The whole picture
@@ -18,16 +20,12 @@ flowchart TD
         A1(["agent: target"])
         F1["target.yaml<br/>target/start.sh, seed.sh, stop.sh"]
         G1{{"gate: start, seed, reset, stop"}}
-        A1 --> F1 --> G1
-    end
-
-    subgraph P2["Phase 2 — interfaces"]
         A2(["agent: interfaces"])
         F2["interfaces.yaml"]
-        A2 --> F2
+        A1 --> F1 --> G1 --> A2 --> F2
     end
 
-    subgraph P3["Phase 3 — reading (the specification)"]
+    subgraph P2["Phase 2 — specification"]
         R1(["structures reader"])
         F3["structures.yaml"]
         R2(["common reader"])
@@ -39,18 +37,14 @@ flowchart TD
         R1 --> F3 --> R2 --> F4 --> R3 --> F5 --> R4 --> F6
     end
 
-    subgraph P4["Phase 4 — evidence (the proof)"]
+    subgraph P3["Phase 3 — proof"]
         B(["builder — one per interface<br/>one tool: play"])
         F7["operations/&lt;interface&gt;/scenarios/*.yaml"]
         T1{{"record: each scenario played twice<br/>on fresh stacks"}}
         F8["operations/&lt;interface&gt;/evidence/*.yaml<br/>a reference and its noise"]
-        B --> F7 --> T1 --> F8
-    end
-
-    subgraph P5["Phase 5 — judgement"]
         J(["judge — one per interface<br/>no tool"])
         F9["operations/&lt;interface&gt;/judgements.yaml"]
-        J --> F9
+        B --> F7 --> T1 --> F8 --> J --> F9
     end
 
     sys[["the running target"]]
@@ -60,14 +54,13 @@ flowchart TD
     code --> R1
     code --> R2
     code --> R3
-    P1 --> P2 --> P3 --> P4 --> P5
+    P1 --> P2 --> P3
     B -. "play" .-> sys
     T1 -. "play" .-> sys
-    F8 --> J
     F5 --> J
 
     V{{"status · check · view"}}
-    P5 --> V
+    P3 --> V
 
     classDef agent fill:#e8f0fe,stroke:#3b6fd4,color:#111;
     classDef tool fill:#fff4d6,stroke:#b8860b,color:#111;
@@ -84,21 +77,24 @@ the rule.
 
 ## Who reads what, who writes what
 
-| Phase | Who | Reads | Writes | Its check |
+| Phase | Step | Reads | Writes | Its check |
 |---|---|---|---|---|
-| target | agent, one session | the checkout | `target.yaml`, `target/` | the target starts, is seeded, is reset, stops |
-| interfaces | agent, one session | the contract, else the code | `interfaces.yaml` | the file passes its check |
-| reading | structures reader | the code | `structures.yaml` | the structures' file |
-| reading | common reader | the code | `common.yaml`, `common-trigger.yaml` | both files |
-| reading | reader, one per interface | the code, the structures, the common files, `services/` | `operations/<interface>/rules.yaml`, `hints.yaml`, `trigger.yaml` | the three files pass their check |
-| reading | states reader, once | `exspec/` only: structures, interfaces, every rule and hint | `states.yaml` | each state serves rules of two operations at least |
-| evidence | builder, one per interface | its rules and hints, `states.yaml`, the paths of the states; **the system through `play` only** | `scenarios/<slug>.yaml` | every scenario is well formed and plays |
-| evidence | the tool (`record`) | the scenarios | `evidence/<slug>.yaml` | two plays agree outside the noise |
-| judgement | judge, one per interface | the rule and the recording, nothing else | `judgements.yaml` | a verdict per reference |
+| target | the target's session | the checkout | `target.yaml`, `target/` | the target starts, is seeded, is reset, stops |
+| target | the interfaces' session | the contract, else the code | `interfaces.yaml` | the file passes its check |
+| specification | structures reader | the code | `structures.yaml` | the structures' file |
+| specification | common reader | the code | `common.yaml`, `common-trigger.yaml` | both files |
+| specification | reader, one per interface | the code, the structures, the common files, `services/` | `operations/<interface>/rules.yaml`, `hints.yaml`, `trigger.yaml` | the three files pass their check |
+| specification | states reader, once | `exspec/` only: structures, interfaces, every rule and hint | `states.yaml` | each state serves rules of two operations at least |
+| proof | builder, one per interface | its rules and hints, `states.yaml`, the paths of the states; **the system through `play` only** | `scenarios/<slug>.yaml` | every scenario is well formed and plays |
+| proof | the tool (`record`) | the scenarios | `evidence/<slug>.yaml` | two plays agree outside the noise |
+| proof | judge, one per interface | the rule and the recording, nothing else | `judgements.yaml` | a verdict per reference |
+
+A session's step is skipped when its file passes its check: it runs again when its file is
+removed, not when its phase is named.
 
 A check that fails sends its findings back to the same session, three times at most.
 
-## The evidence phase and the states
+## The proof and the states
 
 A state (`states.yaml`) is a business situation several operations need — a session
 planned, a learner enrolled. It names the scenario that reaches it, its **path**. Other
@@ -106,8 +102,7 @@ scenarios start from the state instead of rebuilding it: the tool plays the path
 in its place.
 
 A state can be started from only once it is **reached**: its path recorded, and its
-sentence (`seen`) judged to hold on that recording. So the evidence phase runs in two
-waves.
+sentence (`seen`) judged to hold on that recording. So the proof runs in two waves.
 
 ```mermaid
 flowchart LR
@@ -122,12 +117,10 @@ flowchart LR
 
     subgraph W2["Wave 2 — every operation"]
         direction LR
-        B2(["builders<br/>may start from a state reached"]) --> T2{{"record"}}
+        B2(["builders<br/>may start from a state reached"]) --> T2{{"record"}} --> J2(["judges"])
     end
 
-    J2(["Phase 5 — judges"])
-
-    S --> W1 --> R --> W2 --> J2
+    S --> W1 --> R --> W2
 
     classDef agent fill:#e8f0fe,stroke:#3b6fd4,color:#111;
     classDef tool fill:#fff4d6,stroke:#b8860b,color:#111;
@@ -150,22 +143,22 @@ A state not reached yet is a gap of `check`; a state its path does not show is a
 
 ```
 exspec/
-  target.yaml              how the target starts, is seeded, is reset          phase 1
+  target.yaml              how the target starts, is seeded, is reset          target
   target/                  the scripts it runs, the credentials the seed wrote
-  interfaces.yaml          every interface, what it accepts and answers        phase 2
-  structures.yaml          the business concepts, named once for all readers   phase 3
+  interfaces.yaml          every interface, what it accepts and answers        target
+  structures.yaml          the business concepts, named once for all readers   specification
   states.yaml              the named states, each with its path
   services/<service>.yaml  what the system needs of someone else               providers read
   providers/<name>/        the provider this target calls, its twin            providers write-twin
   common.yaml              what holds for every operation
   common-trigger.yaml      how each shared refusal leaves, the error bodies
   operations/<interface>/
-    rules.yaml             what the operation requires, does and answers       phase 3
+    rules.yaml             what the operation requires, does and answers       specification
     hints.yaml             for each rule, a situation and how to reach it
     trigger.yaml           how the interface is bound to the operation
-    scenarios/<slug>.yaml  one scenario per rule and situation                 phase 4
+    scenarios/<slug>.yaml  one scenario per rule and situation                 proof
     evidence/<slug>.yaml   what the target answered, and its noise
-    judgements.yaml        a verdict per scenario, and per state               phase 5
+    judgements.yaml        a verdict per scenario, and per state               proof
 ```
 
 Nothing derived is stored: `status`, `check` and `view` compute what is verified, refuted

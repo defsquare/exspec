@@ -1,11 +1,11 @@
-import type { AgentPhase } from "../derive/phases.ts";
-import type { Phase } from "../shapes/event.ts";
+import type { Phase, SessionStep } from "../shapes/event.ts";
 import type { Flow, RoleSession, Trouble } from "./flow.ts";
 
 export type Panel =
   | {
       readonly kind: "session";
       readonly phase: Phase;
+      readonly step: SessionStep;
       // the phase runs: its round and what the agent does are drawn too
       readonly running?: { readonly round: number };
       readonly findings: readonly string[];
@@ -24,17 +24,15 @@ export type Panel =
       readonly more: number;
     };
 
-const agentPhases: readonly AgentPhase[] = ["target", "interfaces"];
-
-const isRoles = (phase: Phase) => !agentPhases.some((one) => one === phase);
-
-// A running agent phase: its last failed gate cut to `most` findings. A running roles' phase:
-// its sessions, and the last `most` troubles. Once the extraction has failed, every finding
-// or trouble of the phase that failed — nothing when it has none.
+// Told by the step that spoke last, not by the phase. A session's step running: its last
+// failed gate cut to `most` findings. The roles running: their sessions, and the last `most`
+// troubles. Once the extraction has failed, every finding or trouble of the step that
+// failed — nothing when it has none.
 export function panelOf(flow: Flow, most: number): Panel | undefined {
   const running = flow.boxes.find(({ state }) => state === "running");
+  const { step } = flow;
   if (running !== undefined) {
-    if (isRoles(running.phase)) {
+    if (step === undefined) {
       return {
         kind: "roles",
         phase: running.phase,
@@ -51,6 +49,7 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
     return {
       kind: "session",
       phase: running.phase,
+      step,
       running: { round: running.round },
       findings: all.slice(0, most),
       more: Math.max(0, all.length - most),
@@ -58,7 +57,7 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
   }
   const failed = flow.boxes.find(({ state }) => state === "failed");
   if (flow.ok !== false || failed === undefined) return undefined;
-  if (isRoles(failed.phase)) {
+  if (step === undefined) {
     return flow.troubles.length === 0
       ? undefined
       : {
@@ -72,20 +71,19 @@ export function panelOf(flow: Flow, most: number): Panel | undefined {
   }
   const all = flow.gate?.findings ?? [];
   return all.length > 0
-    ? { kind: "session", phase: failed.phase, findings: all, more: 0 }
+    ? { kind: "session", phase: failed.phase, step, findings: all, more: 0 }
     : undefined;
 }
 
-// what a phase writes, one of it and several
+// what a phase writes, one of it and several; the proof's judgements are told by their
+// verdicts
 const written: Readonly<Record<Phase, readonly [string, string]>> = {
   target: ["", ""],
-  interfaces: ["", ""],
-  reading: ["read", "read"],
-  evidence: ["reference", "references"],
-  judgement: ["judgement", "judgements"],
+  specification: ["read", "read"],
+  proof: ["reference", "references"],
 };
 
-// evidence with {written: 3, kept: 2, failed: 1}, 2 sessions and 4 of 9 builders queued over
+// proof with {written: 3, kept: 2, failed: 1}, 2 sessions and 4 of 9 builders queued over
 //   -> ["3 references", "2 kept", "4 of 9 builders", "2 running", "1 failed"]
 // what counts scenarios first, then what counts sessions; a zero is left out, except in
 // "0 of 9 builders", said for as long as the phase runs

@@ -1,16 +1,22 @@
 import { pathsFirst } from "../derive/paths-first.ts";
 import {
-  type AgentPhase,
   declaredIn,
   type Examined,
   phasesOf,
   problemLine,
   staticFindings,
+  stepDone,
 } from "../derive/phases.ts";
 import { leftOf } from "../derive/roles-left.ts";
 import type { Io } from "../run/io.ts";
 import { resetTarget, startTarget, stopTarget } from "../run/lifecycle.ts";
-import { type Event, type Phase, phaseSchema } from "../shapes/event.ts";
+import {
+  type Event,
+  type Phase,
+  phaseSchema,
+  type SessionStep,
+  sessionStepSchema,
+} from "../shapes/event.ts";
 import type { SourceFile } from "../shapes/extraction.ts";
 import type { Target } from "../shapes/target.ts";
 import { under, writesOf } from "./access.ts";
@@ -87,80 +93,90 @@ async function* lifecycleGate(
 
 // the files first; then, for the target, the target itself
 async function* gate(
-  phase: AgentPhase,
+  step: SessionStep,
   extracting: Extracting,
 ): AsyncGenerator<Event, readonly string[]> {
   const examined = await examineAgain(extracting);
-  const found = staticFindings(phase, examined);
+  const found = staticFindings(step, examined);
   const { target } = examined.extraction;
-  if (found.length > 0 || phase === "interfaces" || target === undefined) return found;
+  if (found.length > 0 || step === "interfaces" || target === undefined) return found;
   return yield* lifecycleGate(target, extracting);
 }
 
-// What each of the two agent phases may write under exspec/: its own files, never the
+// What each of the two sessions may write under exspec/: its own files, never the
 // other's — a list of interfaces written by the session of the target would have its own
-// phase found done and never run.
+// step found done and never run.
 //   target      target.yaml, .gitignore, target/…
 //   interfaces  interfaces.yaml
-const owned: Readonly<Record<AgentPhase, (path: string) => boolean>> = {
+const owned: Readonly<Record<SessionStep, (path: string) => boolean>> = {
   target: (path) =>
     path === "target.yaml" || path === ".gitignore" || under("target")(path),
   interfaces: (path) => path === "interfaces.yaml",
 };
 
-const confinement: Readonly<Record<AgentPhase, string>> = {
+const confinement: Readonly<Record<SessionStep, string>> = {
   target:
     "This phase writes only exspec/target.yaml, exspec/.gitignore and under exspec/target/: the list of interfaces is written by the session after this one.",
   interfaces:
     "This phase writes only exspec/interfaces.yaml: how the target starts is settled, and the rest is written after this session.",
 };
 
-export const phaseWrites = (dir: string, phase: AgentPhase) =>
-  writesOf(dir, owned[phase]);
+export const stepWrites = (dir: string, step: SessionStep) => writesOf(dir, owned[step]);
 
 // one session, then its gate; a failed gate's findings are the session's next prompt
-function agentPhase(
-  phase: AgentPhase,
+function sessionStep(
+  step: SessionStep,
   extracting: Extracting,
 ): AsyncGenerator<Event, boolean> {
+  const phase = "target";
   const { dir, model, instructions, drive } = extracting;
   return sessionRounds({
     drive,
     session: {
-      prompt: instructions.phases[phase],
+      prompt: instructions.steps[step],
       system: instructions.system,
       cwd: dir,
       model,
       tools: phaseTools,
       mayRead: () => true,
-      mayWrite: phaseWrites(dir, phase),
-      confinement: confinement[phase],
+      mayWrite: stepWrites(dir, step),
+      confinement: confinement[step],
     },
     rounds,
     failedGate,
-    label: (event) => ({ ...event, phase }),
+    label: (event) => ({ ...event, phase, step }),
     checked: (findings) => ({
       type: "gate-checked",
       phase,
+      step,
       ok: findings.length === 0,
       findings,
     }),
-    gate: () => gate(phase, extracting),
+    gate: () => gate(step, extracting),
   });
 }
 
-// What the roles run in a phase, on the target and interfaces declared. In the evidence,
-// the interfaces a path of a state not reached names go first, as far as their judgement:
-// then every interface is built and recorded with the states now reached.
+// each session in order, skipped with no event when its files pass what its gate checks
+async function* targetPhase(extracting: Extracting): AsyncGenerator<Event, boolean> {
+  for (const step of sessionStepSchema.options) {
+    if (stepDone(step, await examineAgain(extracting))) continue;
+    if (!(yield* sessionStep(step, extracting))) return false;
+  }
+  return true;
+}
+
+// What the roles run in a phase, on the target and interfaces declared. In the proof, the
+// interfaces a path of a state not reached names go first, as far as their judgement: then
+// every interface is built and recorded with the states now reached, then judged.
 function rolesPhase(
-  phase: Exclude<Phase, AgentPhase>,
+  phase: Exclude<Phase, "target">,
   rolesRun: RolesRun,
   setting: RolesSetting,
 ): AsyncGenerator<Event, boolean> {
   switch (phase) {
-    case "reading":
+    case "specification":
       return runReaders(rolesRun, setting);
-    case "evidence":
+    case "proof":
       return (async function* () {
         const first = pathsFirst(
           await rolesRun.readFiles(rolesRun.dir),
@@ -174,10 +190,9 @@ function rolesPhase(
         }
         const built = yield* runBuilders(rolesRun, setting);
         const recorded = yield* recordReferences(rolesRun, setting, false);
-        return built && recorded;
+        if (!(built && recorded)) return false;
+        return yield* runJudges(rolesRun, setting);
       })();
-    case "judgement":
-      return runJudges(rolesRun, setting);
     default: {
       const unreachable: never = phase;
       return unreachable;
@@ -191,9 +206,7 @@ async function* runPhase(
   rolesRun: RolesRun,
 ): AsyncGenerator<Event, boolean> {
   try {
-    if (phase === "target" || phase === "interfaces") {
-      return yield* agentPhase(phase, extracting);
-    }
+    if (phase === "target") return yield* targetPhase(extracting);
     const { extraction, problems } = await examineAgain(extracting);
     const { target, interfaces } = extraction;
     const failures = [

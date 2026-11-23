@@ -29,15 +29,14 @@ const commandSchema = z.enum([
 ]);
 export type Command = z.infer<typeof commandSchema>;
 
-export const phaseSchema = z.enum([
-  "target",
-  "interfaces",
-  "reading",
-  "evidence",
-  "judgement",
-]);
+export const phaseSchema = z.enum(["target", "specification", "proof"]);
 
 export type Phase = z.infer<typeof phaseSchema>;
+
+// the agent's sessions of the target's phase, each a step of it, in the checkout
+export const sessionStepSchema = z.enum(["target", "interfaces"]);
+
+export type SessionStep = z.infer<typeof sessionStepSchema>;
 
 export const roleSchema = z.enum([
   "structures-reader",
@@ -66,10 +65,8 @@ const progressSchema = z.enum(["done", "to-do"]);
 export const phasesSchema = z
   .object({
     target: progressSchema,
-    interfaces: progressSchema,
-    reading: progressSchema,
-    evidence: progressSchema,
-    judgement: progressSchema,
+    specification: progressSchema,
+    proof: progressSchema,
   })
   .readonly();
 
@@ -174,8 +171,9 @@ export const agentEventSchema = z.discriminatedUnion("type", [
 
 export type AgentEvent = z.infer<typeof agentEventSchema>;
 
-// Not a discriminated union: an agent's event and a gate's come from a phase or from a role,
-// two shapes under one type.
+// Not a discriminated union: an agent's event and a gate's come from a session's step of a
+// phase or from a role, two shapes under one type.
+const ofStep = { phase: phaseSchema, step: sessionStepSchema };
 export const eventSchema = z.union([
   z.object({
     type: z.literal("command-started"),
@@ -244,13 +242,13 @@ export const eventSchema = z.union([
   z.object({ type: z.literal("phase-started"), phase: phaseSchema }),
   // the files say it is done already
   z.object({ type: z.literal("phase-skipped"), phase: phaseSchema }),
-  agentSaid.extend({ phase: phaseSchema }),
-  agentUsed.extend({ phase: phaseSchema }),
-  agentEnded.extend({ phase: phaseSchema }),
+  agentSaid.extend(ofStep),
+  agentUsed.extend(ofStep),
+  agentEnded.extend(ofStep),
   // findings: [] when the gate passes; else what is sent back to the agent
   z.object({
     type: z.literal("gate-checked"),
-    phase: phaseSchema,
+    ...ofStep,
     ok: z.boolean(),
     findings: z.array(z.string()).readonly(),
   }),

@@ -140,7 +140,7 @@ export function describeEvent(event: Event): string {
       return `phase    ${event.phase} done already`;
     case "gate-checked":
       return [
-        `${from(event)}gate     ${"phase" in event ? event.phase : event.role} ${event.ok ? "passed" : "failed"}`,
+        `${from(event)}gate     ${"step" in event ? event.step : event.role} ${event.ok ? "passed" : "failed"}`,
         ...event.findings.map((finding) => `  ${finding}`),
       ].join("\n");
     case "phase-finished":

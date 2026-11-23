@@ -20,28 +20,54 @@ const long = "update-visit-of-a-pet-of-an-owner";
 
 const events: readonly Event[] = [
   { type: "command-started", command: "extract", dir: "/abs/petclinic" },
-  { type: "phase-skipped", phase: "target" },
-  { type: "phase-started", phase: "interfaces" },
-  { type: "agent-said", phase: "interfaces", text: "Reading the controllers." },
-  { type: "agent-used", phase: "interfaces", tool: "Grep", about: "@RequestMapping" },
-  { type: "agent-ended", phase: "interfaces", turns: 9, seconds: 40, cost: 0.31 },
+  { type: "phase-started", phase: "target" },
+  {
+    type: "agent-said",
+    phase: "target",
+    step: "interfaces",
+    text: "Reading the controllers.",
+  },
+  {
+    type: "agent-used",
+    phase: "target",
+    step: "interfaces",
+    tool: "Grep",
+    about: "@RequestMapping",
+  },
+  {
+    type: "agent-ended",
+    phase: "target",
+    step: "interfaces",
+    turns: 9,
+    seconds: 40,
+    cost: 0.31,
+  },
   {
     type: "gate-checked",
-    phase: "interfaces",
+    phase: "target",
+    step: "interfaces",
     ok: false,
     findings: ["interfaces.yaml 2.pattern: a pattern starts with /"],
   },
   {
     type: "agent-used",
-    phase: "interfaces",
+    phase: "target",
+    step: "interfaces",
     tool: "Edit",
     about: "exspec/interfaces.yaml",
   },
-  { type: "agent-ended", phase: "interfaces", turns: 2, seconds: 6, cost: 0.05 },
-  { type: "gate-checked", phase: "interfaces", ok: true, findings: [] },
-  { type: "phase-finished", phase: "interfaces", ok: true },
+  {
+    type: "agent-ended",
+    phase: "target",
+    step: "interfaces",
+    turns: 2,
+    seconds: 6,
+    cost: 0.05,
+  },
+  { type: "gate-checked", phase: "target", step: "interfaces", ok: true, findings: [] },
+  { type: "phase-finished", phase: "target", ok: true },
 
-  { type: "phase-started", phase: "reading" },
+  { type: "phase-started", phase: "specification" },
   {
     type: "role-skipped",
     role: "structures-reader",
@@ -101,9 +127,9 @@ const events: readonly Event[] = [
   { type: "agent-ended", ...reader("delete-pet"), turns: 3, seconds: 10, cost: 0.1 },
   { type: "gate-checked", ...reader("delete-pet"), ok: true, findings: [] },
   { type: "role-finished", ...reader("delete-pet"), ok: true },
-  { type: "phase-finished", phase: "reading", ok: true },
+  { type: "phase-finished", phase: "specification", ok: true },
 
-  { type: "phase-started", phase: "evidence" },
+  { type: "phase-started", phase: "proof" },
   { type: "roles-queued", role: "builder", count: 4 },
   { type: "target-step", step: "start", state: "started" },
   { type: "target-step", step: "alive", state: "done" },
@@ -146,9 +172,6 @@ const events: readonly Event[] = [
   { type: "reference-written", path: "create-pet/accepted", noise: 1 },
   { type: "reference-written", path: "create-pet/name-missing", noise: 0 },
   { type: "reference-written", path: "delete-pet/unknown-pet", noise: 0 },
-  { type: "phase-finished", phase: "evidence", ok: true },
-
-  { type: "phase-started", phase: "judgement" },
   { type: "roles-queued", role: "judge", count: 4 },
   {
     type: "role-skipped",
@@ -192,7 +215,7 @@ const events: readonly Event[] = [
     type: "roles-counted",
     verdicts: { holds: 1, contradicted: 1, "refused-unexpectedly": 0, "not-shown": 0 },
   },
-  { type: "phase-finished", phase: "judgement", ok: false },
+  { type: "phase-finished", phase: "proof", ok: false },
   { type: "command-finished", command: "extract", ok: false },
 ];
 

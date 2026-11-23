@@ -49,13 +49,7 @@ test("status of a directory with an extraction", async () => {
     },
     {
       type: "extraction-phases",
-      phases: {
-        target: "to-do",
-        interfaces: "to-do",
-        reading: "to-do",
-        evidence: "to-do",
-        judgement: "to-do",
-      },
+      phases: { target: "to-do", specification: "to-do", proof: "to-do" },
     },
     {
       type: "extraction-judged",
@@ -156,32 +150,20 @@ const phasesShown = async (shown: readonly { path: string; text: string }[]) =>
     )
   ).filter(({ type }) => type === "extraction-phases");
 
-test("status shows the five phases of a checkout whose reading is judged", async () => {
+test("status shows the three phases of a checkout whose reading is judged", async () => {
   expect(await phasesShown(filesOf(points.judged))).toEqual([
     {
       type: "extraction-phases",
-      phases: {
-        target: "done",
-        interfaces: "done",
-        reading: "done",
-        evidence: "done",
-        judgement: "done",
-      },
+      phases: { target: "done", specification: "done", proof: "done" },
     },
   ]);
 });
 
-test("status shows a computed specification with no reading as three phases to do", async () => {
+test("status shows a computed specification with no reading as two phases to do", async () => {
   expect(await phasesShown(judged)).toEqual([
     {
       type: "extraction-phases",
-      phases: {
-        target: "done",
-        interfaces: "done",
-        reading: "to-do",
-        evidence: "to-do",
-        judgement: "to-do",
-      },
+      phases: { target: "done", specification: "to-do", proof: "to-do" },
     },
   ]);
 });
