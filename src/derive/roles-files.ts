@@ -9,6 +9,8 @@ import {
   roleScenarioSchema,
   rulesSchema,
   type StateJudgement,
+  type Step,
+  type WrittenStep,
 } from "../shapes/roles.ts";
 import { type Interface, interfacesFileSchema } from "../shapes/target.ts";
 import { type Callable, callableOf } from "./callables.ts";
@@ -137,15 +139,20 @@ export function readerFilesOf(files: readonly SourceFile[], name: string) {
 // and an evidence with an unplayable exchange is never of its scenario as written.
 // An actor the credentials held when the evidence was taken, and no longer hold: the
 // evidence stands, it is what the target answered then; a replay tells the step unplayable.
+// paths: a scenario that starts from a state is played by its path's actors too.
 export function actorsNamed(
   written: readonly { readonly slug: string; readonly text: string }[],
+  paths: readonly { readonly steps: readonly Step[] }[],
 ): readonly string[] {
-  return written.flatMap(({ slug, text }) => {
-    const read = readYaml(slug, text, roleScenarioSchema);
-    return "value" in read
-      ? read.value.steps.flatMap((step) => ("as" in step ? (step.as ?? []) : []))
-      : [];
-  });
+  const named = (steps: readonly WrittenStep[]) =>
+    steps.flatMap((step) => ("as" in step ? (step.as ?? []) : []));
+  return [
+    ...written.flatMap(({ slug, text }) => {
+      const read = readYaml(slug, text, roleScenarioSchema);
+      return "value" in read ? named(read.value.steps) : [];
+    }),
+    ...paths.flatMap(({ steps }) => named(steps)),
+  ];
 }
 
 // The scenario files of an interface that no rule of its reading can own. A file is named

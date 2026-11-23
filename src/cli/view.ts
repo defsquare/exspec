@@ -113,7 +113,7 @@ function readingsOf(files: readonly SourceFile[]) {
             bound,
             rules,
             protocol: trigger?.protocol ?? [],
-            actors: actorsNamed(written),
+            actors: actorsNamed(written, paths),
             services: servicesIn(files),
             callables,
             paths,

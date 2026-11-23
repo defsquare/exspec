@@ -36,7 +36,7 @@ export function builtOf(
     bound,
     rules,
     protocol: trigger.protocol ?? [],
-    actors: actors ?? actorsNamed(written),
+    actors: actors ?? actorsNamed(written, paths),
     services: servicesIn(files),
     callables,
     paths,
