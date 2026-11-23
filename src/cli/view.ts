@@ -135,7 +135,7 @@ function readingsOf(files: readonly SourceFile[]) {
         return evidence === undefined ? [] : [{ slug, evidence }];
       }),
       judgements: judgementsIn(files, name),
-      startsFrom: statesStartedFrom(files, name),
+      startsFrom: statesStartedFrom(files, name, paths),
     };
   });
   return {

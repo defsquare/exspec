@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { statesView } from "../../src/derive/states-view.ts";
+import { statesStartedFrom, statesView } from "../../src/derive/states-view.ts";
 import {
   type Files,
   filesOf,
@@ -17,6 +17,21 @@ const written: Files = {
 - {state: u, of: [S], seen: reading the f shows it, path: f/exists-a}
 `,
 };
+
+test("a scenario that starts from a state says, for each step played, the state whose path it is a step of", () => {
+  expect(
+    statesStartedFrom(filesOf(written), "f", [
+      {
+        state: "s",
+        steps: [
+          { when: "arrange", as: "u", request: { method: "post", path: "/f" } },
+          { when: "call", as: "u", request: { method: "get", path: "/f/x" } },
+          { when: "after", as: "u", request: { method: "get", path: "/f/x" } },
+        ],
+      },
+    ]),
+  ).toEqual([{ slug: "exists-b", states: ["s"], played: ["s", "s", undefined] }]);
+});
 
 const judged = (state: string, verdict: string, of: string) => ({
   scenario: "exists-a",

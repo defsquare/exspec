@@ -28,10 +28,12 @@ export type ReadInterface = {
   }[];
   readonly evidence: readonly { readonly slug: string; readonly evidence: Evidence }[];
   readonly judgements: readonly RuleJudgement[];
-  // the scenarios that start from a state, as written: [{slug: b, states: [s]}]
+  // the scenarios that start from a state, as written, and for each step played the state
+  // whose path it is a step of: [{slug: b, states: [s], played: [s, s, undefined]}]
   readonly startsFrom?: readonly {
     readonly slug: string;
     readonly states: readonly string[];
+    readonly played?: readonly (string | undefined)[];
   }[];
 };
 
@@ -92,6 +94,8 @@ export type StepView = {
   // what the target sent to its providers while the step was played, as recorded
   readonly sideEffects?: readonly SideEffect[];
   readonly unplayable?: string;
+  // the state the scenario starts from, when the step is one of its path's
+  readonly state?: string;
 };
 
 export type ScenarioView = {
@@ -401,7 +405,8 @@ export function viewOfRoles({
         const rule = scenario?.rule ?? played?.rule;
         if (rule === undefined) return [];
         const judged = judgements.find((j) => j.scenario === slug);
-        const from = startsFrom.find((one) => one.slug === slug)?.states ?? [];
+        const started = startsFrom.find((one) => one.slug === slug);
+        const from = started?.states ?? [];
         return [
           {
             path: `${name}/${slug}`,
@@ -411,7 +416,10 @@ export function viewOfRoles({
               ? {}
               : { situation: scenario.situation, reached: String(scenario.reached) }),
             ...(from.length === 0 ? {} : { startsFrom: from }),
-            steps: stepsOf(scenario, played, interfaceOf),
+            steps: stepsOf(scenario, played, interfaceOf).map((step, i) => {
+              const state = started?.played?.[i];
+              return state === undefined ? step : { ...step, state };
+            }),
             judgement:
               judged === undefined
                 ? null

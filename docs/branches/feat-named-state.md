@@ -157,6 +157,12 @@ The design: ADR-0025 and ADR-0026 (Accepted).
   no state — they are built before any is reached — and cost 4.50 USD of the 12.71.
   The page read on this run: the sheet "The states" shows each with its sentence, its
   verdict, the rules it serves and the scenarios that start from it.
+- **The state in the drawings** (2026-11-23, in the thread, seen on the full run's page):
+  a scenario's sequence shows the steps of its state's path as one row — the state, what
+  is seen in it — that unfolds them. The state a rule needs, tried at the rule's foot in an
+  operation's gates, was taken out: a state is where a scenario starts, and a rule
+  has several scenarios that may start from different states — the operation's drawing
+  cannot show them all, so it shows none.
 
 ## Backlog
 

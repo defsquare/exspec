@@ -3,6 +3,7 @@ import { readYaml, roleScenarioSchema, type StateJudgement } from "../shapes/rol
 import { partsOfPath } from "./check-states.ts";
 import { folderOf, interfacesOf, slugsIn, statesOf } from "./roles-files.ts";
 import { judgedOnPaths, pathsOf } from "./states-files.ts";
+import { type Path, stepsFromStates } from "./steps-from-states.ts";
 
 // one state as the page shows it, for a review with the business:
 //   {state: s, seen: "…", of: [A], path: {operation: f, scenario: a}, reached: "no",
@@ -32,18 +33,33 @@ export type StateView = {
 };
 
 // the scenarios of an interface that start from a state, with the states they start from,
-// as written: [{slug: "b", states: ["s"]}]
+// as written, and for each step played the state whose path it is a step of:
+//   [{slug: "b", states: ["s"], played: ["s", "s", undefined]}]
+// played is [] when a state it starts from is not among the paths
 export function statesStartedFrom(
   files: readonly SourceFile[],
   name: string,
-): readonly { readonly slug: string; readonly states: readonly string[] }[] {
+  paths: readonly Path[],
+): readonly {
+  readonly slug: string;
+  readonly states: readonly string[];
+  readonly played: readonly (string | undefined)[];
+}[] {
   return slugsIn(files, `${folderOf(name)}/scenarios`).flatMap(({ slug, text }) => {
     const read = readYaml(slug, text, roleScenarioSchema);
-    const states =
-      "value" in read
-        ? read.value.steps.flatMap((step) => ("state" in step ? [step.state] : []))
+    if (!("value" in read)) return [];
+    const { steps } = read.value;
+    const states = steps.flatMap((step) => ("state" in step ? [step.state] : []));
+    if (states.length === 0) return [];
+    const replaced = stepsFromStates(steps, paths);
+    const played =
+      "from" in replaced
+        ? replaced.from.map((at) => {
+            const step = steps[at - 1];
+            return step !== undefined && "state" in step ? step.state : undefined;
+          })
         : [];
-    return states.length === 0 ? [] : [{ slug, states }];
+    return [{ slug, states, played }];
   });
 }
 
@@ -67,7 +83,7 @@ export function statesView(files: readonly SourceFile[]): readonly StateView[] {
   const judged = judgedOnPaths(files, states);
   const started = (interfacesOf(files) ?? []).map(({ interface: name }) => ({
     operation: name,
-    scenarios: statesStartedFrom(files, name),
+    scenarios: statesStartedFrom(files, name, paths),
   }));
   return states.map(({ state, seen, of, path, serves }): StateView => {
     const { operation, slug } = partsOfPath(path);
