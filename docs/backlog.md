@@ -193,8 +193,15 @@ them in; each of the first five is a branch of its own.
   references are stable, so nothing is red; `status` shows them as
   `not-exercised: refused`. Conduit and Petclinic have ids one can predict (a slug, a
   serial number) and never met it.
+  On `trainings`, a whole extraction: the seed created two clients through the API at
+  each start, 115 mentions of one client's identifier in the scenarios, 59 scenarios of
+  223 unstable — 200 then 404 on the two stacks — and the proof failed with no judgement
+  written.
 - **Settled.** A scenario is written with holes and an execution fills them; the seed is a
   command of the target and writes the credentials file (ADR-0004).
+  The target's session is now asked for the same starting state on every start from
+  nothing, identifiers included: its seed loads the snapshot when there is one, and the
+  snapshot is kept. A brief, checked by no gate.
 - **Next.** An ADR, through the challenger: a way for a scenario to name what the seed
   created — the seed writing its ids beside the credentials, a scenario citing one by
   name — against the alternative of arranging the instance in the scenario and using the

@@ -40,8 +40,15 @@ authenticated (a token from a login, basic auth, nothing).
   other. Small: a human must be able to hold it in their head.
 - If callers are authenticated, write `exspec/target/credentials.json`: for each actor,
   the request headers that sign it in.
-- Last, take a **snapshot** of the starting state for the reset — for a SQL database, a
-  data-only dump including the sequences, left under `exspec/target/`.
+- Last, take a **snapshot** of the starting state — for a SQL database, a data-only dump
+  including the sequences, left under `exspec/target/`. The reset loads it, and so does
+  the seed itself the next time.
+- **The starting state is the same on every start from nothing, identifiers included.** A
+  trial is written once, with the identifiers it saw, and run again on a system started
+  from nothing: an identifier the system drew at random the first time is unknown there.
+  So when the snapshot exists, the seed loads it and creates nothing; it goes through the
+  API only when there is none yet. Where the API lets you choose an identifier, choose
+  one that reads as yours.
 - It must fail loudly (`set -euo pipefail`, non-2xx answers checked): a half-seeded target
   is worse than none.
 
@@ -53,8 +60,9 @@ If the application keeps state in memory that the database restore does not undo
 cache, a pool of identifiers), say so in your final message.
 
 Scripts find their files relative to their own location, are executable, and write
-nothing outside `exspec/target/`. Add `exspec/.gitignore` for what they produce (the
-credentials, the snapshot).
+nothing outside `exspec/target/`. Add `exspec/.gitignore` for what they produce and a
+start writes again (the credentials); the snapshot is not ignored: it is the starting
+state, and it is kept.
 
 **The systems the target calls.** Find the outside systems the target calls over HTTP — a
 mail service, a document renderer, a payment API — in its configuration, its clients, its
@@ -80,7 +88,9 @@ line that sets it (`source: "exspec/target/compose.yaml:12"`).
    world is there.
 3. Change something through the API, run your reset lines, look again: the change is gone,
    and creating the same thing again gives the same identifier as the first time.
-4. `{{exspec}} target down .`
+4. `{{exspec}} target down .`, then `{{exspec}} target up .` again: every instance has the
+   identifier it had the first time.
+5. `{{exspec}} target down .`
 
 End with a short message: how the target starts, what the starting state holds (the
 actors, the instances), and anything the reset does not restore.
