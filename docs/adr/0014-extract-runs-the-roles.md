@@ -1,7 +1,7 @@
 # ADR-0014 — `extract` runs the three roles, in phases named for what they produce
 
-Status: Accepted (2026-11-18) — by the user, after one whole target was read by the roles
-with their reads held; the challenger's review of the design taken. Supersedes ADR-0006.
+Status: Superseded by [ADR-0029](0029-extract-runs-three-phases-the-providers-are-of-the-targets.md)
+(2026-11-23) — was Accepted (2026-11-18). Superseded ADR-0006.
 
 ## Context
 
