@@ -53,7 +53,7 @@ A phase does only what the files say is left of it, and is skipped when nothing 
 stopped, `extract` goes on from where the files stand. On a terminal it draws a flow;
 piped, or with `--format json`, it prints every event.
 
-Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/commands.md). How an extraction flows, phase by phase: [`docs/extraction-flow.md`](docs/extraction-flow.md).
+Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/commands.md). How an extraction flows, phase by phase: [`docs/extraction-flow.md`](docs/extraction-flow.md). The concepts and what names what: [`docs/metamodel.md`](docs/metamodel.md).
 
 ## What it claims
 

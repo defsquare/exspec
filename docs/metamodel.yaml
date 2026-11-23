@@ -1,0 +1,76 @@
+# The metamodel as data: the source of the drawings under docs/metamodel/.
+# A concept, a link: one line each, so that a commit's diff says what changed.
+#   bun scripts/metamodel.ts                          draw docs/metamodel/*.svg again
+#   bun scripts/metamodel.ts --since main --out <dir> draw what changed since a revision
+# at: [column, row] — a group's place among the groups, a concept's place in its group.
+# Moving one changes a drawing, not the metamodel. Two groups a link joins sit side by side.
+# in: the concept this one is a part of — it has no place of its own, it is drawn inside it,
+# and a link that names it is drawn at the whole.
+
+groups:
+  - {group: proof, says: "what was played and what was made of it", at: [0, 0]}
+  - {group: specification, says: "what survives the target being rewritten", at: [1, 0]}
+  - {group: target, says: "what may not survive a rewrite", at: [0, 1]}
+  - {group: bindings, says: "the only shapes that know both sides", at: [1, 1]}
+
+concepts:
+  - {concept: judgement, group: proof, says: "holds · contradicted · not-shown …", at: [1, 0]}
+  - {concept: evidence, group: proof, says: "what the target answered, its noise", at: [0, 1]}
+  - {concept: side effect, group: proof, says: "what the target sent a provider", in: evidence}
+  - {concept: scenario, group: proof, says: "a situation, written with holes", at: [1, 1]}
+  - {concept: step, group: proof, says: "arrange · before · call · after", in: scenario}
+
+  - {concept: state, group: specification, says: "a situation, by what is seen in it", at: [0, 0]}
+  - {concept: structure, group: specification, says: "a business concept", at: [1, 0]}
+  - {concept: field, group: specification, says: "what a structure holds", in: structure}
+  - {concept: rule, group: specification, says: "a requirement, an effect, the answer", at: [0, 1]}
+  - {concept: operation, group: specification, says: "what it takes, what it answers", at: [1, 1]}
+  - {concept: shared rule, group: specification, says: "holds for the whole system", at: [2, 1]}
+  - {concept: service, group: specification, says: "what the system needs of someone else", at: [0, 2]}
+  - {concept: condition, group: specification, says: "a situation a service is put in", in: service}
+
+  - {concept: trigger, group: bindings, says: "the statuses, how each refusal leaves", at: [0, 0]}
+  - {concept: renders, group: bindings, says: "a line of a provider's description", at: [1, 0]}
+
+  - {concept: target, group: target, says: "how it starts, is seeded, is reset", at: [0, 0]}
+  - {concept: provider, group: target, says: "an observable: a system the target calls", at: [1, 0]}
+  - {concept: twin, group: target, says: "the program that stands for a provider", in: provider}
+  - {concept: interface, group: target, says: "method, pattern, shapes", at: [2, 0]}
+  - {concept: protocol, group: target, says: "the rules of the wire", at: [2, 1]}
+
+# exception: a link that leaves the direction of the references, on purpose
+links:
+  - {from: scenario, to: step, verb: is made of, card: "1..n"}
+  - {from: evidence, to: scenario, verb: records the play of}
+  - {from: evidence, to: side effect, verb: keeps, card: "0..n"}
+  - {from: judgement, to: scenario, verb: judges}
+  - {from: judgement, to: rule, verb: judges it on}
+  - {from: scenario, to: rule, verb: exercises, card: "1"}
+  - {from: evidence, to: rule, verb: is of the scenario of}
+  - {from: scenario, to: state, verb: starts from, card: "0..n"}
+  - {from: judgement, to: state, verb: judges what is seen in}
+  - {from: step, to: operation, verb: calls}
+  - {from: step, to: condition, verb: gives a service}
+  - {from: step, to: interface, verb: sends a raw request to, exception: true}
+  - {from: side effect, to: provider, verb: was sent to}
+
+  - {from: operation, to: rule, verb: has, card: "1..n"}
+  - {from: operation, to: shared rule, verb: names, card: "0..n"}
+  - {from: operation, to: structure, verb: answers, card: "0..1"}
+  - {from: operation, to: field, verb: takes, card: "0..n"}
+  - {from: structure, to: field, verb: holds, card: "1..n"}
+  - {from: field, to: structure, verb: may refer to}
+  - {from: rule, to: service, verb: may rest on}
+  - {from: service, to: condition, verb: has, card: "0..n"}
+  - {from: state, to: structure, verb: is of, card: "0..n"}
+  - {from: state, to: rule, verb: serves, card: "0..n"}
+  - {from: state, to: scenario, verb: names its path, card: "1", exception: true}
+
+  - {from: trigger, to: operation, verb: binds}
+  - {from: trigger, to: interface, verb: binds to}
+  - {from: trigger, to: protocol, verb: names rules of}
+  - {from: renders, to: service, verb: renders}
+  - {from: renders, to: provider, verb: rendered by}
+
+  - {from: target, to: provider, verb: observes, card: "0..n"}
+  - {from: provider, to: twin, verb: is stood in for by}

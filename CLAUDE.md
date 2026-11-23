@@ -59,10 +59,14 @@ removed from the code gets its ADR marked `Deprecated`. Keep no concept because 
 already exists, and add none a target has not asked for: the spike's fit test
 (`docs/brief/fit-*.md`) lists what two targets need.
 
-Four groups, and the direction of every reference (`docs/brief/metamodel.md`):
+Four groups, and the direction of every reference (the spike's drawing:
+`docs/brief/metamodel.md`). `docs/metamodel.md` draws the concepts the roles' reading
+writes, from `docs/metamodel.yaml`: a schema that adds, removes or renames one of them, or a
+link between two, changes that file in the same commit. `fact`, `projection` and `detects`
+are of the computed path only and are not drawn there.
 
 ```
-proof           scenario, call, side effect, path    points at the specification
+proof           scenario, step, evidence, side effect, judgement    points at the specification
 specification   operation, rule, fact, structure, field, service, condition, state    points at nothing below it
 bindings        projection, trigger, detects, renders    the only shapes that know both sides
 target          target, interface, protocol, observable (a provider is one)    points at nothing above it
