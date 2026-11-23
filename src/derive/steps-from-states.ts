@@ -27,6 +27,14 @@ const nameOf = (step: Step) => ("name" in step ? step.name : undefined);
 
 const namesOf = (steps: readonly Step[]) => steps.flatMap((step) => nameOf(step) ?? []);
 
+// the steps of a path that are played in a scenario starting from its state
+const playedOf = (steps: readonly Step[]) =>
+  steps.filter(({ when }) => when === "arrange" || when === "call");
+
+// the names a hole may cite under a state step: those of the path's steps that are played
+//   [{arrange, name: c}, {call, name: d}, {after, name: e}]  ->  ["c", "d"]
+export const citableOf = ({ steps }: Path) => namesOf(playedOf(steps));
+
 type Replaced =
   | { readonly at: number; readonly fromState: boolean; readonly steps: readonly Step[] }
   | { readonly at: number; readonly finding: string };
@@ -78,19 +86,17 @@ export function stepsFromStates(
     return {
       at,
       fromState: true,
-      steps: path.steps
-        .filter(({ when }) => when === "arrange" || when === "call")
-        .map((one) => {
-          const name = nameOf(one);
-          return renamed(
-            {
-              ...one,
-              when: "arrange",
-              ...(name === undefined ? {} : { name: `${step.name}-${name}` }),
-            },
-            under,
-          );
-        }),
+      steps: playedOf(path.steps).map((one) => {
+        const name = nameOf(one);
+        return renamed(
+          {
+            ...one,
+            when: "arrange",
+            ...(name === undefined ? {} : { name: `${step.name}-${name}` }),
+          },
+          under,
+        );
+      }),
     };
   });
   const findings = replaced.flatMap((one) => {

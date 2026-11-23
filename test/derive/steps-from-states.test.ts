@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { type Path, stepsFromStates } from "../../src/derive/steps-from-states.ts";
+import {
+  citableOf,
+  type Path,
+  stepsFromStates,
+} from "../../src/derive/steps-from-states.ts";
 import type { Step, WrittenStep } from "../../src/shapes/roles.ts";
 
 const path: Path = {
@@ -22,6 +26,10 @@ const call: WrittenStep = {
   as: "a",
   call: { operation: "g", with: { x: "{{p.c.id}}", z: "{{n.body.id}}" } },
 };
+
+test("the names a hole may cite under a state step are those of its path's steps that are played", () => {
+  expect(citableOf(path)).toEqual(["c", "d"]);
+});
 
 test("a state step is the path's steps up to its call, as arrange, their names and holes under its name", () => {
   expect(

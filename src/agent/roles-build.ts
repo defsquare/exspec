@@ -15,7 +15,7 @@ import {
 } from "../derive/roles-files.ts";
 import { type InterfaceLeft, interfaceLeft, leftOf } from "../derive/roles-left.ts";
 import { pathsOf, statesWithPathIn } from "../derive/states-files.ts";
-import { stepsFromStates } from "../derive/steps-from-states.ts";
+import { citableOf, type Path, stepsFromStates } from "../derive/steps-from-states.ts";
 import { startTarget, stopTarget } from "../run/lifecycle.ts";
 import { oneAtATime, type PlayedSteps, playSteps } from "../run/play-steps.ts";
 import type { Event } from "../shapes/event.ts";
@@ -147,6 +147,13 @@ function builderSkip(left: InterfaceLeft, only: string | undefined): string | un
   }
 }
 
+// a state reached, as a builder is told it: its name and the steps of its path a hole cites
+//   s (c, d)        s, when its path names no step
+const stateTold = (path: Path) => {
+  const citable = citableOf(path);
+  return citable.length === 0 ? path.state : `${path.state} (${citable.join(", ")})`;
+};
+
 // The builder's task. A service an operation rests on is told by its file; nothing of the
 // providers that render it.
 export function builderPrompt({
@@ -181,7 +188,7 @@ export function builderPrompt({
       : [
           paths.length === 0
             ? "No state is reached yet: a scenario starts from none."
-            : `The states reached now, a scenario may start from them: ${paths.map(({ state }) => state).join(", ")}.`,
+            : `The states reached now, a scenario may start from them — each with the steps of its path a hole may cite, \`{{p.c.id}}\` for a step \`c\`: ${paths.map(stateTold).join("; ")}.`,
         ]),
     `The operation: ${name}, ${method.toUpperCase()} ${pattern}.`,
     `Your folder: exspec/${folder}/ — rules.yaml, hints.yaml and trigger.yaml are there; write each scenario as scenarios/<slug>.yaml there.`,

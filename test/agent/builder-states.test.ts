@@ -29,7 +29,9 @@ const toldWith = (reached: string) => [
   reached,
 ];
 
-const told = toldWith("The states reached now, a scenario may start from them: s.");
+const told = toldWith(
+  "The states reached now, a scenario may start from them — each with the steps of its path a hole may cite, `{{p.c.id}}` for a step `c`: s.",
+);
 
 const ofG = [
   "The operation: g, GET /g.",
