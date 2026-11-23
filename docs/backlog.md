@@ -819,6 +819,80 @@ them in; each of the first five is a branch of its own.
 - **Source.** ADR-0017, its alternatives and consequences; `docs/branches/feat-logo.md` at
   `5038184`, its Journal.
 
+## An operation left by the evidence phase is said left
+
+- **Seen.** On the full run on `trainings`, four reading operations whose check of what
+  was built failed were passed over by the recording and by their judge, and `extract`
+  ended ok: nothing said they were left. The cause of that failure was fixed; the silence
+  was not. In the same phase, one path's builder failing in the first wave stops the
+  evidence of every operation, and a state its path does not show puts its operation
+  first again at each extraction.
+- **Settled.** What is left is computed (`leftOf`), never stored; a state not reached is a
+  gap, a path refuted a problem (ADR-0026).
+- **Next.** At the end of the evidence phase, an operation whose built check fails is a
+  finding the command ends on, with the check's own words — a test on a fixture whose
+  scenario names an unknown actor. Then the first wave: let the operations no failed path
+  serves go on.
+- **Source.** `docs/branches/feat-named-state.md` at `13e5b07`, Journal › "The full run on
+  `trainings`"; `src/agent/roles-build.ts`, `src/derive/built-of.ts`.
+
+## What a state leaves open
+
+- **Seen.** On `trainings`, 13 states gathered by a role and reached, 341 of 941 scenarios
+  starting from one, the builders 11 % cheaper on a whole run and 23 to 28 % on the
+  operations that need a chained state.
+  - *From a state, 81 % of the scenarios hold against 84 % of the others*: not read rule
+    by rule; a state at hand may pull a builder toward the situation it already gives.
+  - *The 13 path operations start from no state* — they are built before any is reached —
+    and cost 4.50 USD of 12.71: a path that starts from another state is not written.
+  - *`serves` is checked by the states' reader alone and read by the page alone*: a rule
+    renamed later leaves a dead link there.
+  - *One builder used no state* though its situation was one (`unenroll-learner`): one
+    run, not looked into.
+  - *`exspec states rename`*: a write that fails midway leaves a half rename; a key
+    `my-state: a` makes it refuse where it could go on.
+  - *The words*: "1 operations are not read yet".
+  - *The page, on an evidence older than its state's path*: a step played is given its
+    state by its position among the exchanges; a path changed since the recording may put
+    a step under the wrong state. And the page replaces the state steps a second time,
+    after `checkBuilt` did: one derivation, handed on, could not diverge.
+- **Settled.** A state is a name, its structures and what is seen in it; its path is a
+  scenario, and it is reached when its sentence is judged to hold on that path (ADR-0025,
+  ADR-0026). A state belongs to scenarios, not to a rule: the page shows it in a
+  scenario's drawing and on its own sheet, never on an operation's.
+- **Next.** Read the `not-shown` of the scenarios that start from a state against those of
+  the same rules before the states. Then, each a decision of its own, what ADR-0025 lists
+  as not decided: a state that narrows another; a rule that cites the state before its
+  call and the one after; a path that starts from another state; a state that holds a
+  service's condition; what becomes of a hint's `situation`. Last and apart: the world of
+  a proven state captured and restored, in place of its path played again.
+- **Source.** ADR-0025, ADR-0026; `docs/branches/feat-named-state.md` at `13e5b07`, its
+  Journal.
+
+## The metamodel's drawing follows the schemas by hand
+
+- **Seen.** `docs/metamodel.yaml` is written after the schemas of `src/shapes/` and drawn
+  by `scripts/metamodel.ts`; a test holds the drawings to the file, nothing holds the file
+  to the schemas. In the drawings a few routed lines still cross, with no word on them.
+- **Settled.** The file is the source of the drawings and of their comparison between two
+  revisions; a place on the grid is not the metamodel.
+- **Next.** If the file drifts once: a test that every key naming another file in a
+  schema has its link in the YAML — or the reverse, the links listed from the schemas.
+- **Source.** `docs/metamodel.md`; `scripts/metamodel/draw.ts`.
+
+## Modules past their size
+
+- **Seen.** By the challenger, before the merge of the named state: `roles-view.ts` (563
+  lines), `roles-build.ts` (356; `rolesPlay` would go in a module of its own),
+  `main.ts` (309), `check-built.ts` (306), `roles-files.ts` (past 300). `RolesGap`
+  repeats the kinds of `gapSchema`. `scripts/metamodel/draw.ts` is 800 lines: the
+  schema, the comparison and the drawing are three steps.
+- **Settled.** One module, one step.
+- **Next.** `rolesPlay` out of `roles-build.ts` first; `RolesGap` inferred from
+  `gapSchema`.
+- **Source.** `docs/branches/feat-named-state.md` at `13e5b07`, Journal › "Pre-merge
+  review".
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").
