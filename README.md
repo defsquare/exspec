@@ -86,10 +86,8 @@ It has run end to end on three targets, a Conduit, a Petclinic and a trainings p
 is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
 Only what the target says outward is compared: what its interfaces answer and what it sends to a provider (ADR-0018).
 
-The project starts from a spike made in another project, whose record is in
-[`docs/brief/`](docs/brief/README.md): `framing.md` (what is kept, dropped, settled),
-`shapes.edn` (every data shape as one instance, in the spike's notation),
-`metamodel.md` (the concepts and what points at what).
+The project starts from a spike made in another project; its record, `docs/brief/`, was
+removed once the ADRs and the code said what it said (`git show 5aec9f7:docs/brief/README.md`).
 
 ## Developing
 

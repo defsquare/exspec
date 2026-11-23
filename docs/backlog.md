@@ -16,8 +16,8 @@ them in; each of the first five is a branch of its own.
   optional key in an interface's schema.
 - **Next.** Take them in the order of their counts, each with the scenario that needs it.
   Measure the fit again once inputs have their place: the reports predate it.
-- **Source.** `docs/brief/fit-conduit.md`, `docs/brief/fit-petclinic.md`,
-  `docs/brief/framing.md` › "The shapes, redrawn by instances and tested for fit".
+- **Source.** `docs/brief/fit-conduit.md` at `5aec9f7`, `docs/brief/fit-petclinic.md` at `5aec9f7`,
+  `docs/brief/framing.md` at `5aec9f7` › "The shapes, redrawn by instances and tested for fit".
 
 ## 7 — Scenarios derived from a rule, and values at the bounds
 
@@ -29,7 +29,7 @@ them in; each of the first five is a branch of its own.
   values on each side of a constraint of a field.
 - **Next.** From the `:takes` of `register`, produce the missing scenarios as planned
   copies, play them, and count what thirty bound mutants do before and after.
-- **Source.** `docs/brief/framing.md` › "Experiments left"; ADR-0001.
+- **Source.** `docs/brief/framing.md` at `5aec9f7` › "Experiments left"; ADR-0001.
 
 ## 9 — The target's clock
 
@@ -41,7 +41,7 @@ them in; each of the first five is a branch of its own.
   the same day and red the next: two recordings do not show it (ADR-0005).
 - **Next.** Not before a target with a clock is taken. Then: holding the clock of a target
   that offers nothing for it, a date type, calendar arithmetic in a rule.
-- **Source.** `docs/brief/clock.md`.
+- **Source.** `docs/brief/clock.md` at `5aec9f7`.
 
 ## 10 — A rule is checked: the trace and the mutants
 
@@ -51,7 +51,7 @@ them in; each of the first five is a branch of its own.
   trace; a mutant of that branch must turn them red. Trace and mutants come from existing
   tools and belong to the target.
 - **Next.** After item 7. One rule of Conduit, end to end, with JaCoCo and PIT.
-- **Source.** `docs/brief/framing.md` › "Settled with the user".
+- **Source.** `docs/brief/framing.md` at `5aec9f7` › "Settled with the user".
 
 ## The reset is checked, through the interfaces
 
@@ -83,7 +83,7 @@ them in; each of the first five is a branch of its own.
 - **Next.** Count the leaves a noisy place frees, show it in `reference-written` and in
   `status`. Then pair the elements of a list by the identity of the structure a projection
   says it shows, instead of by index — it needs the projection, so after the readings.
-- **Source.** ADR-0005 › Consequences; `docs/brief/spike-journal.md` › Journal 6;
+- **Source.** ADR-0005 › Consequences; `docs/brief/spike-journal.md` at `5aec9f7` › Journal 6;
   `docs/branches/feat-play.md` at `f8bd037`.
 
 ## A forced recording that changes the class of a status says so
@@ -95,7 +95,7 @@ them in; each of the first five is a branch of its own.
   rewritten.
 - **Next.** When a reference is replaced and the status of its judged call changes, emit
   it as an event of its own; decide whether `--force` alone may do it.
-- **Source.** `docs/brief/spike-journal.md` › Journal 5; `src/run/record.ts`.
+- **Source.** `docs/brief/spike-journal.md` at `5aec9f7` › Journal 5; `src/run/record.ts`.
 
 ## Conditions that say "the caller's" and "already taken"
 
@@ -129,7 +129,7 @@ them in; each of the first five is a branch of its own.
 - **Next.** Terms for an instance that appears (shown by a projection after, absent
   before) and one that goes; a field that takes the value of an input. With the scenario
   that needs each, one target at a time.
-- **Source.** `docs/brief/fit-conduit.md`, `docs/brief/fit-petclinic.md` (a `:then` for
+- **Source.** `docs/brief/fit-conduit.md` at `5aec9f7`, `docs/brief/fit-petclinic.md` at `5aec9f7` (a `:then` for
   each effect); `docs/branches/feat-extract.md` at `c1c9ef0`.
 - **Tried.** On a closed spike: an effect says which instance (`where`), takes a value
   from an input, sees an instance appear, read by the identity the answer gives. Written
@@ -259,7 +259,7 @@ them in; each of the first five is a branch of its own.
 - **Next.** Decide what `status` says of a fact the interfaces cannot show at all — today
   it reads like a fact the agent did not write — and whether a reading may be taken as
   another actor than the caller (an administrator reading the caller's permissions).
-- **Source.** `docs/brief/fit-petclinic.md` › "Blind spots"; `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
+- **Source.** `docs/brief/fit-petclinic.md` at `5aec9f7` › "Blind spots"; `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## How much of a target an extraction covers, and how steady it is
 
@@ -367,7 +367,7 @@ them in; each of the first five is a branch of its own.
 - **Next.** Terms on the judged answer itself (an order, every element has a value, a
   count), each with the scenario that needs it; reading one element of a list by its
   identity needs the parent's locator, which is no field of the element.
-- **Source.** `docs/brief/fit-conduit.md`; `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
+- **Source.** `docs/brief/fit-conduit.md` at `5aec9f7`; `docs/branches/spike-proof-completeness.md` at `e73729b` (branch `spike/proof-completeness`, closed without a merge).
 
 ## Three changes of a closed spike that do not depend on its terms
 

@@ -6,13 +6,8 @@ operations, rules, facts, structures — and says, for every claim, what holds i
 
 **Project context — refer to it, do not duplicate here:**
 - What the project is, how to build and run it → **`README.md`**
-- Where it comes from, what is settled, what is kept and dropped → **`docs/brief/`** (start
-  with `docs/brief/README.md`); the data shapes by instance → **`docs/brief/shapes.edn`**
 - Architecture decisions (the *why*) → **`docs/adr/`** (index `docs/adr/README.md`)
 - What is left to do → **`docs/backlog.md`**, the only backlog
-
-`docs/brief/` is the record of the spike this project starts from. It is read, never
-edited: a decision that changes one of its statements is an ADR here.
 
 ## Language
 
@@ -42,7 +37,8 @@ verdicts), *Backlog* (this branch's items) — and **move** the items it takes o
 into `docs/backlog.md`.
 
 At the merge, empty the working file: each open item goes back to `docs/backlog.md` or is
-dropped with its reason in the commit that deletes the file; a design worth keeping becomes an ADR; then
+dropped with its reason in the commit that deletes the file; a design that is one of the
+four decisions an ADR records becomes one; then
 delete the file — the branch's commits are its record. An item that goes back is written
 to be picked up cold — *Seen*, *Settled*, *Next*, *Source* — its Source pinned to the last
 commit that holds the working file. A done item is deleted from `docs/backlog.md`, never
@@ -56,11 +52,9 @@ item says. A commit may cite one.
 **A concept exists because a target uses it.** Adding, removing or renaming
 a concept is what calls for an ADR — the index is not a list of the concepts; a concept
 removed from the code gets its ADR marked `Deprecated`. Keep no concept because it
-already exists, and add none a target has not asked for: the spike's fit test
-(`docs/brief/fit-*.md`) lists what two targets need.
+already exists, and add none a target has not asked for.
 
-Four groups, and the direction of every reference (the spike's drawing:
-`docs/brief/metamodel.md`). `docs/metamodel.md` draws the concepts the roles' reading
+Four groups, and the direction of every reference. `docs/metamodel.md` draws the concepts the roles' reading
 writes, from `docs/metamodel.yaml`: a schema that adds, removes or renames one of them, or a
 link between two, changes that file in the same commit. `fact`, `projection` and `detects`
 are of the computed path only and are not drawn there.
@@ -237,8 +231,8 @@ proposing" says so. An implementer that meets one reports it instead of deciding
 ## Challenge before proposing
 
 Before putting a design to the user, have the `challenger` agent review it when any of:
-- it needs a new ADR, or amends or supersedes one;
-- it adds a concept, or a key to a data shape;
+- it needs a new ADR, or supersedes one;
+- it adds, removes or renames a concept;
 - it is the second heuristic in a row for the same problem (a sign the approach is wrong);
 - it makes something derivable stored, or something observed predicted.
 
@@ -247,28 +241,38 @@ Not for bug fixes, renames, or a change an accepted ADR already decides.
 
 ## Mandatory ADR pass before every commit
 
-**What gets an ADR, and what does not.** An ADR records a decision that matters on one of
-three subjects:
+**What gets an ADR, and what does not.** An ADR is rare. It records a decision that:
 
-- the **architecture** — the layers and what may import what, the stack, a dependency that
-  shapes the code, how the tool talks to a target or to the agent;
-- the **overall design** — one of the three rules the design rests on, the notation of the
-  files, the event stream, how a scenario is played, recorded and compared;
-- the **metamodel** — a concept added, removed or renamed, a link between two concepts, a
-  key added to a data shape.
+- changes one of the **three rules** the design rests on;
+- adds, removes or renames a **concept** of the metamodel, or turns the direction of a
+  reference between two groups;
+- changes the **architecture** — the layers and what may import what, the stack, how the
+  tool talks to a target or to the agent;
+- **reverses** an accepted ADR.
 
-Everything else is told in the **body of the commit message**: the choice made, the reason,
-what was set aside — a local implementation choice, the layout of a module, a term added
-inside an existing shape, a library's option, a fix. When in doubt: would someone rewriting
-this module in a year have to know the decision to avoid undoing it by accident? If not,
-the commit carries it.
+Everything else is the **commit's**: a key added to a shape, a file's name or place, an
+event, a check, a brief's wording, a library's option, the layout of a module, a fix. The
+body says the choice and the reason; one trailer per decision makes it found again
+(`git log --grep '^Decision:'`):
+
+```
+Decision: a shared refusal is said once; an operation's trigger does not say it again
+Rejected: held to the same status and body — a body left out would have to be judged equal
+```
+
+When in doubt: would someone rewriting this module in a year have to know the decision to
+avoid undoing it by accident, **and could they not read it in the code**? A key is read in
+its schema; only its reason is missing, and a commit holds a reason.
+
+**An ADR names concepts and rules, not paths or keys**: a file moved or a key renamed then
+amends none. The ADRs written before stay as they are.
 
 Before **every** `git commit`, do a pass over the ADRs:
 
 1. Compare the staged diff (`git diff --cached`) against the ADRs in `docs/adr/`.
 2. **Create** a new ADR (Nygard format: Context / Decision / Alternatives / Consequences)
-   for any decision of the diff on one of the three subjects above; write any other
-   decision in the commit body.
+   for a decision of the diff that is one of the four above; write any other decision in
+   the commit, with its `Decision:` trailer.
 3. **Supersede** — status `Superseded by ADR-XXXX` + link — any ADR made obsolete;
    **deprecate** — status `Deprecated`, one line on what replaced it — the ADR of a concept
    the diff removes.

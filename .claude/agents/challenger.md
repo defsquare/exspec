@@ -13,8 +13,7 @@ Read only: never edit, write, commit or run anything that changes the repository
 for `git log`, `git show`, `grep` and reading.
 
 Ground every claim in what you read — `README.md`, `docs/adr/` (index in
-`docs/adr/README.md`), `docs/brief/` (the spike this project starts from: its framing, its
-shapes, what two targets needed), the code the proposal touches, its tests — and cite files,
+`docs/adr/README.md`), the code the proposal touches, its tests — and cite files,
 functions and ADR numbers.
 
 Hold the proposal against the three rules the design rests on (CLAUDE.md › The metamodel):

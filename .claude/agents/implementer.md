@@ -9,7 +9,7 @@ report file. Read the brief first: it is your requirements, with the exact value
 verbatim. Do this item, nothing beside it.
 
 Before writing, read what the item touches: `README.md`, the modules and their tests, the
-ADRs the brief names, the instances of `docs/brief/shapes.edn` it concerns. `CLAUDE.md`
+ADRs the brief names. `CLAUDE.md`
 binds you — above all:
 
 - layers: a module imports only its layer or those below; `shapes` and `derive` pure — no
