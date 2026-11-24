@@ -166,6 +166,23 @@ them in; each of the first five is a branch of its own.
   checks pass.
 - **Source.** `docs/branches/feat-extract.md` at `c1c9ef0`.
 
+## A target's command that never returns stops the run
+
+- **Seen.** On Plane, `extract` waited 1h28 on `reset.sh`: its
+  `docker compose exec plane-mq rabbitmqctl purge_queue` never returned, started during a
+  RabbitMQ `system_memory_high_watermark` alarm. RabbitMQ answered again minutes later;
+  the `exec` did not, ignored SIGTERM (forwarded to the stuck `rabbitmqctl`), and gave way
+  only to a SIGKILL of the `docker-compose` plugin, after which the run went on. Nothing
+  was emitted while it waited: the run looked alive. `src/io/shell.ts` spawns the
+  target's commands (start, seed, reset, stop) with no deadline.
+- **Settled.** Nothing.
+- **Next.** A deadline on each of the target's commands, as the providers' and the twins'
+  calls already have; past it, kill the process group (SIGTERM, then SIGKILL) and fail
+  with the command line and what it printed — an error the run shows, not a wait. Whether
+  the deadline is one value or set per command in the target's description is the
+  choice to make.
+- **Source.** The Plane extraction of 2026-11-24, `d0062ec`.
+
 ## Loose ends of the verdicts
 
 - **Seen.** `play` judges a copy without knowing its noise: a date in a reading refutes
