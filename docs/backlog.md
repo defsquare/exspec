@@ -468,6 +468,29 @@ them in; each of the first five is a branch of its own.
   less" and "Conduit read again"; the runs under `targets/spike-snapshots/8-tool-petclinic/`
   and `9-tool-conduit/` (not in the repository).
 
+## How many of a target's rules a reader misses
+
+- **Seen.** A reading is measured by its count of rules alone: Petclinic 263 with the
+  default model, 504 with the stronger one. Nothing says how many rules of the target a
+  reader misses, nor how many it writes that the target does not have before a judge
+  costs a scenario to say so. A paper that extracts rules from legacy code with an agent
+  (AgentModernize) measures exactly that, against a list of rules reviewed by hand: 90 %
+  precision, 92 % recall on eight programs written for it, 195 to 310 lines and 12 to 15
+  rules each, some of them implicit — in the code, in no document. Its list is one
+  annotator's and its programs are synthetic; its own way to keep a rule in the list:
+  one "a naive translation could plausibly get wrong", which dropped about a third of
+  the candidates (field present, generic sanitising).
+- **Settled.** Nothing.
+- **Next.** A small target whose rules are known because they were planted: about fifteen,
+  written down before any reading, a few of them implicit and one or two spread over
+  several files. Read it with each model and effort, several runs per cell; count the
+  rules found, missed, and written without a planted rule behind them. A rule's name
+  moves from a run to the next, so the pairing is by hand, or by `source` if "A rule's
+  identity from one run to the next" shows it pairs. Decide first whether a target
+  already kept can carry planted rules or one is written for it.
+- **Source.** arXiv 2605.17535v2, its Table VII and the section on the gold standard;
+  "Which model reads a whole target" above.
+
 ## A contradiction that is the reader's, and a family with one cause
 
 - **Seen.** One line of the common reading made 29 contradictions on Petclinic; corrected
