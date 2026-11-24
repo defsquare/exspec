@@ -51,7 +51,9 @@ A phase is steps in order, each skipped when the files say it is done, and a pha
 nothing left is skipped whole: stopped, `extract` goes on from where the files stand. On a terminal it draws a flow;
 piped, or with `--format json`, it prints every event.
 
-Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/commands.md). How an extraction flows, phase by phase: [`docs/extraction-flow.md`](docs/extraction-flow.md). The concepts and what names what: [`docs/metamodel.md`](docs/metamodel.md).
+Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/commands.md). 
+How an extraction flows, phase by phase: [`docs/extraction-flow.md`](docs/extraction-flow.md). 
+The concepts and what names what: [`docs/metamodel.md`](docs/metamodel.md).
 
 ## What it claims
 
@@ -65,8 +67,8 @@ Every command, with its options: `exspec --help` and [`docs/commands.md`](docs/c
 ## The idea in four groups
 
 ```
-proof           scenario, call, side effect          points at the specification
-specification   operation, rule, fact, structure, field, service, condition    points at nothing below it
+proof           scenario, step, evidence, side effect, judgement    points at the specification
+specification   operation, rule, fact, structure, field, service, condition, state    points at nothing below it
 bindings        projection, trigger, detects, renders    the only shapes that know both sides
 target          target, interface, observable (a provider is one)    points at nothing above it
 ```
@@ -80,12 +82,8 @@ one provider.
 
 ## Status
 
-It has run end to end on three targets, a Conduit, a Petclinic and a trainings platform that calls providers. What it does not do yet
-is in [`docs/backlog.md`](docs/backlog.md); the decisions are in [`docs/adr/`](docs/adr/README.md).
-Only what the target says outward is compared: what its interfaces answer and what it sends to a provider (ADR-0018).
-
-The project starts from a spike made in another project; its record, `docs/brief/`, was
-removed once the ADRs and the code said what it said (`git show 5aec9f7:docs/brief/README.md`).
+exspec is in **alpha**: nothing of it is stable yet — the commands, the notation of the files and the concepts 
+themselves still move. 
 
 ## Developing
 
