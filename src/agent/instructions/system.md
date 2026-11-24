@@ -43,7 +43,7 @@ alive: {method: get, path: /items, status: 200}
 seed: ["./exspec/target/seed.sh"]
 reset: ["./exspec/target/reset.sh"]
 stop: ["docker compose -f exspec/target/compose.yaml down -v"]
-api: {base-url: "http://localhost:18080/api"}
+api: {base-url: "http://localhost:18080"}
 credentials: exspec/target/credentials.json
 runs-with:
   - {setting: "security is on", source: "exspec/target/compose.yaml:12"}
@@ -52,7 +52,10 @@ observables:
   - {observable: mail, kind: provider}
 ```
 
-`start`, `seed`, `reset`, `stop` are shell lines run from the checkout. `alive` is a
+`start`, `seed`, `reset`, `stop` are shell lines run from the checkout. `base-url` is where
+the system answers — scheme, host, port — and no path, unless every route the system
+serves is under it: the prefix of one part of it (`/api/v1`) belongs to the interfaces'
+patterns. `alive` is a
 request (path relative to `base-url`) that answers `status` once the target is up.
 `credentials` (optional) is a JSON file the seed writes: for each actor's name, the
 request headers that sign it in — `{"ann": {"Authorization": "Bearer …"}}`.

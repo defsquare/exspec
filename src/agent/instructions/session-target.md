@@ -9,8 +9,10 @@ leave nothing running.
 ## What to find out, from the checkout
 
 How the system is built and started (a build file, a Dockerfile, a compose file, a README);
-which database it needs; where its API is rooted (a context path, a port); how a caller is
-authenticated (a token from a login, basic auth, nothing).
+which database it needs; where it answers (a port, and a context path only if every route
+it serves is under it — a back-office beside an API is the same system); how a caller is
+authenticated (a token from a login, basic auth, a session cookie, nothing) — each way, when
+its parts differ.
 
 ## What to write
 
@@ -39,7 +41,9 @@ authenticated (a token from a login, basic auth, nothing).
   and "someone else's" exist; a few instances of each main concept, some related to each
   other. Small: a human must be able to hold it in their head.
 - If callers are authenticated, write `exspec/target/credentials.json`: for each actor,
-  the request headers that sign it in.
+  the request headers that sign it in. Where a part of the system signs its callers in
+  with a session cookie, the seed logs in — on every start, snapshot or not — and writes
+  the `Cookie` header among the actor's.
 - Last, take a **snapshot** of the starting state — for a SQL database, a data-only dump
   including the sequences, left under `exspec/target/`. The reset loads it, and so does
   the seed itself the next time.

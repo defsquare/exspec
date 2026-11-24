@@ -917,6 +917,15 @@ them in; each of the first five is a branch of its own.
 - **Source.** `docs/branches/feat-named-state.md` at `13e5b07`, Journal › "Pre-merge
   review".
 
+## `check` crashes on a terminal
+
+- **Seen.** Three sessions of the interfaces, on trainings, report that `exspec check .`
+  crashes on a terminal with a React rendering error, and fall back on `--format json`.
+  Not reproduced by hand.
+- **Next.** Run `check` on a terminal against an extraction that holds only `target.yaml`
+  and `interfaces.yaml`, every interface a gap; fix the renderer at the cause.
+- **Source.** The interfaces' sessions of the extractions of trainings, 2026-11-24.
+
 ## Open questions, no item yet
 
 - A fact the interfaces do not show ("the email is not registered yet").

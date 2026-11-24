@@ -3,6 +3,8 @@
 Write `exspec/interfaces.yaml`: every interface the target exposes to its callers, each
 with the shape of what it accepts and of what it answers.
 
+- Start from where the server mounts its routes, not from one prefix: an API, a back-office
+  and pages a browser posts forms to are all interfaces of the one system.
 - Take them from the target's contract if it has one (an OpenAPI document), otherwise
   from the code (controllers, routes, the request and response types). Where both exist
   and disagree, write what the **contract** says: the disagreement is something the
