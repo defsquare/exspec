@@ -502,8 +502,9 @@ them in; each of the first five is a branch of its own.
   written down before any reading, a few of them implicit and one or two spread over
   several files. Read it with each model and effort, several runs per cell; count the
   rules found, missed, and written without a planted rule behind them. A rule's name
-  moves from a run to the next, so the pairing is by hand, or by `source` if "A rule's
-  identity from one run to the next" shows it pairs. Decide first whether a target
+  moves from a run to the next, so the pairing is by hand, or by name, then `on`, then
+  the nearest sentence, as measured in "A rule's identity from one run to the next".
+  Decide first whether a target
   already kept can carry planted rules or one is written for it.
 - **Source.** arXiv 2605.17535v2, its Table VII and the section on the gold standard;
   "Which model reads a whole target" above.
@@ -534,17 +535,35 @@ them in; each of the first five is a branch of its own.
   judgements left without a rule. And since a step calls an operation by its inputs'
   names (ADR-0024), an input renamed in one reading makes stale the evidence of every
   scenario that calls it, in any interface.
-- **Settled.** Nothing.
-- **Next.** Try `source` as the key on two runs of one target already kept: how many rules
-  pair, how many split or merge. Needed before a reading can follow a change of the code.
-- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "A second run of each role".
+- **Seen.** Tried on two readings of Conduit, of six operations of Kadai, and of
+  Petclinic by two models. A name cannot be made the same twice and is not the obstacle:
+  the cut is — one rule here, three there. Rules with one equal in the other reading, by
+  hand: 78 of 129 on Conduit (47 cut otherwise, 4 alone), 58 of 62 on Kadai, 11 of 35
+  between two models. Paired by the same name, then the one input a requirement is on,
+  then the nearest sentence: 97 of 129 on Conduit with none wrong, 58 of 62 on Kadai
+  with one wrong. `source`, best match, pairs 77 with 4 wrong within one code base and 0
+  of 27 across two; a refusal's name, 180 pairs with 107 wrong.
+- **Settled.** No identity is stored. A name is a label: right when it matches (33 pairs
+  of 33) and rarely matching; the cut is the obstacle. The pairing was written, measured
+  and removed: the comparison of two readings does not need it ("Two code bases compared
+  by their readings").
+- **Next.** What still needs an identity is a scenario and a judgement left without their
+  rule when a reading is made again. The pairing is to write again from its three layers
+  (same name, the one input, nearest sentence) if a reading has to
+  follow a change of the code; decide then what a rule cut otherwise does to its
+  scenarios.
+- **Source.** `docs/branches/spike-three-roles.md` at `d88b471`, "A second run of each role";
+  `docs/branches/spike-replay-other-implementation.md` at `fdd596b`, "A rule's name made
+  deterministic" and "The pairing in `derive`".
 
 ## A judge that says the same twice
 
 - **Seen.** The judge run twice on the same evidence of Petclinic: 321 of 333 judgements
   have the same word. The 12 that move are near-matches of a text and `contradicted`
   against `refused-unexpectedly`; a confidence moves by a tenth. The judge costs 1.3 to
-  2.7 USD on the two small targets and 17.9 on Kadai, a third of that run.
+  2.7 USD on the two small targets and 17.9 on Kadai, a third of that run. On a NestJS
+  back end of Conduit's API, judged under two seeds: 7 verdicts of 162 move on the same
+  exchanges (a missing token taken or not for a bad one, a token equal to the one before).
 - **Settled.** A judgement is stored with a hash of what the judge was given (ADR-0010);
   no threshold on a confidence. A decision model as the judge was tried by hand — 18 of
   19 planted contradictions, no evidence named — and the user did not take up measuring
@@ -965,6 +984,168 @@ them in; each of the first five is a branch of its own.
 - **Next.** Run `check` on a terminal against an extraction that holds only `target.yaml`
   and `interfaces.yaml`, every interface a gap; fix the renderer at the cause.
 - **Source.** The interfaces' sessions of the extractions of trainings, 2026-11-24.
+
+## A rewrite held to an extraction: what is carried, and what the first target leaves in it
+
+- **Seen.** Conduit's extraction carried into the checkout of a NestJS back end of the
+  same API. The references replayed there: 12 equal of 162, 150 different — dates,
+  identifiers, null against "", statuses — and nothing says which difference breaks a
+  rule. The same scenarios recorded and judged on the second target instead (two turns of
+  `roles record` and `roles judge`, no builder, 0.75 USD): 96 hold on both, 30 hold on
+  the first and are contradicted on the second, each with its sentence; 10 contradicted
+  on the first hold on the second.
+- **Seen.** What the first target leaves in what is carried: a reference holds the first
+  target's defects (its 401 for what does not exist is in 35 references); a trigger does
+  too (`article-missing: 401`, and the second is contradicted for answering 404); 93
+  scenarios of 162 held a raw request, because an input under an envelope had no place.
+  What had to be done by hand: the first target's `interfaces.yaml` in place of the
+  second's (a trigger binds an interface by the reader's name for it), the seed's calls,
+  and the `runs-with` lines — the judge's text holds them, so every carried judgement
+  and state is stale on a target that words its settings otherwise.
+- **Seen.** With the extraction carried before `extract --phase target`, the session
+  wrote a base URL ending in `/api` against carried patterns that start with `/api`: its
+  gate plays `alive` alone and passed, 94 references were route misses. Three scenarios
+  of 162 lean on the seed; the judge moved 7 verdicts of 162 between two readings of the
+  same exchanges.
+- **Seen.** What a `holds` lets through: the judge takes a status that matches and says
+  the body differs — a message where the trigger says empty — in ten of the verdicts
+  read; `bio` and `image` empty where the first target answers null are in no verdict.
+  The wire is described, not proven (ADR-0028): a rewrite held to the wire too needs the
+  references compared, with their 49 scenarios of dates and identifiers.
+- **Seen.** Both targets were HTTP with the same paths. With another way of calling the
+  system — a batch, a file, a screen — only a scenario made of calls to operations
+  survives; not tried.
+- **Settled.** By the user: references are shared between two versions of one
+  application only. Two code bases are not compared by replaying one's references on the
+  other — see "Two code bases compared by their readings". A rewrite kept to the
+  scenarios is judged by rule, on its own recordings. An input no call could send is now
+  a finding of the reader's gate.
+- **Next.** If a rewrite is taken up: write the procedure (what is copied, what is the
+  second target's own, the two turns) and give the README's claim on a rewrite its
+  standing; a check that the base URL's own path is not the start of every carried
+  pattern; a command for a rule's verdict on two targets (today a script outside the
+  repository). Not started: the scenarios built again from the rules alone on the second
+  target.
+- **Source.** `docs/branches/spike-replay-other-implementation.md` at `fdd596b`, from "The
+  floor" to "Why 135 steps are requests".
+
+## Two code bases compared by their readings
+
+- **Seen.** Each code base read on its own, nothing carried (the specification phase,
+  about 2 USD each on Conduit's 19 operations); the operations matched by method and
+  pattern (19 of 19); then one agent given, per operation, the rules of both sides —
+  requirements and effects with their sentences, the shared rules applied — and no code.
+  Conduit (Spring) against a NestJS back end: 17 to 21 differences said, 9 marked sure
+  in both runs and the same nine, all in the code — the author filter exact against
+  partial, filters one by precedence against all together, an unknown tag ignored against
+  an empty list, offset as a page against offset skipped, a cap of 20, following and
+  unfollowing oneself refused by one, a username already used. Conduit read twice, as a
+  control: 2 to 5 said, 1 sure — the two readers disagreeing on the list's page, one of
+  them wrong against the code. A comparison of two readings of one code finds a reader's
+  error.
+- **Seen.** The silence. The differences not marked sure are of one kind: one side
+  states a rule, the other says nothing — 12 in the code between the two code bases, 4
+  false on the double reading, and nothing tells them apart. A reading says what an
+  operation does, never what its reader looked for and did not find.
+- **Seen.** What did not serve. A rule's name: two readings of one code share 0 shared
+  rule of 7 and 17 effects of 61 by name. The file and line a rule cites: 0 of 27 across
+  two code bases. A pairing of the rules computed first (same name, then the one input,
+  then the nearest sentence — 87 pairs of 129, 2 wrong): the agent finds the same sure
+  differences without it, and judging pair by pair loses what sits across a pair and a
+  rule left alone. What two readings of Conduit do agree on: operations, structures (4
+  of 4), fields (28 of 28), inputs (36 of 38), and a requirement's `on`.
+- **Settled.** By the user: no reference and no call is shared between two code bases.
+  The whole operation is judged, not a pair of rules. A difference read in sentences is
+  a lead to check in the code or by a scenario, not a finding. No command: a prompt and a
+  script outside the repository.
+- **Next.** Before any command, a second pair of code bases — the prompt was written on
+  one. Then the silence: what would let a reading say "looked for, not there" (a list of
+  questions every reader answers for an operation? the proof on both sides, comparing
+  only the rules held?). The prompt, as run:
+
+  ```
+  You compare the business behaviour of two systems, A and B, that serve the same API.
+  For each operation you are given the rules someone wrote after reading each system's
+  code: the requirements (what must hold, or the call is refused) and the effects (what
+  the call does or shows). You do not have the code and must not look for it.
+
+  The two lists were written independently. The same behaviour is often said with other
+  words, under another name, or cut otherwise: one rule on one side may be two or three
+  on the other, and a rule's sentence on one side may hold what the other side says in a
+  rule of its own. Judge the operation as a whole, not rule by rule.
+
+  For each operation, say every difference of behaviour between A and B that the two
+  lists state or imply — a call accepted by one and refused by the other, a different
+  result, a different thing stored, shown or removed. Do not report: a difference of
+  wording, naming or cut with the same behaviour; a detail one side states and the other
+  is merely silent about, when nothing on the other side says otherwise and it is a
+  detail a writer could leave out.
+
+  Report as `only` a behaviour that one side states as a rule of its own and that the
+  other side would be expected to state if it had it (a refusal, a cap, a filter's
+  behaviour).
+
+  One entry per difference: the operation, `differs` | `only-A` | `only-B`, the rules
+  involved, one sentence (what A does, what B does), and `sure`: high | low — low when
+  the two sentences may be two ways of saying one behaviour and you cannot tell.
+  ```
+- **Source.** `docs/branches/spike-replay-other-implementation.md` at `fdd596b`, from "The
+  strategy turned" to its end; the runs under `targets/runs/2026-11-2[4-6]-*` (not in the
+  repository).
+
+## The flows of an operation: which rules turn it
+
+- **Seen.** By the user: a requirement on an input, or on an instance being there,
+  weighs less than what an accepted call changes; a requirement weighs when it turns the
+  business flow; an operation with such turns is not a straight line. Conduit has none:
+  of its 125 rules, 61 are effects, 32 shared requirements applied, 15 on an input, 17 on
+  the situation. Kadai has: 158 of its 395 effects hold a `when`, in 62 of 93
+  operations — about 80 on an input, 45 on the state of the thing, 20 per item of a bulk
+  call.
+- **Seen.** Six operations of Kadai read twice: the refusals and an effect's `on` (the
+  input its `when` looks at) are the same in both; the `when` of an effect on the
+  situation differs in three operations of six. A key tying an effect to the requirement
+  it is an accepted answer of (`of`) was written in one operation of six by each reader,
+  not the same, and was removed.
+- **Settled.** An effect's `when` may say `on: <input>`; `flowsOf` derives, from the
+  rules alone, the refusals (on an input, on the situation), what every accepted call
+  does, what varies by an input and what turns on the situation. Nothing is stored, no
+  command shows it. Rejected with the challenger: a named decision with its alternatives,
+  a label on a `when`, a structure's field as the thing a `when` reads.
+- **Next.** The turns on the situation are a flat list: nothing says whether two `when`s
+  are two answers to one question or two questions. Without it the branches cannot be
+  counted or drawn as a tree. What is left once the effects with an `on` are set aside is
+  the list of an operation's business turns — a first use that needs nothing more.
+- **Source.** `docs/branches/spike-replay-other-implementation.md` at `fdd596b`, from "An
+  operation is not a straight line" to "`of` removed".
+
+## Loose ends of a reading's inputs
+
+- **Seen.** The envelope of a request (`{article: {…}}`) is read three ways by three
+  readers of one target: an input of its own, a requirement `on` a field it holds, a
+  requirement on nothing; five rules are named `…-wrapper-present` — rules of the wire,
+  which is described and not proven (ADR-0028). They are most of what one reading says
+  and another does not.
+- **Seen.** Nine triggers of 19 write `sends: {}`, which says nothing.
+- **Seen.** Read in the code, not met in a run: an input is found at the top of a body
+  only when the description writes the body as a map of its fields. A body written as a
+  named schema, or as optional, hides its fields: the gate then asks for `sends`, where
+  the reader's instructions say `sends` is not written for a field at the top of the
+  body. The place a `sends` names is already looked up through the named schemas.
+- **Seen.** Two minors of the pre-merge review, left: the test of the findings on an
+  effect's `on` sits with the flows' tests, not the reader's check's; `describedOf` does
+  not say it reads the interfaces' file.
+- **Seen.** An input the target's description has no place for — a header, a body the
+  description lacks — is a finding its reader cannot fix: after three rounds the
+  operation is left unread. Six operations of Conduit's extraction kept under
+  `targets/conduit` no longer pass their reading and were not read again.
+- **Settled.** An input is placed by its name at the top of the request, or by `sends`.
+- **Next.** One sentence in the reader's instructions for the envelope (no rule, no
+  input of its own?) and for an empty `sends`; decide what an operation with an input
+  that cannot be placed becomes; an input named like a field of a body given by a named
+  schema is placed there, the schemas passed as they are to the check of a `sends`.
+- **Source.** `docs/branches/spike-replay-other-implementation.md` at `fdd596b`, "Why 135
+  steps are requests", "An input with no place", "Conduit read a second time".
 
 ## Open questions, no item yet
 
