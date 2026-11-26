@@ -83,6 +83,8 @@ unsure:                                 # what reading could not settle about a 
 trigger: <the name your task gives>
 interface: <the name your task gives>
 operation: <the name your task gives>
+sends:                                  # only the inputs that do not go where their name says
+  name: [body, item, name]              # in the body, under `item`
 answers: {status: [200]}                # every status an accepted call is answered with
 refuses:                                # one entry per refusal rules.yaml names
   not-found: {status: 404, body: "{error: {code: THING_NOT_FOUND, message: 'Thing <id> not found'}}"}
@@ -103,6 +105,11 @@ Rules of writing:
   made — is written nowhere.
 - Two rules refuse by the same name only when they refuse the same way; a different status
   or body is a different refusal, with a name of its own.
+- An input is sent where the request has a part of its name: a parameter of the path
+  (`{itemId}`), a parameter of the query, a field of a form, a field at the top of the
+  body. `sends` is written for an input that goes anywhere else, and only for it: a field
+  of the body under another (`[body, item, name]`, as deep as it sits), a part named
+  otherwise (`[query, q]`, `[path, id]`, `[form, to]`).
 - `refuses` has an entry for each refusal `rules.yaml` names that `common-trigger.yaml`
   does not say. A refusal said under `refuses` in `common-trigger.yaml` is never said
   again here: where this operation answers it another way, it is another refusal, with a

@@ -1,14 +1,23 @@
 import { type CommonTrigger, type Trigger, triggerSchema } from "../shapes/bindings.ts";
 import { type Common, type Rules, readYaml } from "../shapes/roles.ts";
+import type { Interface, NamedShape } from "../shapes/target.ts";
 import { acceptedStatuses } from "./accepted.ts";
+import { hasPlace } from "./check-bindings.ts";
+import { placesOfInputs } from "./input-places.ts";
 
 // The trigger written beside an operation's rules, checked against them and against the
 // shared trigger. A finding is a line the reader can fix:
 //   'trigger.yaml: refuses says nothing of "r", the refusal of "a", nor does common-trigger.yaml'
 //   'trigger.yaml: "s" is a shared refusal, said in common-trigger.yaml: not said again'
+// An input a call could not send is one too: left to the builder, each step that gives it
+// is written as a request, held to this target's wire.
+//   takes {x}, "post /s" taking body {a: {x}}, no sends
+//   -> 'trigger.yaml: sends says nothing of "x": no … body field … of post /s is named "x"'
 export function checkTrigger({
   name,
   interfaces,
+  bound,
+  schemas = [],
   rules,
   common,
   commonTrigger,
@@ -18,6 +27,9 @@ export function checkTrigger({
   readonly name: string;
   // the target's interfaces; undefined when interfaces.yaml does not parse
   readonly interfaces: readonly string[] | undefined;
+  // the interface as the target describes it, when it does: where an input may be sent
+  readonly bound?: Interface | undefined;
+  readonly schemas?: readonly NamedShape[] | undefined;
   readonly rules: Rules;
   readonly common: Common | undefined;
   readonly commonTrigger: CommonTrigger | undefined;
@@ -38,6 +50,7 @@ export function checkTrigger({
   const refusals = new Set(named.map(({ refusal }) => refusal));
   const said = (refusal: string) =>
     Object.hasOwn(trigger.refuses, refusal) || Object.hasOwn(shared, refusal);
+  const takes = Object.keys(rules.takes ?? {});
   const findings = [
     ...(trigger.interface === name
       ? []
@@ -77,6 +90,21 @@ export function checkTrigger({
               `trigger.yaml: refuses names "${refusal}", which no rule of this operation names`,
             ],
     ),
+    ...Object.entries(trigger.sends).flatMap(([input, place]) => [
+      ...(takes.includes(input)
+        ? []
+        : [`trigger.yaml: sends names "${input}", which takes does not declare`]),
+      ...(bound === undefined || hasPlace(bound, place, schemas)
+        ? []
+        : [
+            `trigger.yaml: sends.${input} is ${place.join(".")}, which the request of ${bound.method} ${bound.pattern} does not have`,
+          ]),
+    ]),
+    ...(bound === undefined
+      ? []
+      : placesOfInputs({ inputs: takes, sends: trigger.sends, bound }).unplaced.map(
+          ({ input, why }) => `trigger.yaml: sends says nothing of "${input}": ${why}`,
+        )),
   ];
   return findings.length === 0 ? { trigger, findings } : { findings };
 }

@@ -61,17 +61,20 @@ export function evidenceAt(
   return read !== undefined && "value" in read ? read.value : undefined;
 }
 
-// the target's interfaces, undefined when interfaces.yaml does not parse
-export function interfacesOf(
-  files: readonly SourceFile[],
-): readonly Interface[] | undefined {
+// interfaces.yaml as it parses, undefined when it does not
+function describedOf(files: readonly SourceFile[]) {
   const text = textAt(files, "interfaces.yaml");
   const read =
     text === undefined
       ? undefined
       : readYaml("interfaces.yaml", text, interfacesFileSchema);
-  return read !== undefined && "value" in read ? read.value.interfaces : undefined;
+  return read !== undefined && "value" in read ? read.value : undefined;
 }
+
+// the target's interfaces, undefined when interfaces.yaml does not parse
+export const interfacesOf = (
+  files: readonly SourceFile[],
+): readonly Interface[] | undefined => describedOf(files)?.interfaces;
 
 const interfacesNamed = (files: readonly SourceFile[]) =>
   interfacesOf(files)?.map(({ interface: name }) => name);
@@ -123,9 +126,12 @@ export function readerFilesOf(files: readonly SourceFile[], name: string) {
     rulesText === undefined ? undefined : readYaml("rules.yaml", rulesText, rulesSchema);
   if (parsed === undefined || !("value" in parsed))
     return { common, commonTrigger, findings: read.findings };
+  const described = describedOf(files);
   const { trigger, findings } = checkTrigger({
     name,
     interfaces: interfacesNamed(files),
+    bound: described?.interfaces.find((one) => one.interface === name),
+    schemas: described?.schemas,
     rules: parsed.value,
     common,
     commonTrigger,

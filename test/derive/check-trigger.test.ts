@@ -16,7 +16,7 @@ import {
   structuresText,
   triggerText,
 } from "../roles-fixture.ts";
-import { filesOf } from "../roles-left-fixture.ts";
+import { filesOf, reading } from "../roles-left-fixture.ts";
 
 const { common } = checkCommon(commonText);
 const { structures } = checkStructuresFile(structuresText);
@@ -143,6 +143,33 @@ test("the shared trigger says each refusal of common.yaml, and none other", () =
   ]).toEqual([
     ['common-trigger.yaml: refuses says nothing of "r", the refusal of "a"'],
     ['common-trigger.yaml: no rule of common.yaml refuses by "q"'],
+    [],
+  ]);
+});
+
+test("an input no call could send is a finding, until sends says where the request has it", () => {
+  const found = (sends: string) =>
+    readerFilesOf(
+      filesOf({
+        "interfaces.yaml":
+          "interfaces:\n  - {interface: f, method: post, pattern: /f, request: {body: {a: {x: string}}}, responses: {200: {body: any}}}\n",
+        "operations/f/rules.yaml": `${reading["operations/f/rules.yaml"]}takes: {x: {says: the x}}\n`,
+        "operations/f/trigger.yaml": `{trigger: f, interface: f, operation: f, sends: ${sends}, answers: {status: 200}, refuses: {not-found: {status: 404}}}`,
+      }),
+      "f",
+    ).findings;
+  expect([
+    found("{}"),
+    found("{x: [body, b, x], y: [body, a, x]}"),
+    found("{x: [body, a, x]}"),
+  ]).toEqual([
+    [
+      'trigger.yaml: sends says nothing of "x": no path parameter, query parameter, body field or form field of post /f is named "x"',
+    ],
+    [
+      "trigger.yaml: sends.x is body.b.x, which the request of post /f does not have",
+      'trigger.yaml: sends names "y", which takes does not declare',
+    ],
     [],
   ]);
 });

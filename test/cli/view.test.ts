@@ -8,7 +8,7 @@ import { target } from "../files.ts";
 
 const interfaces = `
 interfaces:
-  - {interface: f, method: delete, pattern: "/a/{id}", responses: {204: {body: null}}}
+  - {interface: f, method: delete, pattern: "/a/{id}", request: {path: {id: int}}, responses: {204: {body: null}}}
   - {interface: g, method: get, pattern: "/a", responses: {200: {body: any}}}
 `;
 
@@ -52,7 +52,7 @@ rule: exists
 situation: an id no a has
 reached: yes
 steps:
-  - {when: call, as: u, request: {method: delete, path: /a/9}}
+  - {when: call, as: u, call: {operation: f, with: {id: "9"}}}
 `;
 
 const evidence = `
@@ -175,6 +175,8 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
             {
               when: "call",
               as: "u",
+              call: { operation: "f", with: { id: "9" } },
+              interface: "f",
               method: "delete",
               path: "/a/9",
               status: 404,
@@ -389,6 +391,8 @@ test("view hands the page a scenario with no service step and no side effect as 
           {
             when: "call",
             as: "u",
+            call: { operation: "f", with: { id: "9" } },
+            interface: "f",
             method: "delete",
             path: "/a/9",
             status: 404,
@@ -471,7 +475,7 @@ situation: an id no a has
 reached: yes
 steps:
   - {when: arrange, state: s, name: p}
-  - {when: call, as: u, request: {method: delete, path: /a/9}}
+  - {when: call, as: u, call: {operation: f, with: {id: "9"}}}
 `,
     },
     { path: "operations/f/evidence/exists-2.yaml", text: evidence },
