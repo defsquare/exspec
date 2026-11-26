@@ -31,10 +31,12 @@ export const requirementSchema = z
 
 export type Requirement = z.infer<typeof requirementSchema>;
 
+// on: the entry of takes its `when` looks at, when the request alone tells whether it is met
 export const effectSchema = z
   .strictObject({
     rule: ruleName,
     when: z.string().optional(),
+    on: z.string().optional(),
     says: z.string(),
     service: z.string().optional(),
     source,

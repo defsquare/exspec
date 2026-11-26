@@ -1,0 +1,31 @@
+operation: delete-workbasket
+takes:
+  workbasketId: {says: "the workbasket to delete"}
+common: [signed-in, role-admin]
+requires:
+  - rule: admin-or-business-admin
+    fact: the caller is a member of the business admin or admin role
+    otherwise: missing-role
+    source: "lib/WorkbasketServiceImpl.java:811"
+  - rule: exists
+    fact: a workbasket with that id exists
+    otherwise: not-found
+    source: "lib/WorkbasketServiceImpl.java:820"
+  - rule: no-uncompleted-tasks
+    fact: the workbasket holds no task that is not completed
+    otherwise: workbasket-in-use
+    source: "lib/WorkbasketServiceImpl.java:828-835"
+effects:
+  - rule: deleted-when-empty
+    when: the workbasket holds no task at all
+    says: The workbasket is removed; a later read of it answers not found.
+    source: "lib/WorkbasketServiceImpl.java:840-844"
+  - rule: references-removed
+    when: the workbasket holds no task at all
+    says: Its access items and every distribution-target link where it is source or target are removed too.
+    source: "lib/WorkbasketServiceImpl.java:1165-1170"
+  - rule: marked-when-completed-tasks
+    when: the workbasket holds only completed tasks
+    says: The workbasket is not removed but marked for deletion, to be removed later.
+    source: "lib/WorkbasketServiceImpl.java:857-859"
+answers: {says: "nothing", structure: null}

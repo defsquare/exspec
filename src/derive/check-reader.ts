@@ -167,6 +167,20 @@ export function checkRulesAndHints({
         ({ rule, on }) =>
           `rules.yaml: the rule "${rule}" is on "${on}", which takes does not declare`,
       ),
+    ...parsed.effects.flatMap(({ rule, on, when }) =>
+      on === undefined
+        ? []
+        : [
+            ...(when === undefined
+              ? [`rules.yaml: the effect "${rule}" is on "${on}" and has no when`]
+              : []),
+            ...(Object.hasOwn(parsed.takes ?? {}, on)
+              ? []
+              : [
+                  `rules.yaml: the effect "${rule}" is on "${on}", which takes does not declare`,
+                ]),
+          ],
+    ),
     ...[...parsed.requires, ...parsed.effects]
       .filter(({ service }) => service !== undefined && !services.includes(service))
       .map(

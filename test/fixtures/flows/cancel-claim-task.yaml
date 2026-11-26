@@ -1,0 +1,48 @@
+operation: cancel-claim-task
+takes:
+  taskId: {says: "the task whose claim is cancelled"}
+  keepOwner: {says: "when true the owner is kept after the claim is cancelled; false when not given"}
+common: [signed-in, role-user]
+requires:
+  - rule: task-exists
+    fact: the task exists
+    otherwise: not-found
+    source: "lib/TaskServiceImpl.java:2200"
+  - rule: edit-tasks-permission
+    fact: the caller holds the permission to edit tasks on the task's workbasket
+    otherwise: not-allowed-on-workbasket-or-task
+    source: "lib/TaskServiceImpl.java:2204-2209"
+  - rule: task-not-finished
+    fact: the task is not completed, cancelled or terminated
+    otherwise: invalid-task-state
+    source: "lib/TaskServiceImpl.java:2210-2212"
+  - rule: claimed-by-caller
+    fact: if the task is claimed or in review, its owner is the caller
+    otherwise: invalid-owner
+    source: "lib/TaskServiceImpl.java:2213-2215"
+effects:
+  - rule: state-ready
+    when: the task was claimed, or ready
+    says: The task is ready, and its claimed time is cleared.
+    source: "lib/TaskServiceImpl.java:1719-1732"
+  - rule: state-ready-for-review
+    when: the task was in review
+    says: The task is ready for review, and its claimed time is cleared.
+    source: "lib/TaskServiceImpl.java:1728-1729"
+  - rule: owner-cleared
+    when: keepOwner is false or not given
+    on: keepOwner
+    says: The task's owner is emptied.
+    source: "lib/TaskServiceImpl.java:1721-1724"
+  - rule: owner-kept
+    when: keepOwner is true
+    on: keepOwner
+    says: The task's owner stays as it was.
+    source: "lib/TaskServiceImpl.java:1721"
+  - rule: marked-read-modified
+    says: The task is marked as read and its modified time is now.
+    source: "lib/TaskServiceImpl.java:1725-1727"
+  - rule: history-event
+    says: A claim-cancelled event is published.
+    source: "lib/TaskServiceImpl.java:2223-2228"
+answers: {says: "the task as changed", structure: null}

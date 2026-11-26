@@ -134,6 +134,10 @@ Rules of writing:
   presence, its type, its length, its form, its range. A requirement that needs what
   is stored (it exists, it is not taken yet, it matches), who the caller is, or two
   inputs together has no `on`.
+- An effect that applies in some accepted calls only says in which with `when`. It has
+  `on: <an entry of takes>` beside its `when` when the request alone, with nothing
+  stored, tells whether the `when` is met, and it looks at that one input: given or not,
+  true or false. A `when` that needs what is stored, or who the caller is, has no `on`.
 - One rule per statement: if a sentence has an "and" joining two things that could fail
   separately, it is two rules. Two checks that give the caller the same answer are still
   two rules.
