@@ -1,7 +1,7 @@
 import type { CommonTrigger, Trigger } from "../shapes/bindings.ts";
 import type { Common, Evidence, Requirement, Rules } from "../shapes/roles.ts";
 import type { Interface, Target } from "../shapes/target.ts";
-import { acceptedStatuses } from "./accepted.ts";
+import { acceptedStatuses, acceptedStatusOf } from "./accepted.ts";
 
 const yaml = (value: unknown) => Bun.YAML.stringify(value, null, 2).trimEnd();
 
@@ -77,9 +77,13 @@ function ruleEntry(rule: string, rules: Rules, common: Common | undefined) {
 //   its name, its rule, the reader's doubts about it, its exchanges; after it, per state
 //   whose path it is (state order), the recording again with the state's sentence:
 //     {recording: "state:s", state: "reading the a shows …", exchanges: […]}
+//   and, when its call was accepted and the operation has effects with a `when`, the
+//   recording a third time, its exchanges not repeated, with every effect's condition:
+//     {recording: "when:a", of: a, whens: {r: "the a is shared", s: "…"}}
 // Nothing of the builder's words — situation, reached, step names — nor the hints. A
 // state's hash is of the shared text, its sentence and the exchanges: a state renamed
-// stales nothing.
+// stales nothing. A `when:` part's hash is of the shared text, the recording's part and its
+// own: a condition rewritten stales it.
 export function judgeTask({
   bound,
   common,
@@ -107,10 +111,17 @@ export function judgeTask({
   readonly text: string;
   readonly of: ReadonlyMap<string, string>;
   readonly ofStates: ReadonlyMap<string, string>;
+  readonly ofConditions: ReadonlyMap<string, string>;
+  // the effects a `when:` part names, by rule
+  readonly conditionalRules: readonly string[];
 } {
+  const conditions = Object.fromEntries(
+    rules.effects.flatMap(({ rule, when }) => (when === undefined ? [] : [[rule, when]])),
+  );
   const sorted = [...recordings].sort((a, b) => (a.slug < b.slug ? -1 : 1));
   const parts = sorted.map(({ slug, evidence: { rule, exchanges } }) => {
     const unsure = rules.unsure.filter((u) => u.rule === rule).map(({ what }) => what);
+    const isAccepted = acceptedStatusOf(exchanges, trigger) !== undefined;
     return {
       slug,
       text: yaml({
@@ -127,6 +138,10 @@ export function judgeTask({
           hashed: yaml({ state: seen, exchanges }),
           text: yaml({ recording: `state:${state}`, state: seen, exchanges }),
         })),
+      conditionsText:
+        isAccepted && Object.keys(conditions).length > 0
+          ? yaml({ recording: `when:${slug}`, of: slug, whens: conditions })
+          : undefined,
     };
   });
   const requirements = [
@@ -148,9 +163,10 @@ export function judgeTask({
     "How this target answers the operation:",
     yaml(wireOf(requirements, trigger, commonTrigger)),
   ].join("\n");
-  const texts = parts.flatMap(({ text, states }) => [
+  const texts = parts.flatMap(({ text, states, conditionsText }) => [
     text,
     ...states.map(({ text }) => text),
+    ...(conditionsText === undefined ? [] : [conditionsText]),
   ]);
   const text = [
     shared,
@@ -168,5 +184,13 @@ export function judgeTask({
         states.map(({ state, hashed }) => [state, hashOf(hashed)] as const),
       ),
     ),
+    ofConditions: new Map(
+      parts.flatMap(({ slug, text, conditionsText }) =>
+        conditionsText === undefined
+          ? []
+          : [[slug, hashOf(`${text}\n---\n${conditionsText}`)] as const],
+      ),
+    ),
+    conditionalRules: Object.keys(conditions),
   };
 }

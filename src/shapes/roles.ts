@@ -325,10 +325,25 @@ export const judgedSchema = z
 
 export type Judged = z.infer<typeof judgedSchema>;
 
-// A judgement of a scenario on its rule, or of a state's sentence on the scenario that is
-// its path; its key tells which:
+// one entry of the judge's answer on a recording named `when:<name>`: each condition of the
+// operation's effects, met or not just before its call
+//   {scenario: "when:a", met: {r: "yes", s: "no", t: "unsure"}, evidence: "…"}
+export const metSchema = z
+  .strictObject({
+    scenario: z.string(),
+    met: z.record(z.string(), z.enum(["yes", "no", "unsure"])).readonly(),
+    evidence: z.string(),
+  })
+  .readonly();
+
+export type Met = z.infer<typeof metSchema>;
+
+// A judgement of a scenario on its rule, of a state's sentence on the scenario that is
+// its path, or of the conditions of the operation's effects on an accepted recording; its
+// key tells which:
 //   {scenario: a, rule: r,  situation: "yes", verdict: contradicted, …, of: h}
 //   {scenario: a, state: s, situation: "yes", verdict: holds,        …, of: k}
+//   {scenario: a, met: {r: "yes", s: "no"}, evidence: "…", of: m}
 // of: the hash of the text the judge was given for that part; another text, a stale
 // judgement
 export const ruleJudgementSchema = judgedSchema
@@ -341,10 +356,20 @@ export const stateJudgementSchema = judgedSchema
   .extend({ state: z.string(), of: z.string() })
   .readonly();
 
-export const judgementSchema = z.union([ruleJudgementSchema, stateJudgementSchema]);
+export const metJudgementSchema = metSchema
+  .unwrap()
+  .extend({ of: z.string() })
+  .readonly();
+
+export const judgementSchema = z.union([
+  ruleJudgementSchema,
+  stateJudgementSchema,
+  metJudgementSchema,
+]);
 
 export type RuleJudgement = z.infer<typeof ruleJudgementSchema>;
 export type StateJudgement = z.infer<typeof stateJudgementSchema>;
+export type MetJudgement = z.infer<typeof metJudgementSchema>;
 
 export const judgementsSchema = z
   .strictObject({

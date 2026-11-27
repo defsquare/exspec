@@ -12,6 +12,7 @@ import {
   evidenceAt,
   judgementsIn,
   judgeTaskOf,
+  metJudgementsIn,
   stateJudgementsIn,
   textAt,
 } from "./roles-files.ts";
@@ -23,7 +24,8 @@ import {
 //   record  the slugs whose evidence is of them as written and has no noise; none while the
 //           builder's check finds something
 //   judge   the slugs whose evidence is a reference of them as written, with no judgement of
-//           the same hash on their rule, or, when one is the path of a state, on its sentence
+//           the same hash on their rule, or, when one is the path of a state, on its sentence,
+//           or, when its call was accepted, on the conditions of the operation's effects
 export type InterfaceLeft =
   | { readonly interface: string; readonly reading: "to-do" }
   | {
@@ -102,6 +104,13 @@ export function interfaceLeft(
             j.of === task?.ofStates.get(state),
         ),
     );
+  const metJudged = metJudgementsIn(files, name);
+  const whenLeft = (slug: string) => {
+    const hash = task?.ofConditions.get(slug);
+    return (
+      hash !== undefined && !metJudged.some((j) => j.scenario === slug && j.of === hash)
+    );
+  };
   return {
     interface: name,
     reading: "done",
@@ -119,7 +128,8 @@ export function interfaceLeft(
           ),
     judge: references.flatMap(({ slug }) =>
       judged.some(({ scenario, of }) => scenario === slug && of === task?.of.get(slug)) &&
-      !stateLeft(slug)
+      !stateLeft(slug) &&
+      !whenLeft(slug)
         ? []
         : [slug],
     ),

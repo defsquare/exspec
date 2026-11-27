@@ -161,6 +161,21 @@ test("view draws the roles' reading, judged by the judge's word, when there is o
                 doubts: [],
               },
             ],
+            flows: {
+              exits: {
+                onInput: [],
+                onSituation: [{ rule: "exists", otherwise: "not-found" }],
+              },
+              line: [],
+              variants: [],
+              turns: [],
+            },
+            branches: {
+              outcomes: [],
+              forks: [],
+              neverMet: [],
+              accepted: [{ status: 204, seen: false }],
+            },
           },
         },
       ],

@@ -54,9 +54,14 @@ async function* judge(
       "no evidence, or a reading that does not pass",
     );
   }
-  const { text, of, ofStates, recordings, states } = task;
-  // a part is a recording, or a state judged on its path: "a", "state:s"
-  const parts = [...of.keys(), ...states.map(({ state }) => `state:${state}`)];
+  const { text, of, ofStates, ofConditions, conditionalRules, recordings, states } = task;
+  // a part is a recording, a state judged on its path, or the conditions met on an accepted
+  // recording: "a", "state:s", "when:a"
+  const parts = [
+    ...of.keys(),
+    ...states.map(({ state }) => `state:${state}`),
+    ...[...ofConditions.keys()].map((slug) => `when:${slug}`),
+  ];
   const left = interfaceLeft(files, bound);
   const waiting = left.reading === "done" ? left.judge : [];
   if (only === undefined && waiting.length === 0) {
@@ -85,10 +90,13 @@ async function* judge(
         confinement: "This session has no tool.",
       },
       gate: async function* (said) {
-        const answer = parseJudgeAnswer(said, parts);
+        const answer = parseJudgeAnswer(said, parts, conditionalRules);
         if ("findings" in answer) return answer.findings;
+        const verdicts = answer.judged.flatMap((judged) =>
+          "met" in judged ? [] : [judged],
+        );
         // every entry is of a part: the answer was parsed against their names
-        const judgements = answer.judged.flatMap((judged) => {
+        const judgements = verdicts.flatMap((judged) => {
           const recording = recordings.find(({ slug }) => slug === judged.scenario);
           const hash = of.get(judged.scenario);
           return recording === undefined || hash === undefined
@@ -96,18 +104,29 @@ async function* judge(
             : [{ ...judged, rule: recording.evidence.rule, of: hash }];
         });
         //   {scenario: "state:s", …} -> {scenario: a, state: s, …, of: k}, a the path of s
-        const stateJudgements = answer.judged.flatMap((judged) => {
+        const stateJudgements = verdicts.flatMap((judged) => {
           const one = states.find(({ state }) => `state:${state}` === judged.scenario);
           const hash = one === undefined ? undefined : ofStates.get(one.state);
           return one === undefined || hash === undefined
             ? []
             : [{ ...judged, scenario: one.slug, state: one.state, of: hash }];
         });
+        //   {scenario: "when:a", met: {…}, …} -> {scenario: a, met: {…}, …, of: m}
+        const metJudgements = answer.judged.flatMap((judged) => {
+          if (!("met" in judged)) return [];
+          const slug = judged.scenario.slice("when:".length);
+          const hash = ofConditions.get(slug);
+          return hash === undefined ? [] : [{ ...judged, scenario: slug, of: hash }];
+        });
         await writeFile(
           dir,
           `${operationFolderOf(name)}/judgements.yaml`,
           Bun.YAML.stringify(
-            { model, at: io.now(), judgements: [...judgements, ...stateJudgements] },
+            {
+              model,
+              at: io.now(),
+              judgements: [...judgements, ...stateJudgements, ...metJudgements],
+            },
             null,
             2,
           ),

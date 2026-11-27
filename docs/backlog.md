@@ -1093,32 +1093,6 @@ them in; each of the first five is a branch of its own.
   strategy turned" to its end; the runs under `targets/runs/2026-11-2[4-6]-*` (not in the
   repository).
 
-## The flows of an operation: which rules turn it
-
-- **Seen.** By the user: a requirement on an input, or on an instance being there,
-  weighs less than what an accepted call changes; a requirement weighs when it turns the
-  business flow; an operation with such turns is not a straight line. Conduit has none:
-  of its 125 rules, 61 are effects, 32 shared requirements applied, 15 on an input, 17 on
-  the situation. Kadai has: 158 of its 395 effects hold a `when`, in 62 of 93
-  operations — about 80 on an input, 45 on the state of the thing, 20 per item of a bulk
-  call.
-- **Seen.** Six operations of Kadai read twice: the refusals and an effect's `on` (the
-  input its `when` looks at) are the same in both; the `when` of an effect on the
-  situation differs in three operations of six. A key tying an effect to the requirement
-  it is an accepted answer of (`of`) was written in one operation of six by each reader,
-  not the same, and was removed.
-- **Settled.** An effect's `when` may say `on: <input>`; `flowsOf` derives, from the
-  rules alone, the refusals (on an input, on the situation), what every accepted call
-  does, what varies by an input and what turns on the situation. Nothing is stored, no
-  command shows it. Rejected with the challenger: a named decision with its alternatives,
-  a label on a `when`, a structure's field as the thing a `when` reads.
-- **Next.** The turns on the situation are a flat list: nothing says whether two `when`s
-  are two answers to one question or two questions. Without it the branches cannot be
-  counted or drawn as a tree. What is left once the effects with an `on` are set aside is
-  the list of an operation's business turns — a first use that needs nothing more.
-- **Source.** `docs/branches/spike-replay-other-implementation.md` at `fdd596b`, from "An
-  operation is not a straight line" to "`of` removed".
-
 ## Loose ends of a reading's inputs
 
 - **Seen.** The envelope of a request (`{article: {…}}`) is read three ways by three

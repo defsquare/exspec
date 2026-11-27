@@ -323,3 +323,73 @@ test("a state's hash changes with its sentence, not with its name, and moves no 
     recording: reworded.of.get("removed") === before.of.get("removed"),
   }).toEqual({ renamed: true, reworded: false, recording: true });
 });
+
+const conditional: Rules = {
+  ...rules,
+  effects: [
+    ...rules.effects,
+    {
+      rule: "shared",
+      when: "the item is shared",
+      says: "It is unlisted.",
+      source: "F.java:4",
+    },
+  ],
+};
+
+const judgedOnConditions = (effects: Rules) =>
+  judgeTask({
+    bound,
+    common,
+    commonTrigger,
+    runsWith,
+    rules: effects,
+    trigger,
+    recordings,
+    states: [],
+  });
+
+test("an accepted recording is given again after its own part, with every effect's condition and not its exchanges", () => {
+  const { text, ofConditions, conditionalRules } = judgedOnConditions(conditional);
+  const [head = "", ...parts] = text.split("\n\n---\n");
+  expect({
+    count: head.split("\n").at(-1),
+    last: parts.at(-1),
+    conditionalRules,
+    keys: [...ofConditions.keys()],
+  }).toEqual({
+    count: "3 recordings, in this order:",
+    last: yaml({
+      recording: "when:removed",
+      of: "removed",
+      whens: { shared: "the item is shared" },
+    }),
+    conditionalRules: ["shared"],
+    keys: ["removed"],
+  });
+});
+
+test("no condition is asked of a refused recording, nor of an operation whose effects have no when", () => {
+  const without = judgedOnConditions(rules);
+  expect({
+    refused: judgedOnConditions(conditional).text.includes("when:exists"),
+    none: {
+      ofConditions: [...without.ofConditions.keys()],
+      conditionalRules: without.conditionalRules,
+    },
+  }).toEqual({ refused: false, none: { ofConditions: [], conditionalRules: [] } });
+});
+
+test("a recording's conditions hash changes with a condition rewritten, and moves no recording's", () => {
+  const before = judgedOnConditions(conditional);
+  const after = judgedOnConditions({
+    ...conditional,
+    effects: conditional.effects.map((e) =>
+      e.rule === "shared" ? { ...e, when: "the item is shared twice" } : e,
+    ),
+  });
+  expect({
+    conditions: after.ofConditions.get("removed") === before.ofConditions.get("removed"),
+    recording: after.of.get("removed") === before.of.get("removed"),
+  }).toEqual({ conditions: false, recording: true });
+});

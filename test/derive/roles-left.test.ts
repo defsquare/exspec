@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { evidenceAt, judgeTaskOf } from "../../src/derive/roles-files.ts";
 import { type Left, leftOf } from "../../src/derive/roles-left.ts";
 import {
   bound,
@@ -92,6 +93,67 @@ test("a reference judged on its rule is left to judge while the state it is the 
     ruleOnly: at({}),
     stale: at(judgedAs(hash, "holds", { of: "k", verdict: "holds" })),
     both: at(judgedAs(hash, "holds", { of: stateHashIn(written), verdict: "not-shown" })),
+  }).toEqual({
+    ruleOnly: done({ findings, judge: ["exists-a"] }),
+    stale: done({ findings, judge: ["exists-a"] }),
+    both: done({ findings }),
+  });
+});
+
+test("an accepted reference judged on its rule is left to judge while the conditions met on it are not judged, or stale", () => {
+  const written: Files = {
+    ...points["a reference"],
+    "operations/f/trigger.yaml":
+      "{trigger: f, interface: f, operation: f, answers: {status: [200, 404]}, refuses: {not-found: {status: 404, body: empty}}}",
+    "operations/f/rules.yaml": `
+operation: f
+requires:
+  - {rule: exists, fact: the item exists, otherwise: not-found, source: "F.java:1"}
+effects:
+  - {rule: shared, when: the item is shared, says: it is listed, source: "F.java:2"}
+answers: {says: "the item", structure: null}
+`,
+    "operations/f/hints.yaml": `
+- {rule: exists, situation: s, how: h, seen-in: none, reachable: yes}
+- {rule: shared, situation: s, how: h, seen-in: none, reachable: yes}
+`,
+  };
+  const files = filesOf(written);
+  const evidence = evidenceAt(files, "f", "exists-a");
+  const task =
+    evidence === undefined
+      ? undefined
+      : judgeTaskOf(files, bound, [{ slug: "exists-a", evidence }]);
+  const judged = (met: readonly { readonly of: string }[]): Files => ({
+    "operations/f/judgements.yaml": Bun.YAML.stringify({
+      model: "m",
+      at: "2026-11-01T10:00:00.000Z",
+      judgements: [
+        {
+          scenario: "exists-a",
+          rule: "exists",
+          situation: "yes",
+          verdict: "holds",
+          confidence: 1,
+          evidence: "e",
+          of: task?.of.get("exists-a") ?? "",
+        },
+        ...met.map(({ of }) => ({
+          scenario: "exists-a",
+          met: { shared: "no" },
+          evidence: "e",
+          of,
+        })),
+      ],
+    }),
+  });
+  const at = (more: Files) =>
+    leftOf({ files: filesOf({ ...written, ...more }), interfaces: [bound] });
+  const findings = ['no scenario for the rule "shared"'];
+  expect({
+    ruleOnly: at(judged([])),
+    stale: at(judged([{ of: "m" }])),
+    both: at(judged([{ of: task?.ofConditions.get("exists-a") ?? "" }])),
   }).toEqual({
     ruleOnly: done({ findings, judge: ["exists-a"] }),
     stale: done({ findings, judge: ["exists-a"] }),

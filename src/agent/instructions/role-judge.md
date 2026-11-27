@@ -45,6 +45,16 @@ in what the `after` exchanges answered; `contradicted` — an `after` exchange s
 otherwise; `not-shown` — the call was refused, or no `after` exchange reads what the
 sentence speaks of. Never `refused-unexpectedly`.
 
+A recording may be given a third time, named `when:<name>`, with `whens` in place of a rule:
+the conditions under which the operation's effects apply, each by its rule, and the exchanges
+not repeated — they are those of the recording `<name>` above. For each condition, say
+whether it was met in that recording just before its call: read the `arrange` and `before`
+exchanges, and the call's own request for a condition on what was sent. `yes`, `no`, or
+`unsure` when the exchanges do not tell. Judge each condition alone, never whether its
+effect happened. Its entry has no situation, verdict nor confidence:
+`{"scenario": "when:<name>", "met": {"<rule>": "yes"}, "evidence": "…"}`, one key per
+condition given.
+
 A rule may carry `unsure`: the reader's own doubt about it. It is not evidence. Where a
 recording settles the doubt one way, say which in `evidence`.
 

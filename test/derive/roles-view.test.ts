@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test";
-import { actorsOf, viewOfRoles } from "../../src/derive/roles-view.ts";
+import { judgeTask } from "../../src/derive/judge-task.ts";
+import {
+  actorsOf,
+  type ReadInterface,
+  viewOfRoles,
+} from "../../src/derive/roles-view.ts";
 import type { CommonTrigger } from "../../src/shapes/bindings.ts";
 import { triggerSchema } from "../../src/shapes/bindings.ts";
 import { evidenceSchema, rulesSchema } from "../../src/shapes/roles.ts";
@@ -301,5 +306,259 @@ test("a refusal's status is its trigger's, else the shared trigger's", () => {
       },
     },
     triggers: [trigger],
+  });
+});
+
+// one operation f: an effect e on every call, two on a condition; one recording w,
+// accepted with 200; its `met` judgement carrying the hash it was judged with
+const branched = (of: (one: Omit<ReadInterface, "met">) => string): ReadInterface => {
+  const one: Omit<ReadInterface, "met"> = {
+    bound: {
+      interface: "f",
+      method: "post",
+      pattern: "/a",
+      request: {},
+      responses: {},
+    },
+    rules: rulesSchema.parse(
+      Bun.YAML.parse(`
+operation: f
+effects:
+  - {rule: e, says: s1, source: "F.java:3"}
+  - {rule: w, when: the a is shared, says: s2, source: "F.java:4"}
+  - {rule: v, when: the a is not shared, says: s3, source: "F.java:5"}
+answers: {says: ok, structure: null}
+`),
+    ),
+    trigger: triggerSchema.parse(
+      Bun.YAML.parse(
+        "{trigger: f, interface: f, operation: f, answers: {status: [200, 202]}, refuses: {}}",
+      ),
+    ),
+    findings: [],
+    scenarios: [],
+    evidence: [
+      {
+        slug: "w",
+        evidence: evidenceSchema.parse(
+          Bun.YAML.parse(`
+rule: w
+run: {target: t, version: v, at: "2026-11-13T10:00:00.000Z", clock: null}
+exchanges:
+  - {when: call, as: u, request: {method: post, path: /a}, response: {status: 200, body: null}}
+`),
+        ),
+      },
+    ],
+    judgements: [
+      {
+        scenario: "w",
+        rule: "e",
+        situation: "yes",
+        verdict: "holds",
+        confidence: 0.9,
+        evidence: "x",
+        of: "h",
+      },
+    ],
+  };
+  return {
+    ...one,
+    met: [{ scenario: "w", met: { w: "yes", v: "unsure" }, evidence: "y", of: of(one) }],
+  };
+};
+
+const judgedToday = ({ bound, rules, trigger, evidence }: Omit<ReadInterface, "met">) =>
+  rules === undefined || trigger === undefined
+    ? undefined
+    : judgeTask({
+        bound,
+        common: undefined,
+        commonTrigger: undefined,
+        runsWith: undefined,
+        rules,
+        trigger,
+        recordings: evidence,
+        states: [],
+      });
+
+const todaysConditionsHash = (one: Omit<ReadInterface, "met">) =>
+  judgedToday(one)?.ofConditions.get("w") ?? "";
+
+const todaysRuleHash = (one: Omit<ReadInterface, "met">) =>
+  judgedToday(one)?.of.get("w") ?? "";
+
+const viewOf = (one: ReadInterface) =>
+  viewOfRoles({
+    target: undefined,
+    structures: [],
+    common: undefined,
+    commonTrigger: undefined,
+    findings: [],
+    interfaces: [one],
+  });
+
+test("a scenario's judgement is the one on its rule, and an operation's branches are those its accepted recordings were judged on", () => {
+  const view = viewOf(branched(todaysConditionsHash));
+  expect({
+    judgement: view.extraction.scenarios[0]?.judgement,
+    branches: view.extraction.operations[0]?.operation.branches,
+  }).toEqual({
+    judgement: null,
+    branches: {
+      outcomes: [{ met: ["w"], unsure: ["v"], status: 200, scenarios: ["w"] }],
+      forks: [],
+      neverMet: ["v"],
+      accepted: [
+        { status: 200, seen: true },
+        { status: 202, seen: false },
+      ],
+    },
+  });
+});
+
+test("a `met` judgement whose conditions changed since is on no outcome, and a gap", () => {
+  const view = viewOf(branched(() => "m"));
+  expect({
+    branches: view.extraction.operations[0]?.operation.branches,
+    gaps: view.gaps.filter(({ kind }) => kind === "judgement-stale"),
+  }).toEqual({
+    branches: {
+      outcomes: [],
+      forks: [],
+      neverMet: ["w", "v"],
+      accepted: [
+        { status: 200, seen: false },
+        { status: 202, seen: false },
+      ],
+    },
+    gaps: [
+      {
+        kind: "judgement-stale",
+        name: "f/w",
+        message:
+          "the conditions of its operation's effects changed since they were judged",
+      },
+    ],
+  });
+});
+
+test("a recording with no `met` whose own rule's judgement is stale is on no outcome, and a gap", () => {
+  const view = viewOf({
+    ...branched(todaysConditionsHash),
+    met: [],
+    judgements: [
+      {
+        scenario: "w",
+        rule: "w",
+        situation: "yes",
+        verdict: "holds",
+        confidence: 0.9,
+        evidence: "x",
+        of: "h",
+      },
+    ],
+  });
+  expect({
+    branches: view.extraction.operations[0]?.operation.branches,
+    gaps: view.gaps.filter(({ kind }) => kind === "judgement-stale"),
+  }).toEqual({
+    branches: {
+      outcomes: [],
+      forks: [],
+      neverMet: ["w", "v"],
+      accepted: [
+        { status: 200, seen: false },
+        { status: 202, seen: false },
+      ],
+    },
+    gaps: [
+      {
+        kind: "judgement-stale",
+        name: "f/w",
+        message: "its rule or its evidence changed since it was judged",
+      },
+    ],
+  });
+});
+
+test("a `met` judgement whose recording is no longer an accepted call is on no outcome, and a gap", () => {
+  const view = viewOf({
+    ...branched(todaysConditionsHash),
+    evidence: [
+      {
+        slug: "w",
+        evidence: evidenceSchema.parse(
+          Bun.YAML.parse(`
+rule: w
+run: {target: t, version: v, at: "2026-11-13T10:00:00.000Z", clock: null}
+exchanges:
+  - {when: call, as: u, request: {method: post, path: /a}, response: {status: 400, body: null}}
+`),
+        ),
+      },
+    ],
+  });
+  expect({
+    branches: view.extraction.operations[0]?.operation.branches,
+    gaps: view.gaps.filter(({ kind }) => kind === "judgement-stale"),
+  }).toEqual({
+    branches: {
+      outcomes: [],
+      forks: [],
+      neverMet: ["w", "v"],
+      accepted: [
+        { status: 200, seen: false },
+        { status: 202, seen: false },
+      ],
+    },
+    gaps: [
+      {
+        kind: "judgement-stale",
+        name: "f/w",
+        message:
+          "its recording is no longer an accepted call of an operation with conditional effects",
+      },
+    ],
+  });
+});
+
+test("a recording's own rule judged reached while its `met` says its condition not met stands on the outcome, and a gap", () => {
+  const one = branched(todaysConditionsHash);
+  const view = viewOf({
+    ...one,
+    met: (one.met ?? []).map((judged) => ({ ...judged, met: { w: "no", v: "unsure" } })),
+    judgements: [
+      {
+        scenario: "w",
+        rule: "w",
+        situation: "yes",
+        verdict: "holds",
+        confidence: 0.9,
+        evidence: "x",
+        of: todaysRuleHash(one),
+      },
+    ],
+  });
+  expect({
+    branches: view.extraction.operations[0]?.operation.branches,
+    gaps: view.gaps.filter(({ kind }) => kind.startsWith("judgement-")),
+  }).toEqual({
+    branches: {
+      outcomes: [{ met: ["w"], unsure: ["v"], status: 200, scenarios: ["w"] }],
+      forks: [],
+      neverMet: ["v"],
+      accepted: [
+        { status: 200, seen: true },
+        { status: 202, seen: false },
+      ],
+    },
+    gaps: [
+      {
+        kind: "judgement-contradicts",
+        name: "f/w",
+        message: "its rule w was judged reached, its condition judged not met",
+      },
+    ],
   });
 });

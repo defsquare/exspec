@@ -4,6 +4,7 @@ import {
   type Evidence,
   evidenceSchema,
   judgementsSchema,
+  type MetJudgement,
   type RuleJudgement,
   readYaml,
   roleScenarioSchema,
@@ -203,6 +204,13 @@ export const stateJudgementsIn = (
   name: string,
 ): readonly StateJudgement[] =>
   judgementsRead(files, name).flatMap((judged) => ("state" in judged ? [judged] : []));
+
+// the judgements of the conditions of the operation's effects on accepted recordings
+export const metJudgementsIn = (
+  files: readonly SourceFile[],
+  name: string,
+): readonly MetJudgement[] =>
+  judgementsRead(files, name).flatMap((judged) => ("met" in judged ? [judged] : []));
 
 // the states as written, with the findings of their entries
 export function statesOf(files: readonly SourceFile[]) {

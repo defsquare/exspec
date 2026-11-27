@@ -443,6 +443,7 @@ function gates(o, path, picked) {
     s("rect", { x: left, y: top, width: name.length * 7.3 + 16, height: 16, rx: 8, fill: "#fff", stroke: "#7c3aed" }), s("text", { x: left + 8, y: top + 12, class: "m sv" }, name));
   const taken = (n) => sc && (exitAt === -1 || n <= exitAt), through = sc && exitAt === -1;
   const pathPaint = "url(#g-flow)";
+  const forkColor = "#172741";
   const spine = (y1, y2, on) => s("line", { x1: cx, y1, x2: cx, y2, stroke: on ? pathPaint : "#d1d5db", "stroke-width": on ? 4 : 1.5 });
   const clip = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
   const inputs = `${o.operation}(${Object.keys(o.takes ?? {}).join(", ")})`;
@@ -492,24 +493,104 @@ function gates(o, path, picked) {
         s("text", { x: left + wide + 46, y: y + height / 2 + 4, class: "small", style: answered !== undefined && answered !== exited.status ? "fill:#a62949;font-weight:600" : "" }, answered !== undefined && answered !== exited.status ? `answered ${answered}` : status(exited))] : null);
     y += height;
   });
-  effects.forEach((e) => {
+  // An effect as a box under the spine, or in an outcome's column: a rule the flow forks on carries the fork's mark.
+  const effectBox = (e, left, top, width, on, forks) => s("a", { class: "click", href: ruleRoute(o.operation, e.rule) }, s("title", null, `${e.rule} — ${e.short}`),
+    s("rect", { x: left, y: top, width, height: tall(e), rx: 6, fill: fill(e, "#f7f7f8"), ...edge(on, e.service) }), mark(e.rule, left + width - 14, top + 14),
+    forks ? s("text", { x: left + width - 26, y: top + 18, "text-anchor": "end", style: `fill:${forkColor};font-weight:700;font-size:15px` }, "⑂") : null,
+    s("text", { x: left + 12, y: top + 19, class: "m" }, clip(e.rule, Math.floor((width - (forks ? 52 : 36)) / 7.3))),
+    s("text", { x: left + 12, y: top + 36, class: "small" }, clip(e.short, Math.floor((width - 24) / 6.6))),
+    e.service ? serviceChip(left + 12, top + 44, e.service) : null);
+  // with the roles' reading, the spine carries the effects on every accepted call and what the operation answers;
+  // the effects with a `when` are drawn on the outcomes the recordings were seen to reach, or, none seen yet, by their input
+  const br = o.branches, outcomes = br?.outcomes ?? [], slug = path?.split("/")[1];
+  const onSpine = br ? effects.filter((l) => l.kind !== "effect" || o.flows.line.includes(l.rule)) : effects;
+  const byRule = (rule) => effects.find((l) => l.rule === rule);
+  onSpine.forEach((e) => {
     els.push(spine(y, y + 20, through));
     y += 20;
-    els.push(s("a", { class: "click", href: ruleRoute(o.operation, e.rule) },
-      s("rect", { x: cx - bw / 2, y, width: bw + 200, height: tall(e), rx: 6, fill: fill(e, "#f7f7f8"), ...edge(through, e.service) }), mark(e.rule, cx + bw / 2 + 200 - 14, y + 14),
-      s("text", { x: cx - bw / 2 + 12, y: y + 19, class: "m" }, clip(e.rule, 56)),
-      s("text", { x: cx - bw / 2 + 12, y: y + 36, class: "small" }, clip(e.short, 66))),
-      e.service ? serviceChip(cx - bw / 2 + 12, y + 44, e.service) : null);
+    els.push(effectBox(e, cx - bw / 2, y, bw + 200, through, false));
     y += tall(e);
   });
-  els.push(spine(y, y + 20, through));
-  y += 20;
   const t = triggerOf(o.operation), accepted = acceptedOf(t), answers = typeof o.answers === "string" ? o.answers : o.answers?.structure;
-  els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#fff", stroke: through ? pathPaint : "#172741", "stroke-width": through ? 4 : 1.5 }),
-    s("text", { x: cx, y: y + 25, "text-anchor": "middle" }, "accepted", t && accepted.length > 0 ? s("tspan", { class: "tg" }, ` · ${accepted.join(", ")}`) : "", answers ? ` · answers ${answers}` : ""),
-    through && answered !== undefined && accepted !== undefined && !accepted.includes(answered) ? s("text", { x: cx + bw / 2 + 12, y: y + 25, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
+  // an exit's look is its status's: two outcomes ending in one status end alike
+  const exitColors = ["#172741", "#0f766e", "#b45309", "#be185d"], exitColor = (status) => exitColors[Math.max(0, (accepted ?? []).indexOf(status)) % exitColors.length];
+  let width = 640;
+  if (outcomes.length > 0) {
+    const cw = 250, gap = 16, left = (n) => cx - bw / 2 + n * (cw + gap), mid = (n) => left(n) + cw / 2;
+    const taking = outcomes.findIndex((p) => through && p.scenarios.includes(slug));
+    width = Math.max(width, left(outcomes.length) + 20);
+    els.push(spine(y, y + 16, through && taking !== -1));
+    y += 16;
+    // the spine forks: a bar across the columns, a drop to each
+    els.push(s("line", { x1: Math.min(cx, mid(0)), y1: y, x2: mid(outcomes.length - 1), y2: y, stroke: "#d1d5db", "stroke-width": 1.5 }),
+      taking === -1 ? null : s("line", { x1: Math.min(cx, mid(taking)), y1: y, x2: Math.max(cx, mid(taking)), y2: y, stroke: pathPaint, "stroke-width": 4 }));
+    if (through && taking === -1 && answered !== undefined) els.push(s("text", { x: cx + 12, y: y - 4, style: "fill:#a62949;font-weight:600;font-size:12px" }, accepted?.includes(answered) ? "on no outcome seen" : `answered ${answered}`));
+    outcomes.forEach((p, n) => els.push(s("line", { x1: mid(n), y1: y, x2: mid(n), y2: y + 54, stroke: n === taking ? pathPaint : "#d1d5db", "stroke-width": n === taking ? 4 : 1.5 }),
+      s("text", { x: mid(n) + 10, y: y + 26, class: "small", "font-weight": 600 }, `outcome ${n + 1} · ${plural(p.scenarios.length, "scenario")}`, s("title", null, p.scenarios.join(", "))),
+      p.unsure.length === 0 ? null : s("text", { x: mid(n) + 10, y: y + 42, class: "small" }, clip(`unsure: ${p.unsure.join(", ")}`, 20), s("title", null, `unsure: ${p.unsure.join(", ")}`))));
+    y += 54;
+    // row by row across the columns, so that the arrows go along a row as they do among the gates
+    const met = outcomes.map((p) => p.met.flatMap((rule) => byRule(rule) ?? []));
+    const rows = Math.max(...met.map((m) => m.length));
+    const ends = outcomes.map(() => y);
+    for (let r = 0; r < rows; r++) {
+      const height = Math.max(...met.map((m) => (m[r] ? tall(m[r]) : 0)));
+      met.forEach((m, n) => {
+        if (!m[r]) return;
+        els.push(s("line", { x1: mid(n), y1: y, x2: mid(n), y2: y + 14, stroke: n === taking ? pathPaint : "#d1d5db", "stroke-width": n === taking ? 4 : 1.5 }),
+          effectBox(m[r], left(n), y + 14, cw, n === taking, br.forks.includes(m[r].rule)));
+        ends[n] = y + 14 + tall(m[r]);
+      });
+      y += 14 + height;
+    }
+    // each column ends in its exit, the exits on one line
+    outcomes.forEach((p, n) => {
+      const on = n === taking, color = exitColor(p.status);
+      els.push(s("line", { x1: mid(n), y1: ends[n], x2: mid(n), y2: y + 20, stroke: on ? pathPaint : "#d1d5db", "stroke-width": on ? 4 : 1.5 }),
+        s("rect", { x: left(n), y: y + 20, width: cw, height: 40, rx: 20, fill: "#fff", stroke: on ? pathPaint : color, "stroke-width": on ? 4 : 2.5 }),
+        s("text", { x: mid(n), y: y + 45, "text-anchor": "middle" }, "accepted · ", s("tspan", { style: `fill:${color};font-weight:600` }, String(p.status))),
+        answers ? s("text", { x: mid(n), y: y + 76, "text-anchor": "middle", class: "small" }, `answers ${answers}`) : null);
+    });
+    y += answers ? 82 : 66;
+    const neverMet = br.neverMet, unanswered = br.accepted.filter((ex) => !ex.seen);
+    if (neverMet.length > 0) {
+      els.push(s("text", { x: cx - bw / 2, y: y + 18, class: "small" }, "never met in a recording: ", commas(neverMet.map((rule) => s("a", { href: ruleRoute(o.operation, rule) }, s("tspan", { class: "m", style: `fill:${forkColor}` }, rule))))));
+      y += 22;
+    }
+    unanswered.forEach((ex) => {
+      els.push(s("text", { x: cx - bw / 2, y: y + 18, class: "small" }, s("tspan", { style: `fill:${exitColor(ex.status)};font-weight:600` }, String(ex.status)), " — no recording"));
+      y += 22;
+    });
+  } else {
+    const flows = o.flows, groups = flows ? [...flows.variants.map((v) => ({ by: `by ${v.on}`, cases: v.cases })), ...(flows.turns.length > 0 ? [{ by: "by the situation", cases: flows.turns }] : [])] : [];
+    if (groups.length > 0) {
+      els.push(spine(y, y + 20, through));
+      y += 20;
+      els.push(s("text", { x: cx - bw / 2, y: y + 14, class: "small", "font-weight": 600 }, "not seen yet: no accepted recording judged on its conditions"));
+      y += 22;
+      groups.forEach((g) => {
+        els.push(s("text", { x: cx - bw / 2 + 12, y: y + 16, class: "m small" }, g.by));
+        y += 22;
+        g.cases.forEach((c) => {
+          els.push(s("text", { x: cx - bw / 2 + 24, y: y + 14, class: "small" }, clip(`when ${c.when}`, 70)));
+          y += 20;
+          c.effects.forEach((rule) => {
+            const e = byRule(rule);
+            if (!e) return;
+            els.push(effectBox(e, cx - bw / 2 + 24, y, bw + 176, false, false));
+            y += tall(e) + 8;
+          });
+        });
+      });
+    }
+    els.push(spine(y, y + 20, through));
+    y += 20;
+    els.push(s("rect", { x: cx - bw / 2, y, width: bw, height: 40, rx: 20, fill: "#fff", stroke: through ? pathPaint : "#172741", "stroke-width": through ? 4 : 1.5 }),
+      s("text", { x: cx, y: y + 25, "text-anchor": "middle" }, "accepted", t && accepted.length > 0 ? s("tspan", { class: "tg" }, ` · ${accepted.join(", ")}`) : "", answers ? ` · answers ${answers}` : ""),
+      through && answered !== undefined && accepted !== undefined && !accepted.includes(answered) ? s("text", { x: cx + bw / 2 + 12, y: y + 25, style: "fill:#a62949;font-weight:600;font-size:12px" }, `answered ${answered}`) : null);
+  }
   const marker = (id, color, size) => s("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerUnits: "userSpaceOnUse", markerWidth: size, markerHeight: size, orient: "auto" }, s("path", { d: "M0,0 L10,5 L0,10 z", fill: color }));
-  return s("svg", { viewBox: `0 0 640 ${y + 60}`, width: 640, role: "group", "aria-label": `Gates of ${o.operation}` }, s("defs", null, marker("g-on", pathColor, 16), marker("g-off", "#d1d5db", 10),
+  return s("svg", { viewBox: `0 0 ${width} ${y + 60}`, width, role: "group", "aria-label": `Gates of ${o.operation}` }, s("defs", null, marker("g-on", pathColor, 16), marker("g-off", "#d1d5db", 10),
     // a band from blue to violet to cyan, repeated down the page and sliding: a line is too thin to carry a gradient of its own
     s("linearGradient", { id: "g-flow", gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: 0, y2: 120, spreadMethod: "repeat" },
       s("stop", { offset: 0, "stop-color": pathColor }), s("stop", { offset: 0.4, "stop-color": "#a855f7" }), s("stop", { offset: 0.7, "stop-color": "#22d3ee" }), s("stop", { offset: 1, "stop-color": pathColor }),
@@ -574,6 +655,7 @@ function operationSheet(o, path, picked) {
     h("div", { class: "card" }, gates(o, path, picked), h("div", { class: "legend" },
       (roles ? [["holds", "holds"], ["contradicted", "contradicted or refused unexpectedly"], ["not-shown", "not shown"], ["none", "unjudged"]] : [["verified", "verified"], ["refuted", "refuted"], ["none", "declared only"]]).map(([key, word]) => h("span", null, dot(colors[key]), word)),
       path ? [h("span", null, h("i", { class: "path" }), "the path the scenario was written to take"), h("span", { class: "otherwise" }, "a status in red: what the target answered instead")] : h("span", null, "A rule opens its proof and its scenarios; a scenario draws its path. Under inputs, a mark is a requirement on that input alone."),
+      o.branches?.outcomes.length ? h("span", null, "Outcomes seen: a column per set of effects the accepted recordings met, ending in the status answered; ", h("b", null, "⑂"), " a rule met on one outcome and not on another.") : null,
       h("span", { class: "keys" }, keys(["↑↓", "rule"], ["←→", "mark of an input"], ["⏎", "its proof"])))),
     unlisted.length === 0 ? null : [h("p", { class: "eyebrow" }, "Scenarios no rule lists"), h("div", { class: "chips" }, unlisted.map((e) =>
       h("a", { class: `chip ${e.path === path ? "on" : ""}`, href: e.path === path ? route("operation", o.operation) : route("scenario", e.path) }, dot(scenarioColor(e.path)), e.path.split("/")[1])))],

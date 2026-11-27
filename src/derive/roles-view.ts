@@ -3,6 +3,7 @@ import type { Problem } from "../shapes/extraction.ts";
 import type {
   Common,
   Evidence,
+  MetJudgement,
   PlayableScenario,
   RuleJudgement,
   Rules,
@@ -11,6 +12,9 @@ import type {
 } from "../shapes/roles.ts";
 import type { Structure } from "../shapes/specification.ts";
 import type { Interface, Target } from "../shapes/target.ts";
+import { acceptedStatuses, acceptedStatusOf } from "./accepted.ts";
+import { branchesOf } from "./branches.ts";
+import { flowsOf } from "./flows.ts";
 import { judgeTask } from "./judge-task.ts";
 import { type Placed, placedOfRoles } from "./placing.ts";
 import { operationFolderOf } from "./roles-files.ts";
@@ -28,6 +32,8 @@ export type ReadInterface = {
   }[];
   readonly evidence: readonly { readonly slug: string; readonly evidence: Evidence }[];
   readonly judgements: readonly RuleJudgement[];
+  // the conditions of the operation's effects judged on its accepted recordings
+  readonly met?: readonly MetJudgement[];
   // the scenarios that start from a state, as written, and for each step played the state
   // whose path it is a step of: [{slug: b, states: [s], played: [s, s, undefined]}]
   readonly startsFrom?: readonly {
@@ -134,6 +140,7 @@ export type RolesGap = {
     | "reading-without-scenario"
     | "evidence-not-judged"
     | "judgement-stale"
+    | "judgement-contradicts"
     | "evidence-played-once"
     | "state-not-reached";
   readonly name: string;
@@ -340,74 +347,123 @@ export function viewOfRoles({
   );
   const interfaceOf = (operation: string) =>
     read.find(({ rules }) => rules.operation === operation)?.bound.interface;
-  const scenarios = read.flatMap(
-    ({ bound, rules, trigger, scenarios, evidence, judgements, startsFrom = [] }) => {
-      const name = bound.interface;
-      // with no trigger, no text a judge would be given today: every judgement is stale
-      const { of } =
-        evidence.length === 0 || trigger === undefined
-          ? { of: new Map<string, string>() }
-          : judgeTask({
-              bound,
-              common,
-              commonTrigger,
-              runsWith: target?.["runs-with"],
-              rules,
-              trigger,
-              recordings: evidence,
-              states: [],
-            });
-      const slugs = [
-        ...new Set([
-          ...scenarios.map(({ slug }) => slug),
-          ...evidence.map(({ slug }) => slug),
-        ]),
-      ].sort();
-      return slugs.flatMap((slug): readonly ScenarioView[] => {
-        const scenario = scenarios.find((s) => s.slug === slug)?.scenario;
-        const played = evidence.find((e) => e.slug === slug)?.evidence;
-        const rule = scenario?.rule ?? played?.rule;
-        if (rule === undefined) return [];
-        const judged = judgements.find((j) => j.scenario === slug);
-        const started = startsFrom.find((one) => one.slug === slug);
-        const from = started?.states ?? [];
+  // the hashes of the text a judge would be given today, per interface; with no trigger,
+  // none: every judgement is stale
+  const hashesOf = ({
+    bound,
+    rules,
+    trigger,
+    evidence,
+  }: (typeof read)[number]): Pick<ReturnType<typeof judgeTask>, "of" | "ofConditions"> =>
+    evidence.length === 0 || trigger === undefined
+      ? { of: new Map(), ofConditions: new Map() }
+      : judgeTask({
+          bound,
+          common,
+          commonTrigger,
+          runsWith: target?.["runs-with"],
+          rules,
+          trigger,
+          recordings: evidence,
+          states: [],
+        });
+  // a `met` judgement whose part of the task changed since, or is no longer asked: not
+  // drawn, a gap
+  const metOf = (one: (typeof read)[number]) => {
+    const { ofConditions } = hashesOf(one);
+    const met = one.met ?? [];
+    return {
+      fresh: met.filter(({ scenario, of }) => of === ofConditions.get(scenario)),
+      stale: met.flatMap(({ scenario, of }) => {
+        const hash = ofConditions.get(scenario);
+        if (hash === of) return [];
         return [
           {
-            path: `${name}/${slug}`,
-            operation: name,
-            rule,
-            ...(scenario === undefined
-              ? {}
-              : { situation: scenario.situation, reached: String(scenario.reached) }),
-            ...(from.length === 0 ? {} : { startsFrom: from }),
-            steps: stepsOf(scenario, played, interfaceOf).map((step, i) => {
-              const state = started?.played?.[i];
-              return state === undefined ? step : { ...step, state };
-            }),
-            judgement:
-              judged === undefined
-                ? null
-                : {
-                    verdict: judged.verdict,
-                    confidence: judged.confidence,
-                    says: judged.evidence,
-                    stale: judged.of !== of.get(slug),
-                  },
+            scenario,
+            message:
+              hash === undefined
+                ? "its recording is no longer an accepted call of an operation with conditional effects"
+                : "the conditions of its operation's effects changed since they were judged",
           },
         ];
-      });
-    },
-  );
-  const operations = read.map(({ bound, rules, trigger }) => ({
-    path: bound.interface,
-    operation: {
-      operation: bound.interface,
-      interface: { method: bound.method, pattern: bound.pattern },
-      takes: rules.takes ?? {},
-      answers: rules.answers,
-      lines: linesOf(rules, common, trigger, commonTrigger),
-    },
-  }));
+      }),
+    };
+  };
+  // the rule judgements whose hash is the one the judge would be given today
+  const freshJudgementsOf = (one: (typeof read)[number]) => {
+    const { of } = hashesOf(one);
+    return one.judgements.filter(({ scenario, of: hash }) => hash === of.get(scenario));
+  };
+  const scenarios = read.flatMap((one) => {
+    const { bound, scenarios, evidence, judgements, startsFrom = [] } = one;
+    const name = bound.interface;
+    const { of } = hashesOf(one);
+    const slugs = [
+      ...new Set([
+        ...scenarios.map(({ slug }) => slug),
+        ...evidence.map(({ slug }) => slug),
+      ]),
+    ].sort();
+    return slugs.flatMap((slug): readonly ScenarioView[] => {
+      const scenario = scenarios.find((s) => s.slug === slug)?.scenario;
+      const played = evidence.find((e) => e.slug === slug)?.evidence;
+      const rule = scenario?.rule ?? played?.rule;
+      if (rule === undefined) return [];
+      const judged = judgements.find((j) => j.scenario === slug && j.rule === rule);
+      const started = startsFrom.find((one) => one.slug === slug);
+      const from = started?.states ?? [];
+      return [
+        {
+          path: `${name}/${slug}`,
+          operation: name,
+          rule,
+          ...(scenario === undefined
+            ? {}
+            : { situation: scenario.situation, reached: String(scenario.reached) }),
+          ...(from.length === 0 ? {} : { startsFrom: from }),
+          steps: stepsOf(scenario, played, interfaceOf).map((step, i) => {
+            const state = started?.played?.[i];
+            return state === undefined ? step : { ...step, state };
+          }),
+          judgement:
+            judged === undefined
+              ? null
+              : {
+                  verdict: judged.verdict,
+                  confidence: judged.confidence,
+                  says: judged.evidence,
+                  stale: judged.of !== of.get(slug),
+                },
+        },
+      ];
+    });
+  });
+  const operations = read.map((one) => {
+    const { bound, rules, trigger, evidence } = one;
+    return {
+      path: bound.interface,
+      operation: {
+        operation: bound.interface,
+        interface: { method: bound.method, pattern: bound.pattern },
+        takes: rules.takes ?? {},
+        answers: rules.answers,
+        lines: linesOf(rules, common, trigger, commonTrigger),
+        flows: flowsOf(rules),
+        branches: branchesOf({
+          rules,
+          accepted: trigger === undefined ? [] : acceptedStatuses(trigger),
+          recordings: evidence.flatMap(({ slug, evidence: { rule, exchanges } }) => {
+            const status =
+              trigger === undefined ? undefined : acceptedStatusOf(exchanges, trigger);
+            return status === undefined ? [] : [{ slug, rule, status }];
+          }),
+          // a stale rule judgement puts no recording on an outcome: it is a gap already
+          judgements: freshJudgementsOf(one),
+          met: metOf(one).fresh,
+        }),
+      },
+    };
+  });
   const rules = operations.flatMap(({ operation: { operation, lines } }) =>
     lines.map(({ rule }): RuleView => {
       const of = scenarios.filter((s) => s.operation === operation && s.rule === rule);
@@ -480,6 +536,35 @@ export function viewOfRoles({
         name: path,
         message: "its rule or its evidence changed since it was judged",
       })),
+    ...read.flatMap((one) =>
+      metOf(one).stale.map(({ scenario, message }) => ({
+        kind: "judgement-stale" as const,
+        name: `${one.bound.interface}/${scenario}`,
+        message,
+      })),
+    ),
+    // the recording's own rule judged reached, its condition said not met: the rule
+    // judgement stands on the outcome, it judged the whole recording
+    ...read.flatMap((one) => {
+      const judged = freshJudgementsOf(one);
+      return metOf(one).fresh.flatMap(({ scenario, met }) => {
+        const rule = one.evidence.find(({ slug }) => slug === scenario)?.evidence.rule;
+        const said = rule === undefined ? undefined : met[rule];
+        return said === undefined ||
+          said === "yes" ||
+          !judged.some(
+            (j) => j.scenario === scenario && j.rule === rule && j.situation === "yes",
+          )
+          ? []
+          : [
+              {
+                kind: "judgement-contradicts" as const,
+                name: `${one.bound.interface}/${scenario}`,
+                message: `its rule ${rule} was judged reached, its condition judged ${said === "no" ? "not met" : "unsure"}`,
+              },
+            ];
+      });
+    }),
   ];
   const placed: readonly Placed[] = placedOfRoles(
     structures,

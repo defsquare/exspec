@@ -15,6 +15,7 @@ import {
   commonFile,
   commonTriggerFile,
   judgementsIn,
+  metJudgementsIn,
   operationFolderOf,
   readerFilesOf,
   slugsIn,
@@ -139,6 +140,7 @@ function readingsOf(files: readonly SourceFile[]) {
         return evidence === undefined ? [] : [{ slug, evidence }];
       }),
       judgements: judgementsIn(files, name),
+      met: metJudgementsIn(files, name),
       startsFrom: statesStartedFrom(files, name, paths),
     };
   });

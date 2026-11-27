@@ -14,7 +14,7 @@ groups:
   - {group: bindings, says: "the only shapes that know both sides", at: [1, 1]}
 
 concepts:
-  - {concept: judgement, group: proof, says: "holds · contradicted · not-shown …", at: [1, 0]}
+  - {concept: judgement, group: proof, says: "a verdict, or the conditions met", at: [1, 0]}
   - {concept: evidence, group: proof, says: "what the target answered, its noise", at: [0, 1]}
   - {concept: side effect, group: proof, says: "what the target sent a provider", in: evidence}
   - {concept: scenario, group: proof, says: "a situation, written with holes", at: [1, 1]}
